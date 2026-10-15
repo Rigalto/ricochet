@@ -28,7 +28,6 @@ Pour la transition sans toucher aux 114 modules de SweetHome : une import map pe
 # Corrections à apporter
 
 * Faire de credential.js une entrée explicite du .gitignore.
-* Ajouter un fichier .nojekyll à la racine de chaque dépôt : sans lui, Pages ignore les fichiers et dossiers commençant par _.
 
 * Le détachement repose sur un MutationObserver global et asynchrone : un élément déplacé dans le DOM perd son composant, et les écouteurs DOM ne sont jamais retirés. C'est la cause probable du double clickDatasetHandler sur mui-icon-button. Comment: _je pense que la fonction 'detach' est faite pour cela, elle est sensée détacher automatiquement les handlers. A tester avant d'agir._
 * _detach : remplacer this._webKeyboardController… par component._webKeyboardController….
@@ -49,6 +48,11 @@ Défauts dans web-wcomponent.mjs
 * Appels non idempotents — observeWindowEvents re-lie this[handler] à chaque appel : un second appel perd la référence du premier écouteur, qui ne sera jamais retiré. Même chose pour observeAttributes, qui crée un nouveau MutationObserver sans déconnecter le précédent.
 * Détachement différé — le MutationObserver traite les retraits en microtâche : un élément retiré puis réinséré (déplacement, tri) est détaché alors qu'il est de nouveau dans la page, sans être remonté automatiquement.
 
+---
+
+# Corrections faites
+
+* Ajout d'un fichier .nojekyll à la racine de chaque dépôt : sans lui, Pages ignore les fichiers et dossiers commençant par _.
 
 ---
 
