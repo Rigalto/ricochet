@@ -58,6 +58,7 @@ Défauts dans web-wcomponent.mjs
 
 # Points à noter
 
+* Déterminer comment sera réalisée la documentation automatique
 * Pages exige des dépôts publics (offre gratuite) et limite un site à 1 Go : img/ (1,1 Go) doit partir vers Drive avant la publication.
 * L'identifiant OAuth Google devra autoriser l'origine https://rigalto.github.io (et http://localhost pour le développement).
 
