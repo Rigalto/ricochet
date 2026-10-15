@@ -60,3 +60,41 @@ Défauts dans web-wcomponent.mjs
 
 * Pages exige des dépôts publics (offre gratuite) et limite un site à 1 Go : img/ (1,1 Go) doit partir vers Drive avant la publication.
 * L'identifiant OAuth Google devra autoriser l'origine https://rigalto.github.io (et http://localhost pour le développement).
+
+---
+
+# Aborescence cible
+
+```
+ricochet/
+├── README.md
+├── LICENSE
+├── ricochet.svg
+├── .gitignore
+├── .nojekyll              ← sans lui, Pages ignore les fichiers commençant par « _ »
+├── index.html             ← page d'accueil Pages : présentation + démonstration
+│
+├── src/                   ← tout ce qu'une application importe
+│   ├── ricochet.mjs       ← point d'entrée unique, qui ré-exporte l'API publique
+│   ├── core/
+│   │   ├── w-controller.mjs   ← bus, items, timers, animation (extrait de web-wcomponent)
+│   │   ├── w-component.mjs    ← liaison as="…", render, détachement
+│   │   ├── w-element.mjs      ← plus tard : le pont Custom Elements
+│   │   ├── keyboard.mjs       ← WebKeyboardController
+│   │   ├── config.mjs         ← WebConfigController + WebConfigTriggered
+│   │   ├── debug.mjs          ← logs, compteurs memoryLeak, surcharges de console
+│   │   └── global.mjs         ← crée window.$global s'il n'existe pas
+│   ├── storage/
+│   │   ├── http.mjs           ← l'actuel web-ajax + WebConfigAjax
+│   │   └── (drive.mjs, indexeddb.mjs plus tard)
+│   ├── ui/                ← les mui-*.mjs et mui-styled.mjs
+│   ├── icons/
+│   │   └── iconset.mjs        ← l'actuel com-iconset
+│   ├── utils/             ← web-util découpé : dates, strings, random, objects…
+│   └── css/
+│       ├── base.css
+│       └── palette.css
+│
+├── demo/                  ← petits exemples autonomes (le compteur du README, etc.)
+└── docs/                  ← la documentation extraite des commentaires par votre utilitaire
+```
