@@ -122,14 +122,28 @@ its element and the list of exports are read from the code, so they never go out
 | `@module name` | The block documents the whole file. |
 | `@category name` | Group in the index (default: the first folder under the source folder). |
 | `@element tag` | Element tag, when it is not found in a `define()` call. |
-| `@attr {type} [name=default] - text` | An HTML attribute of the component. |
 | `@property {type} name - text` | A JavaScript property. |
-| `@item {read\|write} name - text` | A configuration item read or written. |
-| `@fires name - text` / `@listens name - text` | An event emitted / received on the event bus. |
 | `@css name - text` | A CSS class set or used by the component. |
 | `@param {type} [name=default] - text` / `@returns {type} text` | For methods and exported functions. |
 | `@example` | Code shown as an example (the following lines). |
 | `@deprecated text`, `@see text` | Notes. |
+
+The stimuli a component receives or emits are gathered in one **Interface** table, sorted by kind, then by direction
+(`in`, `in/out`, `out`). Each kind has its own tag:
+
+| Kind | Tag | Default direction | Between braces |
+| --- | --- | --- | --- |
+| attribute | `@attr {type} [name=default] - text` | in | type of the value |
+| event | `@listens {payload} name - text` / `@fires {payload} name - text` | in / out | type of the detail |
+| window | `@listens window:name - text` | in | type of the event |
+| item | `@item {in\|out\|in/out} name - text` | — | direction |
+| key | `@key name - text` | in | — |
+| data | `@data {in\|out\|in/out} name - text` | — | direction |
+| action | `@action data-xxx - text` | out | — |
+
+The direction may also be written after the name, for instance an attribute written by the component itself:
+`@attr {string} data-value (out) - Selected value.` For an event, the payload may be an object type:
+`@fires {{selected: string}} tableRowSelected - A row was clicked.`
 
 Methods and exports are listed when they have a block of their own; a one-line block (`/** Text. */`) is enough.
 

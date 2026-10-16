@@ -121,4 +121,4 @@ Reads the size of an SVG image from the `viewBox` attribute of its source.
 | --- | --- | --- |
 | `svg` | string | Source of the SVG image. |
 
-**Returns** `{width: number, height: number` |null} The size, or `null` if there is no valid `viewBox`.
+**Returns** `{width: number, height: number}|null` The size, or `null` if there is no valid `viewBox`.

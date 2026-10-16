@@ -1,0 +1,25 @@
+{
+  // Ctrl+Shift+B (Cmd+Shift+B on macOS) regenerates the documentation;
+  // its warnings appear in the Problems panel, with a link to the source line.
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Ricochet: generate documentation",
+      "type": "shell",
+      "command": "node tools/doc.mjs",
+      "group": {"kind": "build", "isDefault": true},
+      "presentation": {"reveal": "silent", "revealProblems": "onProblem"},
+      "problemMatcher": {
+        "owner": "ricochet-doc",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "severity": "warning",
+        "pattern": {
+          "regexp": "^warning\\s+(.+?):(\\d+)\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "message": 3
+        }
+      }
+    }
+  ]
+}

@@ -59,6 +59,8 @@ Défauts dans web-wcomponent.mjs
 `node C:\Users\dcabu\Documents\alwaysdata\www\sweethome\dev-server.mjs`
 * Environnement de création automatique de la documentation :
 `git config core.hooksPath .githooks`
+* Génération à la main de la documentation dans VSCode :
+`Ctrl-Maj-B`
 
 ---
 

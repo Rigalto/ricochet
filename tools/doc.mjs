@@ -21,7 +21,8 @@ const SOURCES = process.argv.slice(2).length > 0 ? process.argv.slice(2) : ['src
 const OUT = join(ROOT, 'docs', 'api')
 
 // tags whose first word is a name: `@attr {type} name - description`
-const NAMED_TAGS = new Set(['attr', 'item', 'fires', 'listens', 'css', 'param', 'property', 'slot'])
+const NAMED_TAGS = new Set(['attr', 'item', 'fires', 'listens', 'key', 'data', 'action', 'css', 'param', 'property',
+  'slot'])
 const KNOWN_TAGS = new Set([...NAMED_TAGS, 'module', 'category', 'element', 'extends', 'returns', 'example',
   'deprecated', 'see', 'since', 'private'])
 
@@ -62,21 +63,29 @@ const parseBlock = (lines, file, lineNumber) => {
   return {description: description.join('\n').trim(), tags: tags.map(parseTag)}
 }
 
-// `{type} [name=default] - text` → {type, name, defaultValue, text}
+// `{type} [name=default] (direction) - text` → {type, name, defaultValue, direction, text}
 const parseTag = ({tag, body}) => {
   let rest = body
   let type = ''
-  const typeMatch = /^\{([^}]*)\}\s*/.exec(rest)
-  if (typeMatch !== null) {
-    type = typeMatch[1]
-    rest = rest.slice(typeMatch[0].length)
+  if (rest.startsWith('{')) { // the type may hold nested braces: {{module: string}}
+    let depth = 0
+    let end = 0
+    for (; end < rest.length; end++) {
+      if (rest[end] === '{') { depth += 1 }
+      if (rest[end] === '}') { depth -= 1 }
+      if (depth === 0) { break }
+    }
+    type = rest.slice(1, end).trim()
+    rest = rest.slice(end + 1).trimStart()
   }
   let name = ''
   let defaultValue = ''
+  let direction = ''
   if (NAMED_TAGS.has(tag)) {
-    const nameMatch = /^(\[[^\]]*\]|\S+)\s*(?:-\s+)?/.exec(rest)
+    const nameMatch = /^(\[[^\]]*\]|\S+)\s*(?:\((in|out|in\/out)\)\s*)?(?:-\s+)?/.exec(rest)
     if (nameMatch !== null) {
       name = nameMatch[1]
+      direction = nameMatch[2] ?? ''
       rest = rest.slice(nameMatch[0].length)
       const optional = /^\[([^=\]]+)(?:=([^\]]*))?\]$/.exec(name)
       if (optional !== null) {
@@ -88,7 +97,7 @@ const parseTag = ({tag, body}) => {
     rest = rest.replace(/^-\s+/, '')
   }
   const text = tag === 'example' ? rest.replace(/^\n/, '') : rest.trim()
-  return {tag, type, name, defaultValue, text}
+  return {tag, type, name, defaultValue, direction, text}
 }
 
 const parseFile = (path, source) => {
@@ -178,17 +187,49 @@ const table = (header, rows) => {
 
 const section = (title, content) => content === '' ? '' : `## ${title}\n\n${content}`
 
+// ---------------------------------------------------------------- the Interface table: every stimulus in or out
+
+const KINDS = ['attribute', 'event', 'window', 'item', 'key', 'data', 'action']
+const DIRECTIONS = ['in', 'in/out', 'out']
+// the direction written between braces for items and data: {in}, {out}, {in/out}; former {read}, {write}
+const BRACE_DIRECTIONS = {in: 'in', out: 'out', 'in/out': 'in/out', read: 'in', write: 'out', readwrite: 'in/out'}
+
+const interfaceRow = t => {
+  const payload = t.type === '' ? '' : `\`${t.type}\`${t.defaultValue === '' ? '' : ` = \`${t.defaultValue}\``}`
+  switch (t.tag) {
+    case 'attr':
+      return {kind: 'attribute', name: t.name, direction: t.direction || 'in', payload, text: t.text}
+    case 'listens':
+    case 'fires': {
+      const isWindow = t.name.startsWith('window:')
+      return {kind: isWindow ? 'window' : 'event', name: isWindow ? t.name.slice(7) : t.name,
+        direction: t.direction || (t.tag === 'fires' ? 'out' : 'in'), payload, text: t.text}
+    }
+    case 'item':
+    case 'data':
+      return {kind: t.tag, name: t.name, direction: t.direction || BRACE_DIRECTIONS[t.type] || 'in', payload: '',
+        text: t.text}
+    case 'key':
+      return {kind: 'key', name: t.name || t.type, direction: 'in', payload: '', text: t.text}
+    case 'action':
+      return {kind: 'action', name: t.name, direction: t.direction || 'out', payload, text: t.text}
+    default:
+      return null
+  }
+}
+
+const interfaceSection = doc => {
+  const rows = (doc?.tags ?? []).map(interfaceRow).filter(row => row !== null)
+  rows.sort((a, b) => KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind) ||
+    DIRECTIONS.indexOf(a.direction) - DIRECTIONS.indexOf(b.direction)) // stable: source order is kept otherwise
+  return section('Interface', table(['Kind', 'Name', 'Direction', 'Payload', 'Description'],
+    rows.map(r => [r.kind, code(r.name), r.direction, r.payload, r.text])))
+}
+
 const tagSections = doc => [
-  section('Attributes', table(['Attribute', 'Type', 'Default', 'Description'],
-    tagsOf(doc, 'attr').map(t => [code(t.name), t.type, code(t.defaultValue), t.text]))),
+  interfaceSection(doc),
   section('Properties', table(['Property', 'Type', 'Description'],
     tagsOf(doc, 'property').map(t => [code(t.name), t.type, t.text]))),
-  section('Configuration items', table(['Item', 'Access', 'Description'],
-    tagsOf(doc, 'item').map(t => [code(t.name), t.type, t.text]))),
-  section('Events', table(['Event', 'Direction', 'Description'], [
-    ...tagsOf(doc, 'fires').map(t => [code(t.name), 'emitted', t.text]),
-    ...tagsOf(doc, 'listens').map(t => [code(t.name), 'received', t.text]),
-  ])),
   section('Slots', table(['Slot', 'Description'], tagsOf(doc, 'slot').map(t => [code(t.name), t.text]))),
   section('CSS classes', table(['Class', 'Description'], tagsOf(doc, 'css').map(t => [code(t.name), t.text]))),
   section('Examples', tagsOf(doc, 'example').map(t => {
