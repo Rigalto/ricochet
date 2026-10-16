@@ -1,0 +1,5 @@
+#!/bin/sh
+# Regenerates the API documentation (docs/api) and adds it to the commit.
+# Enabled once per clone with:  git config core.hooksPath .githooks
+node tools/doc.mjs || exit 1
+git add docs/api
