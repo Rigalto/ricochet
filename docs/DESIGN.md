@@ -46,6 +46,27 @@ are empty; otherwise it sleeps. The budget is a fraction of the measured frame d
 Plain ES modules, run as written. When a feature needs a library (HTML sanitizing, for instance), Ricochet defines
 the hook and the application provides the library (`setSanitizer()`). *(2026-10-16)*
 
+### 7. Handlers are named methods, bound by the kernel
+
+A component subscribes by **naming** the method that handles a stimulus, never by passing a function. By default the
+name is derived from the stimulus; another method name may be given as a string. *(origin, written down 2026-10-16)*
+
+| Stimulus | Default handler |
+| --- | --- |
+| Event `tableRowSelected` (bus, microtask or scheduled task) | `tableRowSelectedDispatched(payload)` |
+| Attribute `icon`, `no-label` | `iconChanged(newValue, oldValue)`, `noLabelChanged(…)` |
+| Configuration items | `itemsChanged(items)` |
+| Window event, interval, animation frame | method named explicitly |
+
+- No anonymous function or closure can subscribe: every subscription belongs to its component and is released when
+  the component is detached.
+- Handlers show up by name in debugging tools; a missing handler is reported when subscribing, not when the first
+  event arrives.
+- Event names are camelCase identifiers (no `-`, `/` or `:`), so that the handler name can be derived.
+- The kernel binds each method once, keeps the bound function in a map of the instance, and never overwrites the
+  method on the instance: subscribing twice is harmless and unsubscribing always finds the right function.
+- The low-level bus accepts functions, but only kernel code uses it directly.
+
 ## Decisions
 
 | Date | Decision | Reason |
