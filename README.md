@@ -20,6 +20,31 @@ Most front-end frameworks compute a view from a state, then reconcile it with th
 **nothing is ever re-rendered**. Each component receives stimuli, does its own work, changes the exact DOM nodes it owns,
 and sends stimuli in turn — like a stone skipping on water, one impact triggering the next.
 
+### Everything is an event
+
+A component talks to the rest of the application, and to its environment, **through events only**. It receives
+events, does its own work, and emits other events. It never calls another component and never knows who listens.
+
+| Source | Examples |
+| --- | --- |
+| Mouse and keyboard | a click, a key handled by the layered keyboard controller |
+| Window | resize, visibility change |
+| Attribute | an attribute of the component's element changes |
+| Configuration item | a shared item changes |
+| Data | a record changes, in the application or in a remote store |
+| Event bus | another component emits an event |
+| Frame loop | a new frame starts (games and simulations) |
+| Microtask | an event deferred to the spare time of the current frame |
+| Scheduled task | an event due at a given time, in game time or real time |
+
+An event can be emitted at three moments: **now** (synchronous), **in the spare time of the current frame** (a
+microtask, within a time budget), or **later** (a scheduled task). The listener cannot tell which one was used. A
+handler stays short; when the work is long, the handler itself defers it as a microtask. The priority and the cost of a
+microtask are declared once, by the module that does the work, not by the one that emits the event.
+
+> The unified event bus, microtasks, scheduled tasks and the frame loop are being added (see [Roadmap](#roadmap)).
+> Until then the event bus is used through `dispatchEvent()` and `observeEvents()`.
+
 What sets it apart:
 
 - **Reactions, not renders.** A component keeps direct references to its nodes and updates them surgically
@@ -152,7 +177,12 @@ Safari, Chrome and Edge (current versions). Firefox is expected to work. No poly
 2. **Pluggable storage.** Configuration items and data proxies currently persist through a small HTTP backend. They will
    accept storage adapters (Google Drive, IndexedDB, plain JSON files).
 3. **Relative imports and an import map**, so the kernel can be loaded from any host, including GitHub Pages.
-4. **Documentation and a demo page.**
+4. **Unified event bus and frame loop.** One synchronous bus for every event, events deferred as microtasks within
+   the frame budget, events scheduled in game time or real time, and a frame loop that runs only when something needs
+   it — so office-style views and a 60 fps canvas can live in the same page.
+5. **Documentation and a demo page.**
+
+The design decisions behind Ricochet are recorded in [docs/DESIGN.md](docs/DESIGN.md).
 
 ## License
 

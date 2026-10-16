@@ -57,7 +57,7 @@ Défauts dans web-wcomponent.mjs
 * Ajout d'un fichier `.gitattributes` garde au hook des fins de ligne Unix.
 * Création d'un serveur de test en local :
 `node C:\Users\dcabu\Documents\alwaysdata\www\sweethome\dev-server.mjs`
-* Environnement de création automatique de la documentation :
+* Environnement de création automatique de la documentation lors du commit :
 `git config core.hooksPath .githooks`
 * Génération à la main de la documentation dans VSCode :
 `Ctrl-Maj-B`
