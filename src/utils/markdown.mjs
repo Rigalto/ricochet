@@ -17,14 +17,7 @@
  * @module markdown
  */
 
-const HTML_ESCAPES = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}
-
-/**
- * Escapes `&`, `<`, `>` and `"` so that a text can be inserted in HTML, inside an element or an attribute.
- * @param {string} text - Text to escape.
- * @returns {string} The escaped text.
- */
-export const escapeHtml = text => text.replace(/[&<>"]/g, c => HTML_ESCAPES[c])
+import {escapeHtml} from './dom.mjs'
 
 // Inline elements, in priority order. Groups:
 // 1 escaped character | 2-3 code | 4 bold | 5 italic | 6 strikethrough | 7-9 image or link

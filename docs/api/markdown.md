@@ -21,20 +21,9 @@ element.innerHTML = markdownToHtml(text, {
 
 | Name | Kind | Description |
 | --- | --- | --- |
-| `escapeHtml` | function | Escapes `&`, `<`, `>` and `"` so that a text can be inserted in HTML, inside an element or an attribute. |
 | `markdownToHtml` | function | Converts a Ricochet Markdown text to HTML. |
 
 ## Details
-
-### escapeHtml()
-
-Escapes `&`, `<`, `>` and `"` so that a text can be inserted in HTML, inside an element or an attribute.
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `text` | string | Text to escape. |
-
-**Returns** `string` The escaped text.
 
 ### markdownToHtml()
 
