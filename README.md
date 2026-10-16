@@ -35,6 +35,9 @@ What sets it apart:
   goes to the highest layer that listens for it, and to no one else.
 - **Built-in instrumentation.** Leak counters (attached components, listeners, timers, animation frames) and timelines of
   events, configuration changes and network requests, readable from the console or from a debug view.
+- **Documentation from the code.** The same `/** … */` comments feed the tooltips of VSCode, Markdown pages that GitHub
+  displays, and a JSON index your application can show. Names, parent classes and exports are read from the code, so
+  they never drift; a Git hook regenerates everything at each commit.
 - **Zero dependencies, zero build.** Plain ES modules. The code you write is the code the browser runs.
 
 ## Core concepts
@@ -97,6 +100,20 @@ WComponent.render() // mounts every [as] element in <body>
 
 The button does not know the counter exists. Add a second counter anywhere in the page and it works with no change.
 
+## Getting started
+
+Ricochet is a folder of plain ES modules: add it to your project (as a Git submodule or a copy), declare it in an
+import map, and serve the page from any local web server.
+
+```html
+<script type="importmap">
+{ "imports": { "ricochet/": "./ricochet/src/" } }
+</script>
+```
+
+The [guide](docs/GUIDE.md) explains each step, how to run the application on your computer, and how to generate the
+documentation of your own components. The [API reference](docs/api/README.md) is generated from the sources.
+
 ## The API at a glance
 
 | Method | Purpose |
@@ -114,11 +131,14 @@ The button does not know the counter exists. Add a second counter anywhere in th
 
 ## Also included
 
-- **UI components** (`mui-*`): buttons, icon buttons, inputs, selects, checkboxes, radio buttons, sliders, tabs,
+- **UI components** (`rc-*`): buttons, icon buttons, inputs, selects, checkboxes, radio buttons, sliders, tabs,
   dropdowns, alerts — all sharing the same `data-*` action contract.
 - **Colour palettes** driven by CSS custom properties (`--color-*`).
 - **An icon set** drawn on a common 24×24 grid with uniform stroke rules.
-- **Utilities** for dates, strings, hashing and seeded random numbers.
+- **A Markdown converter** for a [restricted, standard-compatible Markdown](docs/MARKDOWN.md), with hooks for
+  application links.
+- **A documentation generator** (`tools/doc.mjs`), usable on your own code.
+- **Utilities** for the DOM, the clipboard, dates, strings, hashing and seeded random numbers.
 
 ## Browser support
 
@@ -126,7 +146,7 @@ Safari, Chrome and Edge (current versions). Firefox is expected to work. No poly
 
 ## Roadmap
 
-1. **Native Custom Elements.** Move from `<div as="mui-button">` to `<mui-button>`, with `connectedCallback`,
+1. **Native Custom Elements.** Move from `<div as="rc-button">` to `<rc-button>`, with `connectedCallback`,
    `disconnectedCallback` and `attributeChangedCallback` replacing the current mutation observers. Light DOM, no Shadow
    DOM, so the global palettes and utility classes keep working. Both syntaxes will coexist during the transition.
 2. **Pluggable storage.** Configuration items and data proxies currently persist through a small HTTP backend. They will

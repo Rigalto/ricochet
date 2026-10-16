@@ -9,15 +9,6 @@
 
 ---
 
-# Travail en cours
-
-* `docs/MARKDOWN.md` : la spécification du Markdown restreint, en une page ;
-* `src/utils/markdown.mjs` : le décodeur, avec un point d’entrée pour vos extensions (liens internes) ;
-* `tools/doc.mjs` et le hook pre-commit ;
-* la conversion des en-têtes, en commençant par les fichiers déjà copiés dans ricochet.
-
----
-
 # importmap
 
 Pour la transition sans toucher aux 114 modules de SweetHome : une import map peut aussi remapper des chemins absolus. Dans index.html de SweetHome :
@@ -38,6 +29,7 @@ Pour la transition sans toucher aux 114 modules de SweetHome : une import map pe
 
 * Faire de credential.js une entrée explicite du .gitignore.
 
+* messages d'erreur de iconset.mjs à traduire en anglais.
 * Le détachement repose sur un MutationObserver global et asynchrone : un élément déplacé dans le DOM perd son composant, et les écouteurs DOM ne sont jamais retirés. C'est la cause probable du double clickDatasetHandler sur mui-icon-button. Comment: _je pense que la fonction 'detach' est faite pour cela, elle est sensée détacher automatiquement les handlers. A tester avant d'agir._
 * _detach : remplacer this._webKeyboardController… par component._webKeyboardController….
 * #eventDebug : ne sérialiser le détail que si debug.eventbus est actif ; passer debug.eventbus à false par défaut.
@@ -61,9 +53,12 @@ Défauts dans web-wcomponent.mjs
 
 # Corrections faites
 
-* Ajout d'un fichier .nojekyll à la racine de chaque dépôt : sans lui, Pages ignore les fichiers et dossiers commençant par _.
+* Ajout d'un fichier `.nojekyll` à la racine de chaque dépôt : sans lui, Pages ignore les fichiers et dossiers commençant par _.
+* Ajout d'un fichier `.gitattributes` garde au hook des fins de ligne Unix.
 * Création d'un serveur de test en local :
 `node C:\Users\dcabu\Documents\alwaysdata\www\sweethome\dev-server.mjs`
+* Environnement de création automatique de la documentation :
+`git config core.hooksPath .githooks`
 
 ---
 
