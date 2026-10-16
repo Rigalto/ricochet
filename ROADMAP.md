@@ -9,6 +9,15 @@
 
 ---
 
+# Travail en cours
+
+* `docs/MARKDOWN.md` : la spécification du Markdown restreint, en une page ;
+* `src/utils/markdown.mjs` : le décodeur, avec un point d’entrée pour vos extensions (liens internes) ;
+* `tools/doc.mjs` et le hook pre-commit ;
+* la conversion des en-têtes, en commençant par les fichiers déjà copiés dans ricochet.
+
+---
+
 # importmap
 
 Pour la transition sans toucher aux 114 modules de SweetHome : une import map peut aussi remapper des chemins absolus. Dans index.html de SweetHome :
@@ -53,6 +62,8 @@ Défauts dans web-wcomponent.mjs
 # Corrections faites
 
 * Ajout d'un fichier .nojekyll à la racine de chaque dépôt : sans lui, Pages ignore les fichiers et dossiers commençant par _.
+* Création d'un serveur de test en local :
+`node C:\Users\dcabu\Documents\alwaysdata\www\sweethome\dev-server.mjs`
 
 ---
 
