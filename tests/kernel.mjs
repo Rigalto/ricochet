@@ -3,7 +3,8 @@
 
 // tests/kernel.mjs — a minimal unit test kernel, without dependency.
 //
-// describe(label, fn) groups assertions; assert(label, condition) records one result.
+// describe(label, fn) groups assertions; assert(label, condition) records one result. fn may be async: then
+// `await describe(…)`.
 // captureConsole() / releaseConsole() silence the console during a test and return what was written,
 // so that expected warnings and errors can be checked.
 
@@ -31,17 +32,28 @@ export function releaseConsole () {
   return lines
 }
 
+// An asynchronous test returns a promise: the test file awaits describe(), so that suites never overlap.
 export function describe (label, fn) {
   const suite = {label, passed: 0, failed: 0, lines: []}
-  currentSuite = suite
-  try {
-    fn()
-  } catch (error) {
+  const fail = error => {
     suite.failed++
     suite.lines.push(`  ❌ unexpected error: ${error.message}`)
   }
-  currentSuite = null
-  results.push(suite)
+  const end = () => {
+    currentSuite = null
+    results.push(suite)
+  }
+  currentSuite = suite
+  let result
+  try {
+    result = fn()
+  } catch (error) {
+    fail(error)
+  }
+  if (result instanceof Promise) {
+    return result.catch(fail).finally(end)
+  }
+  end()
 }
 
 export function assert (label, condition) {

@@ -76,7 +76,7 @@ Ricochet has two base classes and three communication channels.
 | `WComponent` | Bound to a DOM element. Many instances. Mounts with `attach()`, cleans up automatically when the element leaves the DOM. |
 | `WController` | No DOM. A singleton created when its module is imported (keyboard, data proxies, business logic). Same API as `WComponent` for signals. |
 | **Event bus** | Volatile signals: `emit(name, payload)` / `listen(name)`. |
-| **Configuration items** | Persistent shared state: `setItem(item, value)` / `observeItems([items])`. The values are kept by a store the application registers with `setItemStore()`. |
+| **Configuration items** | Persistent shared state: `setItem(item, value)` / `observeItems([items])`. Observers are called once per task; changes are saved after 2 s, or at once when the page closes, through a storage adapter. |
 | **Data proxy** | Complex records: create / update / delete, memory cache, change notification for observers. |
 
 Everything a component subscribes to — events, items, attributes, window events, intervals, animation frames — is
@@ -123,9 +123,9 @@ WComponent.define('like-counter', LikeCounter)
 WComponent.render() // mounts every [as] element in <body>
 ```
 
-> **Note:** a component that observes configuration items needs a store, registered once by the application with
-> `setItemStore()` (`ricochet/core/items.mjs`). A store built into Ricochet, with storage adapters, is being added (see
-> [Roadmap](#roadmap)).
+> **Note:** configuration items are loaded and saved by a storage adapter that the application gives to the store,
+> before loading it: `config.setAdapter(adapter)`, then `await config.load()` (`ricochet/core/config.mjs`). Ricochet
+> provides an adapter in memory (`ricochet/adapters/memory.mjs`); an HTTP server or Google Drive need a few lines.
 
 The button does not know the counter exists. Add a second counter anywhere in the page and it works with no change.
 
@@ -185,18 +185,17 @@ uses JavaScript up to ES2022, so that it also runs in slightly older browsers an
 ## Roadmap
 
 Done: the event bus, relative imports with an import map, the base classes `WController` and `WComponent`, the
-layered keyboard, component styles, unit tests.
+layered keyboard, component styles, the store of configuration items with storage adapters, unit tests.
 
-1. **Pluggable storage.** Configuration items and data proxies will accept storage adapters (HTTP backend, Google
-   Drive, IndexedDB, plain JSON files); the store will move into the kernel.
-2. **Microtasks, scheduled tasks and the frame loop.** Events deferred to the spare time of the current frame, events
+1. **Microtasks, scheduled tasks and the frame loop.** Events deferred to the spare time of the current frame, events
    scheduled in game time or real time, and a frame loop that runs only when something needs it — so office-style
    views and a 60 fps canvas can live in the same page.
-3. **Router and `start()`.** Hash routing with an application resolver and dynamic loading of modules; one entry point
+2. **Router and `start()`.** Hash routing with an application resolver and dynamic loading of modules; one entry point
    that starts the application in a fixed order.
-4. **Native Custom Elements.** Move from `<div as="rc-button">` to `<rc-button>`, with `connectedCallback`,
+3. **Native Custom Elements.** Move from `<div as="rc-button">` to `<rc-button>`, with `connectedCallback`,
    `disconnectedCallback` and `attributeChangedCallback` replacing the current mutation observers. Light DOM, no Shadow
    DOM, so the global palettes and utility classes keep working. Both syntaxes will coexist during the transition.
+4. **Storage in Google Drive.** An adapter for configuration items and data records, with IndexedDB as a cache.
 5. **Documentation and a demo page.**
 
 The design decisions behind Ricochet are recorded in [docs/DESIGN.md](docs/DESIGN.md).

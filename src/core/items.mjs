@@ -2,9 +2,10 @@
 // Copyright (c) 2026 Rigalto
 
 /**
- * The store of configuration items, provided by the application. Items are shared, persistent key/value pairs; the
- * store loads them, saves them and calls their observers. Ricochet only defines the interface, so that the store can
- * be backed by an HTTP server today and by Google Drive tomorrow without changing the kernel.
+ * The store of configuration items used by the kernel (`observeItems()`, `setItem()`, the keyboard…). Items are
+ * shared, persistent key/value pairs; the store loads them, saves them and calls their observers. Ricochet's own
+ * store, `config` (see the `config` module), registers itself when it is imported; an application may register
+ * another store instead.
  *
  * A store is an object with four methods:
  *
@@ -26,7 +27,7 @@
 let store = null
 
 /**
- * Registers the store of configuration items. Called once by the application, at startup.
+ * Registers the store of configuration items. Called once, at startup.
  * @param {object} itemStore - An object with the four methods described above.
  */
 export const setItemStore = itemStore => { store = itemStore }
@@ -36,6 +37,6 @@ export const setItemStore = itemStore => { store = itemStore }
  * @returns {object} The store given to `setItemStore()`.
  */
 export const itemStore = () => {
-  if (store === null) { throw new Error('No store of configuration items: call setItemStore() at startup') }
+  if (store === null) { throw new Error('No store of configuration items: import ricochet/core/config.mjs, or call setItemStore()') }
   return store
 }

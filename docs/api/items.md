@@ -2,9 +2,10 @@
 
 Module `items` · group `core` · source [`src/core/items.mjs`](../../src/core/items.mjs)
 
-The store of configuration items, provided by the application. Items are shared, persistent key/value pairs; the
-store loads them, saves them and calls their observers. Ricochet only defines the interface, so that the store can
-be backed by an HTTP server today and by Google Drive tomorrow without changing the kernel.
+The store of configuration items used by the kernel (`observeItems()`, `setItem()`, the keyboard…). Items are
+shared, persistent key/value pairs; the store loads them, saves them and calls their observers. Ricochet's own
+store, `config` (see the `config` module), registers itself when it is imported; an application may register
+another store instead.
 
 A store is an object with four methods:
 
@@ -24,14 +25,14 @@ setItemStore(myStore)
 
 | Name | Kind | Description |
 | --- | --- | --- |
-| `setItemStore` | function | Registers the store of configuration items. Called once by the application, at startup. |
+| `setItemStore` | function | Registers the store of configuration items. Called once, at startup. |
 | `itemStore` | function | The registered store. |
 
 ## Details
 
 ### setItemStore()
 
-Registers the store of configuration items. Called once by the application, at startup.
+Registers the store of configuration items. Called once, at startup.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
