@@ -1,1 +1,1 @@
-[{"n":"iconset","k":"m","e":"","g":"icons","s":"src/icons/iconset.mjs"},{"n":"dom","k":"m","e":"","g":"utils","s":"src/utils/dom.mjs"},{"n":"markdown","k":"m","e":"","g":"utils","s":"src/utils/markdown.mjs"}]
+[{"n":"bus","k":"m","e":"","g":"core","s":"src/core/bus.mjs"},{"n":"EventBus","k":"c","e":"","g":"core","s":"src/core/bus.mjs"},{"n":"iconset","k":"m","e":"","g":"icons","s":"src/icons/iconset.mjs"},{"n":"dom","k":"m","e":"","g":"utils","s":"src/utils/dom.mjs"},{"n":"markdown","k":"m","e":"","g":"utils","s":"src/utils/markdown.mjs"}]

@@ -20,6 +20,13 @@
           "message": 3
         }
       }
+    },
+    {
+      "label": "Ricochet: run tests",
+      "type": "shell",
+      "command": "node tests/run.mjs",
+      "group": {"kind": "test", "isDefault": true},
+      "problemMatcher": []
     }
   ]
 }
