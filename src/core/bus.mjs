@@ -60,8 +60,10 @@ export class EventBus {
     if (list.length === 1) {
       this.#listeners.delete(name)
     } else {
-      this.#listeners.set(name, list.toSpliced(index, 1))
-    }
+      // copy without the function: an emit in progress keeps iterating over the former array
+      const copy = list.slice()
+      copy.splice(index, 1)
+      this.#listeners.set(name, copy)    }
   }
 
   /**

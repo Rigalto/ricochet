@@ -43,7 +43,7 @@ handler stays short; when the work is long, the handler itself defers it as a mi
 microtask are declared once, by the module that does the work, not by the one that emits the event.
 
 > The unified event bus, microtasks, scheduled tasks and the frame loop are being added (see [Roadmap](#roadmap)).
-> Until then the event bus is used through `dispatchEvent()` and `observeEvents()`.
+> The bus itself is in place: components use `listen()` and `emit()`.
 
 What sets it apart:
 
@@ -73,7 +73,7 @@ Ricochet has two base classes and three communication channels.
 | --- | --- |
 | `WComponent` | Bound to a DOM element. Many instances. Mounts with `attach()`, cleans up automatically when the element leaves the DOM. |
 | `WController` | No DOM. A singleton created when its module is imported (keyboard, data proxies, business logic). Same API as `WComponent` for signals. |
-| **Event bus** | Volatile signals: `dispatchEvent(name, detail)` / `observeEvents(name)`. |
+| **Event bus** | Volatile signals: `emit(name, payload)` / `listen(name)`. |
 | **Configuration items** | Persistent shared state: `setItem(item, value)` / `observeItems([items])`. Observers are called in batches (20 ms); persistence is debounced (2 s). |
 | **Data proxy** | Complex records: create / update / delete, memory cache, change notification for observers. |
 
@@ -147,12 +147,13 @@ documentation of your own components. The [API reference](docs/api/README.md) is
 | `attach()` / `detach()` | Mount and optional extra cleanup. |
 | `innerHTML(html)` | Replaces the component's content and mounts nested components. |
 | `observeAttributes([names])` | Calls `nameChanged(newValue, oldValue)` now and on every change. |
-| `observeEvents(name)` / `dispatchEvent(name, detail)` | Event bus; handler is `nameDispatched(e)` by convention. |
+| `listen(name)` / `emit(name, payload)` | Event bus; the handler is `nameDispatched(payload)` by convention. |
 | `observeItems([items])` / `setItem(item, value)` | Configuration items; handler is `itemsChanged(items)` by convention. |
-| `observeWindowEvents(name, handler)` | Window events, released on detach. |
+| `observeWindowEvents(type, handler)` / `observeDom(target, type, handler)` | Window and DOM events, released on detach. |
 | `observeKeyboard(layer, keys)` | Registers keys for a layer: `modal`, `module`, `view`, floating groups. |
 | `setInterval(handler, ms)` / `setAnimationFrame(handler)` | Timers and animation loops, released on detach. |
 | `WComponent.css(css)` | Component CSS written next to the component, injected in batches, with `@apply` support. |
+| `release()` | Stops every subscription, timer and loop of the instance; called automatically on detach. |
 
 ## Also included
 

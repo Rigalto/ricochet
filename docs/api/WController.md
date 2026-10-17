@@ -1,0 +1,234 @@
+# WController
+
+Class `WController` · group `core` · source [`src/core/w-controller.mjs`](../../src/core/w-controller.mjs)
+
+Base class of controllers. A controller is usually a singleton created when its module is imported.
+
+## Methods
+
+### listen(event, handlerName)
+
+Subscribes a method to an event of the bus, or to each event of an array. The method receives the payload.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `event` | string\|string[] | Event name (camelCase), or an array of names. |
+| `handlerName` | string | Method name. Default: `<event>Dispatched`. |
+
+### unlisten(event, handlerName)
+
+Unsubscribes a method from an event. Not needed before a component is detached: it is done automatically.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `event` | string\|string[] | Event name, or an array of names. |
+| `handlerName` | string | Method name. Default: `<event>Dispatched`. |
+
+### unlistenAll()
+
+Unsubscribes every method of the instance from the bus.
+
+### static emit(event, payload)
+
+Emits an event on the bus: every subscriber is called at once.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `event` | string | Event name. |
+| `payload` | * | Data given to the subscribers. |
+
+### emit(event, payload)
+
+Emits an event on the bus. See `WController.emit()`.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `event` | string | Event name. |
+| `payload` | * | Data given to the subscribers. |
+
+### observeEvents(event, handlerName)
+
+> **Deprecated.** Use `listen()`: the method receives `{type, detail}` instead of the payload.
+
+### unobserveEvents(event, handlerName)
+
+> **Deprecated.** Use `unlisten()`.
+
+### unobserveAllEvents()
+
+> **Deprecated.** Use `unlistenAll()`.
+
+### static dispatchEvent(event, detail = {})
+
+> **Deprecated.** Use `WController.emit()`.
+
+### dispatchEvent(event, detail = {})
+
+> **Deprecated.** Use `emit()`.
+
+### observeWindowEvents(type, handlerName)
+
+Subscribes a method to an event of `window` (`resize`, `hashchange`…). It receives the DOM event.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `type` | string | Event type. |
+| `handlerName` | string | Method name. |
+
+### unobserveWindowEvents(type, handlerName)
+
+Unsubscribes a method from an event of `window`.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `type` | string | Event type. |
+| `handlerName` | string | Method name. |
+
+### unobserveAllWindowEvents()
+
+Unsubscribes every method of the instance from the events of `window`.
+
+### observeDom(target, type, handlerName, options)
+
+Subscribes a method to an event of a DOM element (`click`, `input`…). It receives the DOM event. Unlike a bare
+`addEventListener`, the subscription is removed when the component is detached.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `target` | EventTarget | Element (or document) to listen to. |
+| `type` | string | Event type. |
+| `handlerName` | string | Method name. |
+| `options` | object | Options of `addEventListener` (`capture`, `passive`…). |
+
+### unobserveDom(target, type, handlerName)
+
+Unsubscribes a method from an event of a DOM element.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `target` | EventTarget | The element given to `observeDom()`. |
+| `type` | string | Event type. |
+| `handlerName` | string | Method name. |
+
+### unobserveAllDom()
+
+Unsubscribes every method of the instance from DOM events.
+
+### observeItems(items, handlerName = 'itemsChanged')
+
+Observes configuration items: the method is called now with their current values, then whenever one of them
+changes, with an object `{item: value, …}`. A `$` in an item name is replaced according to the current route.
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `items` | string\|string[] |  | Item name, or an array of names. |
+| `handlerName` | string | `itemsChanged` | Method name. |
+
+### unobserveItems()
+
+Stops every observation of configuration items made by the instance.
+
+### static setItem(item, value)
+
+Changes a configuration item.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `item` | string | Item name. |
+| `value` | string | New value. |
+
+### setItem(item, value)
+
+Changes a configuration item. See `WController.setItem()`.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `item` | string | Item name. |
+| `value` | string | New value. |
+
+### static setItems(items)
+
+Changes several configuration items.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `items` | Array<{item: string, value: string}> | The items and their new values. |
+
+### setItems(items)
+
+Changes several configuration items. See `WController.setItems()`.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `items` | Array<{item: string, value: string}> | The items and their new values. |
+
+### static setItemIfValue(item, expected, value)
+
+Changes a configuration item only if its current value is `expected`.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `item` | string | Item name. |
+| `expected` | string | Value the item must have. |
+| `value` | string | New value. |
+
+### setInterval(handlerName, delay)
+
+Calls a method at a regular interval, until `clearInterval()` or the detachment of the component. Calling it
+again with the same method restarts the interval with the new delay.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `handlerName` | string | Method name. |
+| `delay` | number | Interval in milliseconds. |
+
+### clearInterval(handlerName)
+
+Stops the interval of a method.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `handlerName` | string | Method name. |
+
+### clearAllIntervals()
+
+Stops every interval of the instance.
+
+### setAnimationFrame(handlerName)
+
+Calls a method at every display frame, with the frame timestamp, until `unsetAnimationFrame()` or the
+detachment of the component. One loop per instance: naming another method replaces it, `null` stops it.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `handlerName` | string\|null | Method name, or `null` to stop. |
+
+### unsetAnimationFrame()
+
+Stops the animation loop of the instance.
+
+### getKeyboard()
+
+Physical codes of the keys held down (`KeyA`, `ShiftLeft`…).
+
+**Returns** `Set<string>` The codes.
+
+### getKeys()
+
+Characters of the keys held down.
+
+**Returns** `Set<string>` The characters.
+
+### elementInnerHTML(element, html)
+
+Replaces the content of an element, then mounts the components it holds.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `element` | Element | The element. |
+| `html` | string | Its new content. |
+
+### release()
+
+Stops every subscription, timer and animation loop of the instance. Called automatically when a component is
+detached; a controller that is discarded must call it.
