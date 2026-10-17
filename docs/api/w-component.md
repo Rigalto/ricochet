@@ -14,7 +14,7 @@ Module `w-component` · group `core` · source [`src/core/w-component.mjs`](../.
   `noLabelChanged(…)` now and at each change.
 - **Actions declared in HTML**: `clickDatasetHandler` reads `data-item`/`data-value`, `data-event`/`data-param`,
   `data-path`, `data-url` and `data-paste` on the clicked element and its parents.
-- **Styles**: `WComponent.css(…)` adds CSS rules written next to the component; they are injected in batches.
+- **Styles**: `WComponent.css(…)` adds CSS rules written next to the component (see the `css` module).
 
 ## Exports
 

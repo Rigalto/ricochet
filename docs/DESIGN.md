@@ -112,3 +112,7 @@ route, including its module and its scope; mounting of the interface from `root`
 | 2026-10-17 | Configuration items are kept by a store provided by the application (`setItemStore()`); the kernel only calls it | The same kernel works with an HTTP server today and Google Drive tomorrow. |
 | 2026-10-17 | On detach, the kernel releases every subscription **before** calling `detach()`, and an error in `detach()` is caught | A failing `detach()` must not leave subscriptions behind. |
 | 2026-10-17 | An element moved within the page keeps its component; keyboard keys are released only by the component that declared them | Detaching is deferred: a new view is mounted before the former one is detached. |
+| 2026-10-17 | Component CSS: one `<style>` element per `css()` call, inserted at once, named after its first selector; unbalanced braces are reported | A syntax error stays in its own block; a module loaded on demand is never shown without its styles. |
+| 2026-10-17 | Components of Ricochet put their CSS in the `ricochet` cascade layer; applications write outside any layer | Application rules always win, whatever the order and the specificity. |
+| 2026-10-17 | `cssDefine()` and `@apply` are removed | Unused; classes and CSS custom properties do the same, in standard CSS. |
+| 2026-10-17 | The kernel uses JavaScript up to ES2022 | It must run in Node.js 18 for the tests, and in Safari versions a few years old. |

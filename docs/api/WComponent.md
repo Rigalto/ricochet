@@ -57,26 +57,16 @@ Replaces the content of the component, then mounts the components it holds.
 | --- | --- | --- |
 | `html` | string | The new content. |
 
-### static cssDefine(id, rules)
+### static css(rules, options)
 
-Declares a set of CSS declarations that `css()` rules can insert with `@apply <id>;`.
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `id` | string | Name of the set. |
-| `rules` | string | CSS declarations. |
-
-### static css(css)
-
-Adds CSS rules to the page. Rules added within 20 ms are injected together, in one `<style>` element.
+Adds CSS rules to the page, in a `<style>` element of their own. Same as `css()` of the `css` module.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `css` | string | CSS rules; `@apply <id>;` inserts a set declared with `cssDefine()`. |
+| `rules` | string | Complete CSS rules, with their selectors and braces. |
+| `options` | {name: string, layer: string} | Name of the block and cascade layer (see `css()`). |
 
-### static injectDynamicStyles()
-
-Injects the pending CSS rules at once. Kernel internal.
+**Returns** `HTMLStyleElement|null` The `<style>` element.
 
 ### handleDataset(dataset)
 

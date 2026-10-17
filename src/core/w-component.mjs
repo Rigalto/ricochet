@@ -11,7 +11,7 @@
  *   `noLabelChanged(…)` now and at each change.
  * - **Actions declared in HTML**: `clickDatasetHandler` reads `data-item`/`data-value`, `data-event`/`data-param`,
  *   `data-path`, `data-url` and `data-paste` on the clicked element and its parents.
- * - **Styles**: `WComponent.css(…)` adds CSS rules written next to the component; they are injected in batches.
+ * - **Styles**: `WComponent.css(…)` adds CSS rules written next to the component (see the `css` module).
  *
  * @module w-component
  */
@@ -20,6 +20,7 @@ import {WController, setRenderer} from './w-controller.mjs'
 import {$global} from './global.mjs'
 import {keyboard} from './keyboard.mjs'
 import {writeClipboard} from '../utils/dom.mjs'
+import {css} from './css.mjs'
 
 const leaks = $global.memoryLeak
 
@@ -32,9 +33,6 @@ const camelCase = name => name.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase()
 export class WComponent extends WController {
   static tags = {}
   static detachObserver = null
-  static dynamicStyles = []
-  static dynamicStylesDebounce
-  static #cssDefinitions = {}
   #attributeObserver = null
   #observedAttributes = new Map() // attribute → bound handler
 
@@ -163,33 +161,12 @@ export class WComponent extends WController {
   // ------------------------------------------------------------------ styles
 
   /**
-   * Declares a set of CSS declarations that `css()` rules can insert with `@apply <id>;`.
-   * @param {string} id - Name of the set.
-   * @param {string} rules - CSS declarations.
+   * Adds CSS rules to the page, in a `<style>` element of their own. Same as `css()` of the `css` module.
+   * @param {string} rules - Complete CSS rules, with their selectors and braces.
+   * @param {{name: string, layer: string}} [options] - Name of the block and cascade layer (see `css()`).
+   * @returns {HTMLStyleElement|null} The `<style>` element.
    */
-  static cssDefine (id, rules) { WComponent.#cssDefinitions[id] = rules }
-
-  /**
-   * Adds CSS rules to the page. Rules added within 20 ms are injected together, in one `<style>` element.
-   * @param {string} css - CSS rules; `@apply <id>;` inserts a set declared with `cssDefine()`.
-   */
-  static css = css => {
-    let rules = css.trim()
-    if (rules.includes('@apply')) {
-      rules = rules.replace(/@apply\s+([a-zA-Z0-9-]+);/g, (match, id) => WComponent.#cssDefinitions[id] ?? match)
-    }
-    WComponent.dynamicStyles.push(rules)
-    clearTimeout(WComponent.dynamicStylesDebounce)
-    WComponent.dynamicStylesDebounce = setTimeout(WComponent.injectDynamicStyles, 20)
-  }
-
-  /** Injects the pending CSS rules at once. Kernel internal. */
-  static injectDynamicStyles = () => {
-    const style = document.createElement('style')
-    style.textContent = WComponent.dynamicStyles.join('\n')
-    document.head.appendChild(style)
-    WComponent.dynamicStyles.length = 0
-  }
+  static css (rules, options) { return css(rules, options) }
 
   // ------------------------------------------------------------------ actions declared in HTML
 

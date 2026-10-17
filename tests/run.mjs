@@ -10,6 +10,7 @@ import {results} from './kernel.mjs'
 const REGISTRY = [
   {name: 'Bus', file: './test-bus.mjs'},
   {name: 'WController', file: './test-w-controller.mjs'},
+  {name: 'Css', file: './test-css.mjs'},
 ]
 
 const target = process.argv[2] ?? null
