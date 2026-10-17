@@ -67,6 +67,32 @@ name is derived from the stimulus; another method name may be given as a string.
   method on the instance: subscribing twice is harmless and unsubscribing always finds the right function.
 - The low-level bus accepts functions, but only kernel code uses it directly.
 
+### 8. Routing: a kernel core, an application resolver
+
+The kernel does not know the structure of the routes; it owns the mechanism. *(2026-10-17)*
+
+- The router listens to `hashchange` (hash routing works on any static host, GitHub Pages included). It splits the
+  path and hands it to a **resolver provided by the application**, which returns the route, or asks for a redirect.
+  The resolver may be asynchronous.
+- The route is the payload of the `routeChanged` event. A component that subscribes to `routeChanged` is called at
+  once with the current route: there is always a current route.
+- The route carries a `scope`: the string that replaces `$` in the names of configuration items. The router sets the
+  scope **before** emitting `routeChanged`, so no listener ever reads an item with the former scope.
+- Redirects use `location.replace()`: they do not add an entry to the history.
+- A route may need a module. The application declares it in its route table; the router loads it with `import()`
+  **before** emitting `routeChanged`, so the view only inserts its HTML. When navigations overlap, only the latest
+  one is applied. `routeLoading` is emitted before a load, `routeError` when it fails (the former route stays).
+- An optional resolver, `routing/universe-brick.mjs`, implements the universe/brick structure declaratively: each brick
+  is declared once (module, view), each universe lists its bricks. The same brick may belong to several universes:
+  its code is loaded once, while its data and its scope depend on the universe/brick pair.
+
+### 9. One entry point: `await start()`
+
+The application starts Ricochet with `await start({root, storage, router, sanitizer})`. The steps always run in this
+order: internal setup (debug state, bus, keyboard); loading of the configuration items; resolution of the current
+route, including its module and its scope; mounting of the interface from `root`; listening to route changes.
+`start()` resolves when the application is ready, or rejects with the error that stopped it. *(2026-10-17)*
+
 ## Decisions
 
 | Date | Decision | Reason |
