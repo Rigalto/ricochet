@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
 /**
  * Small helpers around the DOM and the browser: escaping text for HTML, building elements from HTML strings,
  * sanitizing HTML of external origin, and the clipboard.

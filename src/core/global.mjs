@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
 /**
  * The debugging state of the kernel, shared with the console as `window.$global`: debug switches, recent logs and
  * leak counters. An application may create `window.$global` before loading Ricochet, with its own keys; the kernel

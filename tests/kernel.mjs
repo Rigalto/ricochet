@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
 // tests/kernel.mjs — a minimal unit test kernel, without dependency.
 //
 // describe(label, fn) groups assertions; assert(label, condition) records one result.

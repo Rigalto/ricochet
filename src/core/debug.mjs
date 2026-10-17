@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
 /**
  * Debugging tools of the kernel, installed when the module is imported:
  *

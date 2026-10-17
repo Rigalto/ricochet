@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
 /**
  * Styles written next to the component that uses them.
  *

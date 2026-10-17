@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
 // Generates the API documentation from the /** … */ blocks of the source files.
 // ---------------------------------------------------------------------------
 //

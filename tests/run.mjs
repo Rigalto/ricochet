@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
 // tests/run.mjs — runs the unit tests of the kernel, from the repository root:
 //
 //   node tests/run.mjs          all the tests, one line per suite

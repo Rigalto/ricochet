@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
 /**
  * The synchronous event bus: every event of Ricochet goes through it, whether it is emitted now, deferred as a
  * microtask or scheduled for later (see `docs/DESIGN.md`, principles 1 to 3).

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
 // tests/test-w-controller.mjs — node tests/run.mjs WController
 // What does not need a DOM: named methods, bus subscriptions, configuration items, intervals, release().
 // Mounting, attributes, DOM events and animation frames are checked in the browser test page.

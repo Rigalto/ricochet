@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
 /**
  * `WController`: the base class of everything that reacts to events without owning a DOM element (keyboard, data
  * proxies, business logic). `WComponent` extends it for components bound to an element.

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
 /**
  * The store of configuration items, provided by the application. Items are shared, persistent key/value pairs; the
  * store loads them, saves them and calls their observers. Ricochet only defines the interface, so that the store can

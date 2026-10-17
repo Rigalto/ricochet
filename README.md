@@ -203,4 +203,4 @@ The design decisions behind Ricochet are recorded in [docs/DESIGN.md](docs/DESIG
 
 ## License
 
-[MIT](LICENSE) © Didier CABUZEL — see [LICENSE](LICENSE).
+[MIT](LICENSE) © Rigalto — see [LICENSE](LICENSE).

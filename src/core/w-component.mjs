@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
 /**
  * `WComponent`: a controller bound to a DOM element. An element gets its component through its `as` attribute:
  * `<div as="like-button">` is mounted with the class registered by `WComponent.define('like-button', LikeButton)`.

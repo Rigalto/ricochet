@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
 /**
  * Centralised, layered keyboard handling. A key press is handled by the highest layer that listens for it:
  *

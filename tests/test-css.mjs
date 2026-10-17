@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
 // tests/test-css.mjs — node tests/run.mjs Css
 // A minimal document stands in for the browser: css() only creates <style> elements and appends them to <head>.
 

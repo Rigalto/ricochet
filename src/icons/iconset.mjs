@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
 /**
  * Icon set drawn by hand on a common 24 × 24 grid. Each icon is the `d` attribute of a single SVG `<path>`:
  *

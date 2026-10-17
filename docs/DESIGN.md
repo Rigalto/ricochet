@@ -116,3 +116,4 @@ route, including its module and its scope; mounting of the interface from `root`
 | 2026-10-17 | Components of Ricochet put their CSS in the `ricochet` cascade layer; applications write outside any layer | Application rules always win, whatever the order and the specificity. |
 | 2026-10-17 | `cssDefine()` and `@apply` are removed | Unused; classes and CSS custom properties do the same, in standard CSS. |
 | 2026-10-17 | The kernel uses JavaScript up to ES2022 | It must run in Node.js 18 for the tests, and in Safari versions a few years old. |
+| 2026-10-17 | Every source file starts with `// SPDX-License-Identifier: MIT` and `// Copyright (c) 2026 Rigalto` | Ricochet is copied module by module; the notice must travel with each file. |

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
 // tests/test-bus.mjs — node tests/run.mjs Bus
 // Each describe() creates its own EventBus: no shared state.
 

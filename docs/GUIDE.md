@@ -25,6 +25,17 @@ needs a copy of the `src/` folder. Choose one of these ways:
 The files that come with the repository (`.gitattributes`, `.nojekyll`, `.githooks/`) are only used to maintain
 Ricochet itself. Your application does not need them.
 
+Ricochet is released under the [MIT license](../LICENSE). Each file starts with two lines that name the license and
+the author:
+
+```javascript
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+```
+
+Keep them when you copy a file, even a single one: they are what the license asks for. Your own files need no such
+header.
+
 ## 2. Load it with an import map
 
 Ricochet's modules import each other with relative paths, so the `src/` folder can live anywhere. Your application
