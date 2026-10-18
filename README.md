@@ -207,7 +207,8 @@ The events that Ricochet emits and listens to, and the `rc` prefix reserved for 
 - **Palettes and themes** (`ui/theme.mjs`): components use colour tokens (`--rc-surface`, `--rc-text`,
   `--rc-danger`…), computed in `oklch()` from the palette of their block (`palette="view"`, `shade="deep"`), with a
   day and a night value (`light-dark()`). A palette is three numbers; the day/night choice is one configuration item.
-  See [demo/theme.html](demo/theme.html).
+  The parameters, tokens and attributes are listed in [docs/api/theme.module.md](docs/api/theme.module.md); see them
+  at work in [demo/theme.html](demo/theme.html).
 - **An icon set** drawn on a common 24×24 grid with uniform stroke rules.
 - **A Markdown converter** for a [restricted, standard-compatible Markdown](docs/MARKDOWN.md), with hooks for
   application links.
