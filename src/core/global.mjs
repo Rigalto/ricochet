@@ -8,7 +8,7 @@
  *
  * | Key | Content |
  * | --- | --- |
- * | `debug` | switches: `lifecycle` (attach/detach in the console), `eventbus` (every event), `deprecated` (first use of a deprecated method) |
+ * | `debug` | switches: `lifecycle` (attach/detach in the console), `eventbus` (every event), `deprecated` (first use of a deprecated method), `tasks` (undeclared microtasks, frames over budget) |
  * | `logs` | the last 100 `events`, `items` and `ajax` entries, and a `timeline` mixing them |
  * | `memoryLeak` | counters of live subscriptions, timers and components: they must come back to their level after a component is detached |
  *
@@ -16,7 +16,7 @@
  */
 
 const defaults = () => ({
-  debug: {lifecycle: false, eventbus: false, deprecated: false},
+  debug: {lifecycle: false, eventbus: false, deprecated: false, tasks: false},
   logs: {events: [], items: [], ajax: [], timeline: []},
   memoryLeak: {
     attached: 0,
@@ -26,6 +26,8 @@ const defaults = () => ({
     windowEventHandlers: 0,
     domEventHandlers: 0,
     configObserver: 0,
+    microtasks: 0,
+    scheduledTasks: 0,
     ajaxObserver: 0,
     consoleError: 0,
     consoleAssert: 0,

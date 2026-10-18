@@ -194,18 +194,57 @@ Stops the interval of a method.
 
 Stops every interval of the instance.
 
-### setAnimationFrame(handlerName)
+### setAnimationFrame(updateName, renderName)
 
-Calls a method at every display frame, with the frame timestamp, until `unsetAnimationFrame()` or the
-detachment of the component. One loop per instance: naming another method replaces it, `null` stops it.
+Calls methods at every cycle of the frame loop (see the `loop` module), with `(time, dt)`: `time` is the
+timestamp of the frame, `dt` the duration of the cycle in milliseconds. The first method runs in the update phase,
+the second, if given, in the render phase. One animation per instance: naming other methods replaces it, `null`
+stops it. The animation holds the loop, which makes the game clock advance, until `unsetAnimationFrame()` or the
+detachment of the component.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `handlerName` | string\|null | Method name, or `null` to stop. |
+| `updateName` | string\|null | Method of the update phase, or `null` to stop. |
+| `renderName` | string | Method of the render phase. |
 
 ### unsetAnimationFrame()
 
-Stops the animation loop of the instance.
+Stops the animation of the instance.
+
+### defer(event, payload, {once = false} = {})
+
+Defers an event to the spare time of the next frames (a microtask, see the `microtasker` module). The task
+belongs to the instance: it is cancelled by `release()`.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `event` | string | Event name. |
+| `payload` | * | Data given to the listeners. |
+| `options` | {once: boolean} | `once`: not deferred if this instance already deferred the event and it has not run yet. |
+
+### schedule(event, payload, delay, options = {})
+
+Schedules an event (a scheduled task, see the `scheduler` module). The task belongs to the instance: it is
+cancelled by `release()`.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `event` | string | Event name. |
+| `payload` | * | Data given to the listeners. |
+| `delay` | number | Delay in milliseconds. |
+| `options` | {id: string, clock: string, mode: string, at: number} | See `Scheduler.schedule()`. |
+
+**Returns** `number` The due time of the task.
+
+### cancel(idOrRegex)
+
+Cancels scheduled tasks of the instance.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `idOrRegex` | string\|RegExp | The id of the tasks, or a regular expression matched against the ids. |
+
+**Returns** `number` The number of tasks cancelled.
 
 ### getKeyboard()
 
@@ -230,5 +269,5 @@ Replaces the content of an element, then mounts the components it holds.
 
 ### release()
 
-Stops every subscription, timer and animation loop of the instance. Called automatically when a component is
+Stops every subscription, timer, animation and task of the instance. Called automatically when a component is
 detached; a controller that is discarded must call it.

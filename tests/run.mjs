@@ -13,6 +13,7 @@ import {results} from './kernel.mjs'
 const REGISTRY = [
   {name: 'Bus', file: './test-bus.mjs'},
   {name: 'WController', file: './test-w-controller.mjs'},
+  {name: 'Tasks', file: './test-tasks.mjs'},
   {name: 'Config', file: './test-config.mjs'},
   {name: 'Css', file: './test-css.mjs'},
 ]

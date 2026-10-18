@@ -6,11 +6,11 @@ A store of configuration items. The application uses the `config` instance; othe
 
 ## Methods
 
-### constructor({saveDelay = SAVE_DELAY, retryDelay = RETRY_DELAY} = {})
+### constructor({name = 'config', saveDelay = SAVE_DELAY, retryDelay = RETRY_DELAY} = {})
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `options` | {saveDelay: number, retryDelay: number} | Delays in milliseconds before saving changes (default 2000) and before saving them again after a failure (default 30000). |
+| `options` | {name: string, saveDelay: number, retryDelay: number} | `name` of the store (default `config`), which names its save task (`configSave`); delays in milliseconds before saving changes (default 2000) and before saving them again after a failure (default 30000). |
 
 ### setAdapter(adapter)
 

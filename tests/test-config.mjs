@@ -32,8 +32,9 @@ class SpyAdapter extends MemoryAdapter {
   async remove (items) { this.calls.push(['remove', items]); return super.remove(items) }
 }
 
+let storeCount = 0
 const newStore = async (items = {}, options = {saveDelay: 20, retryDelay: 40}) => {
-  const store = new ConfigStore(options)
+  const store = new ConfigStore({name: `test${++storeCount}`, ...options})
   const adapter = new SpyAdapter(items)
   store.setAdapter(adapter)
   await store.load()
@@ -113,7 +114,7 @@ await describe('Config — saving', async () => {
   store.setItem('b', '3')
   store.setItem('a', '4')
   assert('not saved at once', adapter.calls.length === 0)
-  await sleep(40)
+  await sleep(100)
   const saves = adapter.calls.filter(c => c[0] === 'save')
   assert('saved once after the delay, with the last values', saves.length === 1 && saves[0][1].length === 2 &&
     saves[0][1].find(e => e.item === 'a').value === '4')
@@ -133,7 +134,7 @@ await describe('Config — a failed save is tried again', async () => {
   const lines = releaseConsole()
   assert('save() resolves with false and reports the error', saved === false && lines.some(l => l.includes('next attempt later')))
   adapter.failSave = false
-  await sleep(70)
+  await sleep(150)
   assert('saved after the retry delay', adapter.items.a === '2')
 })
 

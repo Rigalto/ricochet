@@ -12,8 +12,8 @@
  *   whenever one of the items changes. Calls are grouped: an observer is called once at the end of the current task,
  *   however many of its items changed.
  * - **Saving.** A change is applied at once in memory and saved 2 seconds later, together with the other changes of
- *   that time. Pending changes are saved at once when the page is hidden or closed. When a save fails, the changes
- *   stay pending and are saved again 30 seconds later.
+ *   that time (a scheduled task, `configSave`). Pending changes are saved at once when the page is hidden or closed.
+ *   When a save fails, the changes stay pending and are saved again 30 seconds later.
  * - **Scope.** In an item name, `$` stands for the current scope, set with `setScope()`: `table-$-sort` is
  *   `table-hom-not-sort` while the scope is `hom-not`. When the scope changes, only the observers whose values change
  *   are called.
@@ -46,8 +46,9 @@ import {bus} from './bus.mjs'
 import {$global} from './global.mjs'
 import {logTime, pushLog} from './debug.mjs'
 import {setItemStore} from './items.mjs'
+import {declareTasks} from './microtasker.mjs'
+import {scheduler} from './scheduler.mjs'
 
-// TODO: the delays will be scheduled tasks once the task scheduler is in place
 const SAVE_DELAY = 2000
 const RETRY_DELAY = 30000
 
@@ -64,18 +65,22 @@ export class ConfigStore {
   #triggered = new Set() // ids of the observers to call at the end of the task
   #flushQueued = false
   #pending = new Set() // names of the items changed and not saved yet
-  #saveTimer = null
+  #saveEvent
   #saving = null // promise of the save in progress
   #saveDelay
   #retryDelay
 
   /**
-   * @param {{saveDelay: number, retryDelay: number}} [options] - Delays in milliseconds before saving changes
-   *   (default 2000) and before saving them again after a failure (default 30000).
+   * @param {{name: string, saveDelay: number, retryDelay: number}} [options] - `name` of the store (default
+   *   `config`), which names its save task (`configSave`); delays in milliseconds before saving changes (default
+   *   2000) and before saving them again after a failure (default 30000).
    */
-  constructor ({saveDelay = SAVE_DELAY, retryDelay = RETRY_DELAY} = {}) {
+  constructor ({name = 'config', saveDelay = SAVE_DELAY, retryDelay = RETRY_DELAY} = {}) {
+    this.#saveEvent = `${name}Save`
     this.#saveDelay = saveDelay
     this.#retryDelay = retryDelay
+    declareTasks({[this.#saveEvent]: {priority: 1, cost: 0.5}})
+    bus.on(this.#saveEvent, () => { this.save() })
   }
 
   // ------------------------------------------------------------------ storage
@@ -120,8 +125,7 @@ export class ConfigStore {
    *   pending and are saved again later).
    */
   async save (options = {}) {
-    clearTimeout(this.#saveTimer)
-    this.#saveTimer = null
+    scheduler.cancel(this.#saveEvent)
     while (this.#saving !== null) { await this.#saving } // one save at a time
     if (this.#pending.size === 0 || this.#items === null) { return true }
     const names = [...this.#pending]
@@ -143,12 +147,9 @@ export class ConfigStore {
     return saved
   }
 
+  // the save is a scheduled task: the first change schedules it, the next ones join it
   #schedule (delay) {
-    if (this.#saveTimer !== null) { return }
-    this.#saveTimer = setTimeout(() => {
-      this.#saveTimer = null
-      this.save()
-    }, delay)
+    scheduler.schedule(this.#saveEvent, null, delay, {id: this.#saveEvent, mode: 'once'})
   }
 
   // ------------------------------------------------------------------ reading

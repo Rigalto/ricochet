@@ -16,7 +16,10 @@ detached — stops them all. Subscribing twice in the same way has no effect.
 | window event | `observeWindowEvents(type, method)` | — |
 | DOM event | `observeDom(target, type, method)` | — |
 | interval | `setInterval(method, ms)` | — |
-| animation frame | `setAnimationFrame(method)` | — |
+| animation frame | `setAnimationFrame(update, render)` | — |
+
+A controller also defers events (`defer()`, a microtask) and schedules them (`schedule()`, a task due later); the
+tasks it creates are cancelled by `release()` too.
 
 ## Exports
 

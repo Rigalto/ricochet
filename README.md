@@ -42,8 +42,16 @@ microtask, within a time budget), or **later** (a scheduled task). The listener 
 handler stays short; when the work is long, the handler itself defers it as a microtask. The priority and the cost of a
 microtask are declared once, by the module that does the work, not by the one that emits the event.
 
-> The bus is in place: components use `listen()` and `emit()`. Microtasks, scheduled tasks and the frame loop are
-> being added (see [Roadmap](#roadmap)).
+```javascript
+declareTasks({tileUpdate: {priority: 5, cost: 0.5}}) // by the module that does the work
+this.emit('tileChanged', {x, y})                      // now
+this.defer('tileUpdate', {x, y})                      // in the spare time of the frame
+this.schedule('plantGrow', {id}, 30000, {clock: 'game'}) // later, in game time
+```
+
+The work is organised in **cycles of 1/60 s** with a budget in milliseconds (3 ms update, 4 ms render, 5 ms
+microtasks), whatever the screen: on a 120 Hz screen, one frame runs `update` and microtasks, the next `render` and
+microtasks. The loop runs only while a game holds it or tasks are waiting.
 
 What sets it apart:
 
@@ -162,7 +170,8 @@ node tests/run.mjs WController  # one module, every assertion shown
 | `observeItems([items])` / `setItem(item, value)` | Configuration items; handler is `itemsChanged(items)` by convention. |
 | `observeWindowEvents(type, handler)` / `observeDom(target, type, handler)` | Window and DOM events, released on detach. |
 | `observeKeyboard(layer, keys)` | Registers keys for a layer: `modal`, `module`, `view`, floating groups. |
-| `setInterval(handler, ms)` / `setAnimationFrame(handler)` | Timers and animation loops, released on detach. |
+| `defer(name, payload)` / `schedule(name, payload, ms)` | Microtasks and scheduled tasks, cancelled on detach. |
+| `setInterval(handler, ms)` / `setAnimationFrame(update, render)` | Timers and the animation of the component in the frame loop, released on detach. |
 | `css(rules)` / `WComponent.css(rules)` | CSS written next to the component: one named `<style>` per call, in the page at once. |
 | `release()` | Stops every subscription, timer and loop of the instance; called automatically on detach. |
 
@@ -185,18 +194,16 @@ uses JavaScript up to ES2022, so that it also runs in slightly older browsers an
 ## Roadmap
 
 Done: the event bus, relative imports with an import map, the base classes `WController` and `WComponent`, the
-layered keyboard, component styles, the store of configuration items with storage adapters, unit tests.
+layered keyboard, component styles, the store of configuration items with storage adapters, microtasks, scheduled
+tasks, clocks and the frame loop, unit tests.
 
-1. **Microtasks, scheduled tasks and the frame loop.** Events deferred to the spare time of the current frame, events
-   scheduled in game time or real time, and a frame loop that runs only when something needs it — so office-style
-   views and a 60 fps canvas can live in the same page.
-2. **Router and `start()`.** Hash routing with an application resolver and dynamic loading of modules; one entry point
+1. **Router and `start()`.** Hash routing with an application resolver and dynamic loading of modules; one entry point
    that starts the application in a fixed order.
-3. **Native Custom Elements.** Move from `<div as="rc-button">` to `<rc-button>`, with `connectedCallback`,
+2. **Native Custom Elements.** Move from `<div as="rc-button">` to `<rc-button>`, with `connectedCallback`,
    `disconnectedCallback` and `attributeChangedCallback` replacing the current mutation observers. Light DOM, no Shadow
    DOM, so the global palettes and utility classes keep working. Both syntaxes will coexist during the transition.
-4. **Storage in Google Drive.** An adapter for configuration items and data records, with IndexedDB as a cache.
-5. **Documentation and a demo page.**
+3. **Storage in Google Drive.** An adapter for configuration items and data records, with IndexedDB as a cache.
+4. **Documentation and a demo page.**
 
 The design decisions behind Ricochet are recorded in [docs/DESIGN.md](docs/DESIGN.md).
 

@@ -16,7 +16,10 @@
  * | window event | `observeWindowEvents(type, method)` | — |
  * | DOM event | `observeDom(target, type, method)` | — |
  * | interval | `setInterval(method, ms)` | — |
- * | animation frame | `setAnimationFrame(method)` | — |
+ * | animation frame | `setAnimationFrame(update, render)` | — |
+ *
+ * A controller also defers events (`defer()`, a microtask) and schedules them (`schedule()`, a task due later); the
+ * tasks it creates are cancelled by `release()` too.
  *
  * @module w-controller
  */
@@ -26,6 +29,9 @@ import {$global} from './global.mjs'
 import './debug.mjs'
 import {itemStore} from './items.mjs'
 import {keyboard} from './keyboard.mjs'
+import {microtasker} from './microtasker.mjs'
+import {scheduler} from './scheduler.mjs'
+import {loop} from './loop.mjs'
 
 const leaks = $global.memoryLeak
 
@@ -57,7 +63,7 @@ export class WController {
   #windowEvents = new Map() // `${type}|${method}` → {type, fn}
   #domEvents = [] // {target, type, name, fn, options}
   #intervals = new Map() // method name → interval id
-  #frame = null // {name, fn, id} of the running animation loop
+  #frame = null // {update, render}: method names of the animation
 
   // ------------------------------------------------------------------ named methods
 
@@ -372,33 +378,70 @@ export class WController {
   }
 
   /**
-   * Calls a method at every display frame, with the frame timestamp, until `unsetAnimationFrame()` or the
-   * detachment of the component. One loop per instance: naming another method replaces it, `null` stops it.
-   * @param {string|null} handlerName - Method name, or `null` to stop.
+   * Calls methods at every cycle of the frame loop (see the `loop` module), with `(time, dt)`: `time` is the
+   * timestamp of the frame, `dt` the duration of the cycle in milliseconds. The first method runs in the update phase,
+   * the second, if given, in the render phase. One animation per instance: naming other methods replaces it, `null`
+   * stops it. The animation holds the loop, which makes the game clock advance, until `unsetAnimationFrame()` or the
+   * detachment of the component.
+   * @param {string|null} updateName - Method of the update phase, or `null` to stop.
+   * @param {string} [renderName] - Method of the render phase.
    */
-  setAnimationFrame (handlerName) {
+  setAnimationFrame (updateName, renderName) {
     this.unsetAnimationFrame()
-    if (handlerName === null || handlerName === undefined) { return }
-    const fn = this.#requireMethod('setAnimationFrame', handlerName, 'the animation loop')
-    if (fn === null) { return }
-    const frame = {name: handlerName, fn, id: 0}
-    const loop = time => {
-      if (this.#frame !== frame) { return }
-      frame.fn(time)
-      if (this.#frame === frame) { frame.id = requestAnimationFrame(loop) }
+    if (updateName === null || updateName === undefined) { return }
+    const update = this.#requireMethod('setAnimationFrame', updateName, 'the animation loop')
+    if (update === null) { return }
+    let render = null
+    if (renderName !== undefined && renderName !== null) {
+      render = this.#requireMethod('setAnimationFrame', renderName, 'the animation loop')
+      if (render === null) { return }
     }
-    this.#frame = frame
-    frame.id = requestAnimationFrame(loop)
+    this.#frame = {update: updateName, render: renderName ?? null}
+    loop.addAnimation(this, update, render)
     leaks.animationframe += 1
   }
 
-  /** Stops the animation loop of the instance. */
+  /** Stops the animation of the instance. */
   unsetAnimationFrame () {
     if (this.#frame === null) { return }
-    cancelAnimationFrame(this.#frame.id)
+    loop.removeAnimation(this)
     this.#frame = null
     leaks.animationframe -= 1
   }
+
+  // ------------------------------------------------------------------ microtasks and scheduled tasks
+
+  /**
+   * Defers an event to the spare time of the next frames (a microtask, see the `microtasker` module). The task
+   * belongs to the instance: it is cancelled by `release()`.
+   * @param {string} event - Event name.
+   * @param {*} [payload] - Data given to the listeners.
+   * @param {{once: boolean}} [options] - `once`: not deferred if this instance already deferred the event and it
+   *   has not run yet.
+   */
+  defer (event, payload, {once = false} = {}) {
+    microtasker.defer(event, payload, {once, owner: this})
+  }
+
+  /**
+   * Schedules an event (a scheduled task, see the `scheduler` module). The task belongs to the instance: it is
+   * cancelled by `release()`.
+   * @param {string} event - Event name.
+   * @param {*} payload - Data given to the listeners.
+   * @param {number} delay - Delay in milliseconds.
+   * @param {{id: string, clock: string, mode: string, at: number}} [options] - See `Scheduler.schedule()`.
+   * @returns {number} The due time of the task.
+   */
+  schedule (event, payload, delay, options = {}) {
+    return scheduler.schedule(event, payload, delay, {...options, owner: this})
+  }
+
+  /**
+   * Cancels scheduled tasks of the instance.
+   * @param {string|RegExp} idOrRegex - The id of the tasks, or a regular expression matched against the ids.
+   * @returns {number} The number of tasks cancelled.
+   */
+  cancel (idOrRegex) { return scheduler.cancel(idOrRegex, this) }
 
   // ------------------------------------------------------------------ keyboard and DOM
 
@@ -427,7 +470,7 @@ export class WController {
   // ------------------------------------------------------------------ release
 
   /**
-   * Stops every subscription, timer and animation loop of the instance. Called automatically when a component is
+   * Stops every subscription, timer, animation and task of the instance. Called automatically when a component is
    * detached; a controller that is discarded must call it.
    */
   release () {
@@ -437,5 +480,7 @@ export class WController {
     this.unobserveItems()
     this.clearAllIntervals()
     this.unsetAnimationFrame()
+    microtasker.cancelOwner(this)
+    scheduler.cancelOwner(this)
   }
 }

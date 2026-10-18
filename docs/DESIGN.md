@@ -36,10 +36,16 @@ No virtual DOM, no re-rendering: a component keeps references to its nodes and w
 
 ### 5. A frame loop that runs only when needed
 
-The frame loop runs four phases: clock and scheduled tasks, `update` (application), `render` (application),
-microtasks with the remaining budget. It runs while a game holds it, or until the microtask and scheduled-task queues
-are empty; otherwise it sleeps. The budget is a fraction of the measured frame duration, not a fixed value, so that
-120 Hz screens are handled. Office-style views and a real-time canvas can share the same page. *(2026-10-16)*
+The frame loop runs four phases: clocks and scheduled tasks, `update` (application), `render` (application),
+microtasks with the remaining budget. It runs while a game holds it, or while microtasks are waiting; otherwise it
+sleeps, and a timer wakes it when the next real time task is due. Office-style views and a real-time canvas can share
+the same page. *(2026-10-16)*
+
+The work is organised in **cycles of 1/60 s**, with a budget in milliseconds tuned for that rate (update 3 ms, render
+4 ms, microtasks 5 ms), because the costs of the microtasks are measured on the computer the application is tuned on.
+On a faster screen, a cycle spans several frames: at 120 Hz, one frame runs `update` and microtasks, the next `render`
+and microtasks; each frame gets a share of the budget proportional to its duration. Games are drawn at 60 Hz and the
+microtasks keep the time they have at 60 Hz. *(2026-10-18)*
 
 ### 6. Zero dependencies, zero build
 
@@ -120,3 +126,8 @@ route, including its module and its scope; mounting of the interface from `root`
 | 2026-10-17 | The store of configuration items is in the kernel (`config`); storage goes through an adapter with `load()`, `save(entries, options)` and `remove(items)` | One store for every application; HTTP today, Google Drive tomorrow. |
 | 2026-10-17 | Item observers are called at the end of the current task (native microtask), no longer after 20 ms | Changes are still grouped, and no frame is shown with the former value. |
 | 2026-10-17 | Pending changes are saved at once when the page is hidden or closed; a failed save is tried again after 30 s | No change is lost. The delays of 2 s and 30 s will become scheduled tasks. |
+| 2026-10-18 | Cycles of 1/60 s with an absolute budget (3 + 4 + 5 ms); on faster screens, `update` and `render` on different frames | Costs are measured at 60 Hz on the tuning computer; a budget proportional to a 120 Hz frame would leave no time for microtasks. |
+| 2026-10-18 | One `requestAnimationFrame` loop for the page; `setAnimationFrame(update, render)` registers the animation of a component in it | One budget for every animation and task; the former API keeps working. |
+| 2026-10-18 | A due scheduled task becomes a microtask; tasks of the same due time, or of the same priority and cost, run in creation order | One place where work runs, within the budget. |
+| 2026-10-18 | Scheduling modes `add`, `once`, `restart`, `extend` and an absolute `at`, instead of one method each | A smaller API, covering the needs of Sixty-Below. |
+| 2026-10-18 | Real time tasks wait while the page is hidden; the game clock advances only while a game holds the loop | The browser stops the frames of a hidden page; changes are saved when the page is hidden. |
