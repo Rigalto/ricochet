@@ -307,3 +307,30 @@ await describe('Tasks — WController: defer, schedule, animation, release', asy
   const lines = releaseConsole()
   assert('a missing method is reported', lines.some(l => l.includes("'missing'")) && !kernelLoop.held)
 })
+
+await describe('Tasks — setInterval() on the scheduler (deprecated)', async () => {
+  class C extends WController {
+    constructor () { super(); this.ticks = 0; this.stops = 0 }
+    tick () { this.ticks++ }
+    stopAtTwo () { if (++this.stops === 2) { this.clearInterval('stopAtTwo') } }
+  }
+  const c = new C()
+  captureConsole()
+  $global.debug.deprecated = true
+  c.setInterval('tick', 20)
+  $global.debug.deprecated = false
+  const lines = releaseConsole()
+  assert('reported as deprecated', lines.some(l => l.includes('C.setInterval is deprecated: use schedule()')))
+  c.setInterval('stopAtTwo', 20)
+  assert('a scheduled task per interval', kernelScheduler.has('rcInterval:tick') && kernelScheduler.has('rcInterval:stopAtTwo'))
+  await new Promise(resolve => setTimeout(resolve, 150))
+  assert('called repeatedly', c.ticks >= 3)
+  assert('the method may stop its own interval', c.stops === 2 && !kernelScheduler.has('rcInterval:stopAtTwo'))
+  await new Promise(resolve => setTimeout(resolve, 50))
+  assert('the calls are not recorded in the logs', !$global.logs.events.some(e => e.event === 'rcInterval'))
+  const leaks = $global.memoryLeak.setInterval
+  c.release()
+  const ticks = c.ticks
+  await new Promise(resolve => setTimeout(resolve, 60))
+  assert('release() stops it', c.ticks === ticks && $global.memoryLeak.setInterval === leaks - 1 && !kernelScheduler.has(/^rcInterval/))
+})

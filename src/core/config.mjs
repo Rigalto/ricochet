@@ -12,7 +12,7 @@
  *   whenever one of the items changes. Calls are grouped: an observer is called once at the end of the current task,
  *   however many of its items changed.
  * - **Saving.** A change is applied at once in memory and saved 2 seconds later, together with the other changes of
- *   that time (a scheduled task, `configSave`). Pending changes are saved at once when the page is hidden or closed.
+ *   that time (a scheduled task, `rcConfigSave`). Pending changes are saved at once when the page is hidden or closed.
  *   When a save fails, the changes stay pending and are saved again 30 seconds later.
  * - **Scope.** In an item name, `$` stands for the current scope, set with `setScope()`: `table-$-sort` is
  *   `table-hom-not-sort` while the scope is `hom-not`. When the scope changes, only the observers whose values change
@@ -72,11 +72,11 @@ export class ConfigStore {
 
   /**
    * @param {{name: string, saveDelay: number, retryDelay: number}} [options] - `name` of the store (default
-   *   `config`), which names its save task (`configSave`); delays in milliseconds before saving changes (default
+   *   `config`), which names its save task (`rcConfigSave`); delays in milliseconds before saving changes (default
    *   2000) and before saving them again after a failure (default 30000).
    */
   constructor ({name = 'config', saveDelay = SAVE_DELAY, retryDelay = RETRY_DELAY} = {}) {
-    this.#saveEvent = `${name}Save`
+    this.#saveEvent = `rc${name[0].toUpperCase()}${name.slice(1)}Save` // internal event: rcConfigSave
     this.#saveDelay = saveDelay
     this.#retryDelay = retryDelay
     declareTasks({[this.#saveEvent]: {priority: 1, cost: 0.5}})

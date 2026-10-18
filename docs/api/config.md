@@ -12,7 +12,7 @@ imported.
   whenever one of the items changes. Calls are grouped: an observer is called once at the end of the current task,
   however many of its items changed.
 - **Saving.** A change is applied at once in memory and saved 2 seconds later, together with the other changes of
-  that time (a scheduled task, `configSave`). Pending changes are saved at once when the page is hidden or closed.
+  that time (a scheduled task, `rcConfigSave`). Pending changes are saved at once when the page is hidden or closed.
   When a save fails, the changes stay pending and are saved again 30 seconds later.
 - **Scope.** In an item name, `$` stands for the current scope, set with `setScope()`: `table-$-sort` is
   `table-hom-not-sort` while the scope is `hom-not`. When the scope changes, only the observers whose values change

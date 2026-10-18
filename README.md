@@ -171,9 +171,12 @@ node tests/run.mjs WController  # one module, every assertion shown
 | `observeWindowEvents(type, handler)` / `observeDom(target, type, handler)` | Window and DOM events, released on detach. |
 | `observeKeyboard(layer, keys)` | Registers keys for a layer: `modal`, `module`, `view`, floating groups. |
 | `defer(name, payload)` / `schedule(name, payload, ms)` | Microtasks and scheduled tasks, cancelled on detach. |
-| `setInterval(handler, ms)` / `setAnimationFrame(update, render)` | Timers and the animation of the component in the frame loop, released on detach. |
+| `setAnimationFrame(update, render)` | The animation of the component in the frame loop, released on detach. |
 | `css(rules)` / `WComponent.css(rules)` | CSS written next to the component: one named `<style>` per call, in the page at once. |
 | `release()` | Stops every subscription, timer and loop of the instance; called automatically on detach. |
+
+The events that Ricochet emits and listens to, and the `rc` prefix reserved for its internal events, are listed in
+[docs/EVENTS.md](docs/EVENTS.md).
 
 ## Also included
 

@@ -10,7 +10,7 @@ A store of configuration items. The application uses the `config` instance; othe
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `options` | {name: string, saveDelay: number, retryDelay: number} | `name` of the store (default `config`), which names its save task (`configSave`); delays in milliseconds before saving changes (default 2000) and before saving them again after a failure (default 30000). |
+| `options` | {name: string, saveDelay: number, retryDelay: number} | `name` of the store (default `config`), which names its save task (`rcConfigSave`); delays in milliseconds before saving changes (default 2000) and before saving them again after a failure (default 30000). |
 
 ### setAdapter(adapter)
 

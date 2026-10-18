@@ -18,9 +18,9 @@
  * ```javascript
  * import {schedule, cancel} from 'ricochet/core/scheduler.mjs'
  *
- * schedule('configSave', null, 2000, {id: 'configSave', mode: 'once'})
+ * schedule('noteSave', {id: 12}, 2000, {id: 'note-12', mode: 'once'})
  * schedule('plantGrow', {plant: 12}, 30000, {clock: 'game'})
- * cancel('configSave')
+ * cancel('note-12')
  * ```
  *
  * @module scheduler
