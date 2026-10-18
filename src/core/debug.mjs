@@ -45,7 +45,13 @@ const toText = detail => {
   }
 }
 
+/**
+ * Events that are not recorded in the logs: frequent kernel events, such as the calls of `setInterval()`.
+ */
+export const quietEvents = new Set()
+
 bus.setTracer((event, detail) => {
+  if (quietEvents.has(event)) { return }
   if ($global.debug.eventbus) { console.warn(`EVENT - ${event}`, detail) }
   const entry = {event, time: logTime(), detail: toText(detail)}
   pushLog($global.logs.events, entry)

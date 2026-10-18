@@ -131,3 +131,4 @@ route, including its module and its scope; mounting of the interface from `root`
 | 2026-10-18 | A due scheduled task becomes a microtask; tasks of the same due time, or of the same priority and cost, run in creation order | One place where work runs, within the budget. |
 | 2026-10-18 | Scheduling modes `add`, `once`, `restart`, `extend` and an absolute `at`, instead of one method each | A smaller API, covering the needs of Sixty-Below. |
 | 2026-10-18 | Real time tasks wait while the page is hidden; the game clock advances only while a game holds the loop | The browser stops the frames of a hidden page; changes are saved when the page is hidden. |
+| 2026-10-18 | No `setInterval` in applications: a repeated action is a scheduled task whose handler schedules the next one. `WController.setInterval()` runs on the scheduler and is deprecated | One time base and one budget; intervals wait while the page is hidden and are released like any task. |

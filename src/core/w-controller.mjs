@@ -15,7 +15,7 @@
  * | configuration items | `observeItems([items])` | `itemsChanged(items)` |
  * | window event | `observeWindowEvents(type, method)` | — |
  * | DOM event | `observeDom(target, type, method)` | — |
- * | interval | `setInterval(method, ms)` | — |
+ * | interval (deprecated: use `schedule()`) | `setInterval(method, ms)` | — |
  * | animation frame | `setAnimationFrame(update, render)` | — |
  *
  * A controller also defers events (`defer()`, a microtask) and schedules them (`schedule()`, a task due later); the
@@ -26,12 +26,16 @@
 
 import {bus} from './bus.mjs'
 import {$global} from './global.mjs'
-import './debug.mjs'
 import {itemStore} from './items.mjs'
 import {keyboard} from './keyboard.mjs'
 import {microtasker} from './microtasker.mjs'
 import {scheduler} from './scheduler.mjs'
 import {loop} from './loop.mjs'
+import {realClock} from './clock.mjs'
+import {quietEvents} from './debug.mjs'
+
+const INTERVAL_EVENT = 'rcInterval' // kernel event of setInterval(), not recorded in the logs
+quietEvents.add(INTERVAL_EVENT)
 
 const leaks = $global.memoryLeak
 
@@ -62,7 +66,7 @@ export class WController {
   #items = new Map() // `${method}|${items}` → observation id in the item store
   #windowEvents = new Map() // `${type}|${method}` → {type, fn}
   #domEvents = [] // {target, type, name, fn, options}
-  #intervals = new Map() // method name → interval id
+  #intervals = new Map() // method name → {fn, delay, token, due}
   #frame = null // {update, render}: method names of the animation
 
   // ------------------------------------------------------------------ named methods
@@ -348,26 +352,48 @@ export class WController {
 
   /**
    * Calls a method at a regular interval, until `clearInterval()` or the detachment of the component. Calling it
-   * again with the same method restarts the interval with the new delay.
+   * again with the same method restarts the interval with the new delay. The calls are scheduled tasks in real time
+   * (see the `scheduler` module): they run in the spare time of the frames, and wait while the page is hidden.
+   * @deprecated Use `schedule()`: the handler of the event schedules the next one.
    * @param {string} handlerName - Method name.
    * @param {number} delay - Interval in milliseconds.
    */
   setInterval (handlerName, delay) {
+    warnDeprecated(this, 'setInterval', 'schedule()')
     const fn = this.#requireMethod('setInterval', handlerName, 'an interval')
     if (fn === null) { return }
     this.clearInterval(handlerName)
-    this.#intervals.set(handlerName, setInterval(fn, delay))
+    const interval = {fn, delay, token: {}, due: 0}
+    this.#intervals.set(handlerName, interval)
+    interval.due = scheduler.schedule(INTERVAL_EVENT, {controller: this, name: handlerName, token: interval.token}, delay,
+      {id: `${INTERVAL_EVENT}:${handlerName}`, owner: this})
     leaks.setInterval += 1
+  }
+
+  // one call of an interval: the next one is scheduled first, so that the method may stop it
+  static {
+    microtasker.declare({[INTERVAL_EVENT]: {priority: 0, cost: 1}})
+    bus.on(INTERVAL_EVENT, ({controller, name, token}) => { controller.#tick(name, token) })
+  }
+
+  #tick (name, token) {
+    const interval = this.#intervals.get(name)
+    if (interval === undefined || interval.token !== token) { return } // stopped or restarted since
+    const now = realClock.time
+    interval.due = Math.max(interval.due + interval.delay, now)
+    scheduler.schedule(INTERVAL_EVENT, {controller: this, name, token}, 0,
+      {id: `${INTERVAL_EVENT}:${name}`, at: interval.due, owner: this})
+    interval.fn()
   }
 
   /**
    * Stops the interval of a method.
+   * @deprecated Use `cancel()` with the id of the scheduled task.
    * @param {string} handlerName - Method name.
    */
   clearInterval (handlerName) {
-    const id = this.#intervals.get(handlerName)
-    if (id === undefined) { return }
-    clearInterval(id)
+    if (!this.#intervals.has(handlerName)) { return }
+    scheduler.cancel(`${INTERVAL_EVENT}:${handlerName}`, this)
     this.#intervals.delete(handlerName)
     leaks.setInterval -= 1
   }

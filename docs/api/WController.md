@@ -174,8 +174,11 @@ Changes a configuration item only if its current value is `expected`.
 
 ### setInterval(handlerName, delay)
 
+> **Deprecated.** Use `schedule()`: the handler of the event schedules the next one.
+
 Calls a method at a regular interval, until `clearInterval()` or the detachment of the component. Calling it
-again with the same method restarts the interval with the new delay.
+again with the same method restarts the interval with the new delay. The calls are scheduled tasks in real time
+(see the `scheduler` module): they run in the spare time of the frames, and wait while the page is hidden.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
@@ -183,6 +186,8 @@ again with the same method restarts the interval with the new delay.
 | `delay` | number | Interval in milliseconds. |
 
 ### clearInterval(handlerName)
+
+> **Deprecated.** Use `cancel()` with the id of the scheduled task.
 
 Stops the interval of a method.
 

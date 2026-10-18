@@ -15,6 +15,7 @@ Debugging tools of the kernel, installed when the module is imported:
 | --- | --- | --- |
 | `logTime` | const | Current time as `hh:mm:ss.mmm`, the format of the logs. |
 | `pushLog` | function | Adds an entry at the head of a log, keeping at most 100 entries. |
+| `quietEvents` | const | Events that are not recorded in the logs: frequent kernel events, such as the calls of `setInterval()`. |
 
 ## Details
 

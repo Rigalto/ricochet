@@ -15,7 +15,7 @@ detached — stops them all. Subscribing twice in the same way has no effect.
 | configuration items | `observeItems([items])` | `itemsChanged(items)` |
 | window event | `observeWindowEvents(type, method)` | — |
 | DOM event | `observeDom(target, type, method)` | — |
-| interval | `setInterval(method, ms)` | — |
+| interval (deprecated: use `schedule()`) | `setInterval(method, ms)` | — |
 | animation frame | `setAnimationFrame(update, render)` | — |
 
 A controller also defers events (`defer()`, a microtask) and schedules them (`schedule()`, a task due later); the
