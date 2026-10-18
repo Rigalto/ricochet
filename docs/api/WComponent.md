@@ -16,11 +16,12 @@ Created by the kernel when the element is mounted; components do their setup in 
 
 ### static define(tag, component)
 
-Registers the class of the components of a tag: elements with `as="<tag>"` are mounted with it.
+Registers the class of the components of a tag: the custom element `<tag>` and the elements with `as="<tag>"`
+are mounted with it. The tag must contain a `-` (`like-button`), as every custom element name.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `tag` | string | Value of the `as` attribute. |
+| `tag` | string | Name of the custom element, and value of the `as` attribute. |
 | `component` | Function | Class extending `WComponent`. |
 
 ### static _detach(element)
@@ -41,9 +42,21 @@ Debugging: the tag name of an element followed by its classes (`div.styled-palet
 
 **Returns** `string` The description.
 
+### _attributeChanged(attribute, newValue, oldValue)
+
+Calls the method of an attribute (`no-label` → `noLabelChanged`). Kernel internal.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `attribute` | string | Attribute name. |
+| `newValue` | string\|null | New value. |
+| `oldValue` | string\|null | Former value. |
+
 ### static render(element = document.body)
 
-Mounts the components of an element and of every `[as]` element inside it.
+Mounts the components of an element and of every `[as]` element inside it. The first call also mounts the
+custom elements already in the page: until then, they wait, so that the application decides when its interface
+appears (`start()` calls it once the configuration items and the route are ready).
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |

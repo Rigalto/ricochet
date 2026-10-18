@@ -137,3 +137,9 @@ route, including its module and its scope; mounting of the interface from `root`
 | 2026-10-18 | The module of a route is declared as a function (`load: () => import('./x.mjs')`), or a URL | A path written in the router would be resolved from the folder of Ricochet, not from the application. |
 | 2026-10-18 | A new listener of `routeChanged` receives the current route at the end of the current task, not during `listen()` | Its `attach()` or constructor is finished when the route arrives. |
 | 2026-10-18 | The router does not decode the path (`%20` stays as is) | The application keeps the address it wrote. |
+| 2026-10-18 | `WComponent.define(tag, Class)` also defines the native custom element `<tag>`; both syntaxes mount the same class, `this.element` is the element | Components migrate one by one, without being rewritten. |
+| 2026-10-18 | Custom elements are mounted only after the first `WComponent.render()` (called by `start()`); those connected before wait | The elements of the initial page would otherwise be mounted as soon as their module loads, before the items and the route. |
+| 2026-10-18 | A custom element is detached at the end of the task in which it left the page, unless it came back | A move (disconnected then connected) keeps the component, as with the `as` attribute. |
+| 2026-10-18 | Defined custom elements get `display: block` in the `ricochet` layer; `static display` chooses another value | They replace `<div as>` elements; any rule of the application or of the component wins. |
+| 2026-10-18 | `static observedAttributes` declares the attributes of a component: `attributeChangedCallback` for a custom element, a mutation observer for an `[as]` element; the methods are called after `attach()` with the current values | The standard name; the same behaviour as `observeAttributes()`. |
+| 2026-10-18 | Tests that need a DOM run in a browser page, `tests/browser/` | Node has no Custom Elements; no dependency is added. |

@@ -1,0 +1,44 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Copyright (c) 2026 Rigalto -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Ricochet — browser tests</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 2rem; }
+    h2 { font-size: 1rem; margin: 1rem 0 0; }
+    pre { margin: 0; }
+    #total { font-weight: bold; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Ricochet — browser tests</h1>
+  <p>Tests that need a DOM. Served by any local web server from the folder above <code>ricochet/</code>, for instance
+    <code>http://localhost:8080/ricochet/tests/browser/</code>.</p>
+  <div id="results">Running…</div>
+  <div id="total"></div>
+  <div id="sandbox"></div>
+  <div id="nothing"></div>
+  <script type="module">
+    import {results} from '../kernel.mjs'
+    const done = await import('./test-elements.mjs').then(() => true, error => { console.error(error); return false })
+    let passed = 0
+    let failed = 0
+    const out = document.getElementById('results')
+    out.textContent = ''
+    for (const suite of results) {
+      passed += suite.passed
+      failed += suite.failed
+      const title = document.createElement('h2')
+      title.textContent = `${suite.failed === 0 ? '✅' : '❌'} ${suite.label}`
+      const lines = document.createElement('pre')
+      lines.textContent = suite.lines.join('\n')
+      out.append(title, lines)
+    }
+    const total = document.getElementById('total')
+    total.textContent = done ? `${failed === 0 ? '✅' : '❌'} Total: ${passed} passed, ${failed} failed` : '❌ The tests could not run: see the console'
+    document.body.dataset.result = done && failed === 0 ? 'ok' : 'ko'
+  </script>
+</body>
+</html>

@@ -2,16 +2,31 @@
 // Copyright (c) 2026 Rigalto
 
 /**
- * `WComponent`: a controller bound to a DOM element. An element gets its component through its `as` attribute:
- * `<div as="like-button">` is mounted with the class registered by `WComponent.define('like-button', LikeButton)`.
+ * `WComponent`: a controller bound to a DOM element. `WComponent.define('like-button', LikeButton)` registers the
+ * class for two syntaxes, which may be mixed in the same page:
  *
- * - **Mounting**: `WComponent.render(element)` mounts the element and every `[as]` element inside it; the kernel then
- *   calls `attach()`. `innerHTML(html)` replaces the content of the component and mounts what it holds.
- * - **Detaching**: when the element leaves the page, the kernel calls `detach()` if it exists, then releases every
- *   subscription, timer, animation loop, DOM listener and keyboard declaration of the component. An element moved
+ * - the **custom element** `<like-button>`, a native Custom Element in light DOM (no Shadow DOM): the browser mounts
+ *   it as soon as it is in the page and its class is defined, even if the element was inserted before its module was
+ *   loaded;
+ * - the **attribute** `<div as="like-button">` (or `<span as="…">`), mounted by `WComponent.render()`: the former
+ *   syntax, kept during the migration.
+ *
+ * In both cases `this.element` is the element, and the component does the same work.
+ *
+ * - **Mounting**: the kernel creates the component, then calls `attach()`. `WComponent.render(element)` mounts the
+ *   `[as]` elements of a subtree; `innerHTML(html)` replaces the content of the component and mounts what it holds.
+ *   Custom elements are mounted by the browser, but not before the first `WComponent.render()` (called by `start()`):
+ *   those of the initial page wait until the configuration items and the route are ready.
+ * - **Detaching**: when the element leaves the page, the kernel releases every subscription, timer, animation, task,
+ *   DOM listener and keyboard declaration of the component, then calls `detach()` if it exists. An element moved
  *   elsewhere in the page keeps its component.
- * - **Attributes**: `observeAttributes(['icon', 'no-label'])` calls `iconChanged(newValue, oldValue)` and
- *   `noLabelChanged(…)` now and at each change.
+ * - **Attributes**: a class that declares `static observedAttributes = ['icon', 'no-label']` gets
+ *   `iconChanged(newValue, oldValue)` and `noLabelChanged(…)` called after `attach()` with the current values, then at
+ *   each change: through `attributeChangedCallback` for a custom element, through a mutation observer for an `[as]`
+ *   element. `observeAttributes()` does the same from `attach()`.
+ * - **Display**: a custom element is `inline` for the browser, like a `<span>`. The kernel gives each defined element
+ *   `display: block`, like a `<div>`, in the `ricochet` cascade layer: the CSS of the application or of the component
+ *   wins over it. A class may choose another value with `static display = 'inline'` (or `'flex'`, `'contents'`…).
  * - **Actions declared in HTML**: `clickDatasetHandler` reads `data-item`/`data-value`, `data-event`/`data-param`,
  *   `data-path`, `data-url` and `data-paste` on the clicked element and its parents.
  * - **Styles**: `WComponent.css(…)` adds CSS rules written next to the component (see the `css` module).
@@ -36,6 +51,10 @@ const camelCase = name => name.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase()
 export class WComponent extends WController {
   static tags = {}
   static detachObserver = null
+  static #open = false // custom elements are mounted once the application has called render() (start() does)
+  static #waiting = [] // custom elements connected before that
+  static #displayRules = [] // default display of the custom elements, one rule per tag
+  static #displayStyle = null
   #attributeObserver = null
   #observedAttributes = new Map() // attribute → bound handler
 
@@ -70,8 +89,9 @@ export class WComponent extends WController {
   }
 
   /**
-   * Registers the class of the components of a tag: elements with `as="<tag>"` are mounted with it.
-   * @param {string} tag - Value of the `as` attribute.
+   * Registers the class of the components of a tag: the custom element `<tag>` and the elements with `as="<tag>"`
+   * are mounted with it. The tag must contain a `-` (`like-button`), as every custom element name.
+   * @param {string} tag - Name of the custom element, and value of the `as` attribute.
    * @param {Function} component - Class extending `WComponent`.
    */
   static define (tag, component) {
@@ -79,7 +99,65 @@ export class WComponent extends WController {
       console.error(`WComponent.define: the tag '${tag}' is defined twice`)
       return
     }
+    for (const attribute of component.observedAttributes ?? []) {
+      const name = `${camelCase(attribute)}Changed`
+      if (typeof component.prototype[name] !== 'function') {
+        console.error(`WComponent.define: ${component.name} has no method '${name}' for the attribute '${attribute}'`)
+      }
+    }
     WComponent.tags[tag] = component
+    if (typeof customElements === 'undefined') { return } // Node: tests
+    if (customElements.get(tag) !== undefined) {
+      console.error(`WComponent.define: the custom element '${tag}' is already defined elsewhere`)
+      return
+    }
+    WComponent.#addDisplay(tag, component.display ?? 'block')
+    customElements.define(tag, class extends HTMLElement {
+      static observedAttributes = component.observedAttributes ?? []
+      connectedCallback () { WComponent.#connected(this, component) }
+      disconnectedCallback () { WComponent.#disconnected(this) }
+      attributeChangedCallback (name, oldValue, newValue) {
+        // the callbacks of the initial attributes come before connectedCallback: the component sends them after attach()
+        if (this._component?._mounted === true) { this._component._attributeChanged(name, newValue, oldValue) }
+      }
+    })
+  }
+
+  // the default display of a custom element, in the 'ricochet' layer: any rule of the application wins over it
+  static #addDisplay (tag, display) {
+    if (display === 'inline') { return } // the default of the browser
+    WComponent.#displayRules.push(`${tag} { display: ${display}; }`)
+    if (WComponent.#displayStyle === null) {
+      WComponent.#displayStyle = css('', {name: 'custom elements: default display', layer: 'ricochet'})
+      // the rules are collected in one <style>, rewritten once per task
+      WComponent.#displayStyle._pending = false
+    }
+    const style = WComponent.#displayStyle
+    if (style === null || style._pending) { return }
+    style._pending = true
+    queueMicrotask(() => {
+      style._pending = false
+      style.textContent = `@layer ricochet {\n${WComponent.#displayRules.join('\n')}\n}`
+    })
+  }
+
+  // a custom element enters the page: mounted, unless it only moved
+  static #connected (element, Component) {
+    element._disconnected = false
+    if (element._component instanceof Component) { return } // moved: it keeps its component
+    if (!WComponent.#open) {
+      WComponent.#waiting.push([element, Component])
+      return
+    }
+    WComponent.#mount(element, Component, element.localName)
+  }
+
+  // a custom element leaves the page: detached at the end of the task, unless it came back (moved)
+  static #disconnected (element) {
+    element._disconnected = true
+    queueMicrotask(() => {
+      if (element._disconnected && !element.isConnected) { WComponent._detach(element) }
+    })
   }
 
   /**
@@ -103,6 +181,7 @@ export class WComponent extends WController {
       }
     }
     component.element = null
+    component._mounted = false
     element._component = null
   }
 
@@ -127,6 +206,11 @@ export class WComponent extends WController {
       return
     }
     if (element._component instanceof Component) { return }
+    WComponent.#mount(element, Component, tag)
+  }
+
+  // creates the component of an element and attaches it
+  static #mount (element, Component, tag) {
     if (element._component) { WComponent._detach(element) } // another class: the former component is fully released
     const component = new Component(element)
     element._component = component
@@ -137,16 +221,47 @@ export class WComponent extends WController {
     console.lifecycle('ATTACH -', component.constructor.name, 'to', WComponent._elementName(element))
     leaks.attached += 1
     component.attach()
+    component._mounted = true
+    // the attributes declared by the class: current values now, then each change
+    const attributes = Component.observedAttributes ?? []
+    if (attributes.length === 0 || component.element === null) { return }
+    if (element.localName === tag && typeof customElements !== 'undefined' && customElements.get(tag) !== undefined) {
+      for (const attribute of attributes) { component._attributeChanged(attribute, element.getAttribute(attribute), null) }
+    } else {
+      component.observeAttributes(attributes)
+    }
   }
 
   /**
-   * Mounts the components of an element and of every `[as]` element inside it.
+   * Calls the method of an attribute (`no-label` → `noLabelChanged`). Kernel internal.
+   * @param {string} attribute - Attribute name.
+   * @param {string|null} newValue - New value.
+   * @param {string|null} oldValue - Former value.
+   */
+  _attributeChanged (attribute, newValue, oldValue) {
+    const name = `${camelCase(attribute)}Changed`
+    if (typeof this[name] === 'function') { this[name](newValue, oldValue) }
+  }
+
+  /**
+   * Mounts the components of an element and of every `[as]` element inside it. The first call also mounts the
+   * custom elements already in the page: until then, they wait, so that the application decides when its interface
+   * appears (`start()` calls it once the configuration items and the route are ready).
    * @param {Element} [element=document.body] - Root of the elements to mount. `<body>` itself must not have `as`.
    */
   static render (element = document.body) {
     if (element.tagName === 'BODY' && element.hasAttribute('as')) {
       console.error('WComponent.render: <body> must not have an "as" attribute')
       return
+    }
+    if (!WComponent.#open) {
+      // the first render() opens the mounting: the custom elements already in the page are mounted now, in their order
+      WComponent.#open = true
+      for (const [waiting, Component] of WComponent.#waiting.splice(0)) {
+        if (waiting.isConnected && !(waiting._component instanceof Component)) {
+          WComponent.#mount(waiting, Component, waiting.localName)
+        }
+      }
     }
     WComponent._render(element)
     for (const inner of element.querySelectorAll('[as]')) { WComponent._render(inner) }

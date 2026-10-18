@@ -93,8 +93,8 @@ released when it is detached. No manual cleanup in normal use.
 ## A quick look
 
 ```html
-<div as="like-button" data-event="liked" data-param='{"id": 42}'></div>
-<div as="like-counter"></div>
+<like-button data-event="liked" data-param='{"id": 42}'></like-button>
+<like-counter></like-counter>
 ```
 
 ```javascript
@@ -102,7 +102,7 @@ import {WComponent} from 'ricochet/core/w-component.mjs'
 import {css} from 'ricochet/core/css.mjs'
 
 css(`
-[as="like-counter"] { font-weight: bold; }
+like-counter { font-weight: bold; }
 `)
 
 class LikeButton extends WComponent {
@@ -128,8 +128,11 @@ class LikeCounter extends WComponent {
 }
 WComponent.define('like-counter', LikeCounter)
 
-WComponent.render() // mounts every [as] element in <body>
+WComponent.render() // mounts the components of the page (start() does it for an application)
 ```
+
+Custom elements live in the light DOM: global styles and utility classes apply to them. The former syntax,
+`<div as="like-button">`, mounts the same class, so that an application can migrate one component at a time.
 
 > **Note:** configuration items are loaded and saved by a storage adapter that the application gives to the store,
 > before loading it: `config.setAdapter(adapter)`, then `await config.load()` (`ricochet/core/config.mjs`). Ricochet
@@ -172,14 +175,17 @@ node tests/run.mjs            # every module, one line per suite
 node tests/run.mjs WController  # one module, every assertion shown
 ```
 
+The tests that need a DOM (custom elements) run in a browser: serve the folder above `ricochet/` with any local web
+server and open `ricochet/tests/browser/`.
+
 ## The API at a glance
 
 | Method | Purpose |
 | --- | --- |
-| `WComponent.define(tag, Class)` | Associates an `as="tag"` attribute with a component class. |
+| `WComponent.define(tag, Class)` | Defines the custom element `<tag>` (and the former `as="tag"` attribute) with a component class. |
 | `attach()` / `detach()` | Mount and optional extra cleanup. |
 | `innerHTML(html)` | Replaces the component's content and mounts nested components. |
-| `observeAttributes([names])` | Calls `nameChanged(newValue, oldValue)` now and on every change. |
+| `static observedAttributes = [names]` | Calls `nameChanged(newValue, oldValue)` after `attach()`, then on every change. |
 | `listen(name)` / `emit(name, payload)` | Event bus; the handler is `nameDispatched(payload)` by convention. |
 | `observeItems([items])` / `setItem(item, value)` | Configuration items; handler is `itemsChanged(items)` by convention. |
 | `observeWindowEvents(type, handler)` / `observeDom(target, type, handler)` | Window and DOM events, released on detach. |
@@ -213,11 +219,11 @@ uses JavaScript up to ES2022, so that it also runs in slightly older browsers an
 
 Done: the event bus, relative imports with an import map, the base classes `WController` and `WComponent`, the
 layered keyboard, component styles, the store of configuration items with storage adapters, microtasks, scheduled
-tasks, clocks and the frame loop, the router with a universe/brick resolver, `start()`, unit tests.
+tasks, clocks and the frame loop, the router with a universe/brick resolver, `start()`, native Custom Elements
+(`<like-button>`, light DOM) alongside the former `<div as="like-button">`, unit tests.
 
-1. **Native Custom Elements.** Move from `<div as="rc-button">` to `<rc-button>`, with `connectedCallback`,
-   `disconnectedCallback` and `attributeChangedCallback` replacing the current mutation observers. Light DOM, no Shadow
-   DOM, so the global palettes and utility classes keep working. Both syntaxes will coexist during the transition.
+1. **UI components `rc-*`.** Buttons, inputs, selects, tabs, dropdowns… styled with CSS custom properties, with a
+   light and a dark theme, usable on a phone screen.
 2. **Storage in Google Drive.** An adapter for configuration items and data records, with IndexedDB as a cache.
 3. **Documentation and a demo page.**
 
