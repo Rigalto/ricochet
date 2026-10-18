@@ -146,7 +146,21 @@ import map, and serve the page from any local web server.
 <script type="importmap">
 { "imports": { "ricochet/": "./ricochet/src/" } }
 </script>
+<script type="module">
+  import {start} from 'ricochet/core/start.mjs'
+  import {universeBrickResolver} from 'ricochet/routing/universe-brick.mjs'
+  import './components/app-main.mjs'
+
+  await start({
+    root: '#root',
+    storage: myAdapter, // loads and saves the configuration items
+    router: universeBrickResolver({universes: {…}, bricks: {…}}),
+  })
+</script>
 ```
+
+`start()` always runs the same steps: configuration items, current route (with its module and its scope), mounting
+of the interface, then listening to the address.
 
 The [guide](docs/GUIDE.md) explains each step, how to run the application on your computer, and how to generate the
 documentation of your own components. The [API reference](docs/api/README.md) is generated from the sources.
@@ -170,6 +184,7 @@ node tests/run.mjs WController  # one module, every assertion shown
 | `observeItems([items])` / `setItem(item, value)` | Configuration items; handler is `itemsChanged(items)` by convention. |
 | `observeWindowEvents(type, handler)` / `observeDom(target, type, handler)` | Window and DOM events, released on detach. |
 | `observeKeyboard(layer, keys)` | Registers keys for a layer: `modal`, `module`, `view`, floating groups. |
+| `listen('routeChanged')` / `router.navigate(path)` | The current route at once, then each change; navigation. |
 | `defer(name, payload)` / `schedule(name, payload, ms)` | Microtasks and scheduled tasks, cancelled on detach. |
 | `setAnimationFrame(update, render)` | The animation of the component in the frame loop, released on detach. |
 | `css(rules)` / `WComponent.css(rules)` | CSS written next to the component: one named `<style>` per call, in the page at once. |
@@ -198,15 +213,13 @@ uses JavaScript up to ES2022, so that it also runs in slightly older browsers an
 
 Done: the event bus, relative imports with an import map, the base classes `WController` and `WComponent`, the
 layered keyboard, component styles, the store of configuration items with storage adapters, microtasks, scheduled
-tasks, clocks and the frame loop, unit tests.
+tasks, clocks and the frame loop, the router with a universe/brick resolver, `start()`, unit tests.
 
-1. **Router and `start()`.** Hash routing with an application resolver and dynamic loading of modules; one entry point
-   that starts the application in a fixed order.
-2. **Native Custom Elements.** Move from `<div as="rc-button">` to `<rc-button>`, with `connectedCallback`,
+1. **Native Custom Elements.** Move from `<div as="rc-button">` to `<rc-button>`, with `connectedCallback`,
    `disconnectedCallback` and `attributeChangedCallback` replacing the current mutation observers. Light DOM, no Shadow
    DOM, so the global palettes and utility classes keep working. Both syntaxes will coexist during the transition.
-3. **Storage in Google Drive.** An adapter for configuration items and data records, with IndexedDB as a cache.
-4. **Documentation and a demo page.**
+2. **Storage in Google Drive.** An adapter for configuration items and data records, with IndexedDB as a cache.
+3. **Documentation and a demo page.**
 
 The design decisions behind Ricochet are recorded in [docs/DESIGN.md](docs/DESIGN.md).
 

@@ -14,6 +14,7 @@ const REGISTRY = [
   {name: 'Bus', file: './test-bus.mjs'},
   {name: 'WController', file: './test-w-controller.mjs'},
   {name: 'Tasks', file: './test-tasks.mjs'},
+  {name: 'Router', file: './test-router.mjs'},
   {name: 'Config', file: './test-config.mjs'},
   {name: 'Css', file: './test-css.mjs'},
   {name: 'Events', file: './test-events.mjs'},

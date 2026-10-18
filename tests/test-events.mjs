@@ -6,10 +6,12 @@
 
 import {readFileSync, readdirSync} from 'node:fs'
 import {join} from 'node:path'
+import {fileURLToPath} from 'node:url'
 import {describe, assert} from './kernel.mjs'
 
-const root = new URL('..', import.meta.url).pathname
+const root = fileURLToPath(new URL('..', import.meta.url)) // not .pathname: '/C:/…' on Windows
 const table = readFileSync(join(root, 'docs/EVENTS.md'), 'utf8')
+
 // the .mjs files under src/, as paths relative to it (readdirSync has no recursive option before Node 20)
 const walk = dir => readdirSync(join(root, 'src', dir), {withFileTypes: true}).flatMap(entry =>
   entry.isDirectory() ? walk(join(dir, entry.name)) : entry.name.endsWith('.mjs') ? [join(dir, entry.name)] : [])

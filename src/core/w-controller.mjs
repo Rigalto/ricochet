@@ -32,6 +32,7 @@ import {microtasker} from './microtasker.mjs'
 import {scheduler} from './scheduler.mjs'
 import {loop} from './loop.mjs'
 import {realClock} from './clock.mjs'
+import {router} from './router.mjs'
 import {quietEvents} from './debug.mjs'
 
 const INTERVAL_EVENT = 'rcInterval' // kernel event of setInterval(), not recorded in the logs
@@ -112,6 +113,12 @@ export class WController {
     bus.on(event, listener)
     this.#listeners.set(key, {event, listener})
     leaks.eventHandlers += 1
+    // there is always a current route: a new listener receives it at the end of the current task
+    if (event === 'routeChanged' && router.current !== null) {
+      queueMicrotask(() => {
+        if (this.#listeners.get(key)?.listener === listener && router.current !== null) { listener(router.current) }
+      })
+    }
   }
 
   #unsubscribe (caller, event, handlerName) {
@@ -132,6 +139,7 @@ export class WController {
 
   /**
    * Subscribes a method to an event of the bus, or to each event of an array. The method receives the payload.
+   * A method subscribed to `routeChanged` also receives the current route at the end of the current task.
    * @param {string|string[]} event - Event name (camelCase), or an array of names.
    * @param {string} [handlerName] - Method name. Default: `<event>Dispatched`.
    */

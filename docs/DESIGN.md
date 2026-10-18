@@ -80,8 +80,9 @@ The kernel does not know the structure of the routes; it owns the mechanism. *(2
 - The router listens to `hashchange` (hash routing works on any static host, GitHub Pages included). It splits the
   path and hands it to a **resolver provided by the application**, which returns the route, or asks for a redirect.
   The resolver may be asynchronous.
-- The route is the payload of the `routeChanged` event. A component that subscribes to `routeChanged` is called at
-  once with the current route: there is always a current route.
+- The route is the payload of the `routeChanged` event. A component that subscribes to `routeChanged` is called with
+  the current route at the end of the current task, once its setup is finished: there is always a current route.
+  *(clarified 2026-10-18)*
 - The route carries a `scope`: the string that replaces `$` in the names of configuration items. The router sets the
   scope **before** emitting `routeChanged`, so no listener ever reads an item with the former scope.
 - Redirects use `location.replace()`: they do not add an entry to the history.
@@ -133,3 +134,6 @@ route, including its module and its scope; mounting of the interface from `root`
 | 2026-10-18 | Real time tasks wait while the page is hidden; the game clock advances only while a game holds the loop | The browser stops the frames of a hidden page; changes are saved when the page is hidden. |
 | 2026-10-18 | No `setInterval` in applications: a repeated action is a scheduled task whose handler schedules the next one. `WController.setInterval()` runs on the scheduler and is deprecated | One time base and one budget; intervals wait while the page is hidden and are released like any task. |
 | 2026-10-18 | The events used by the kernel are listed in `docs/EVENTS.md`, checked by a test; names starting with `rc` are reserved for internal events (`rcInterval`, `rcConfigSave`) | An application must know which names it cannot use. |
+| 2026-10-18 | The module of a route is declared as a function (`load: () => import('./x.mjs')`), or a URL | A path written in the router would be resolved from the folder of Ricochet, not from the application. |
+| 2026-10-18 | A new listener of `routeChanged` receives the current route at the end of the current task, not during `listen()` | Its `attach()` or constructor is finished when the route arrives. |
+| 2026-10-18 | The router does not decode the path (`%20` stays as is) | The application keeps the address it wrote. |

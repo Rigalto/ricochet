@@ -9,6 +9,7 @@ Base class of controllers. A controller is usually a singleton created when its 
 ### listen(event, handlerName)
 
 Subscribes a method to an event of the bus, or to each event of an array. The method receives the payload.
+A method subscribed to `routeChanged` also receives the current route at the end of the current task.
 
 | Parameter | Type | Description |
 | --- | --- | --- |

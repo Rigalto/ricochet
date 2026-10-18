@@ -16,8 +16,9 @@ application never emits nor listens to them, and does not create names with this
 | `dropdownOpen` | the application (a dropdown, a modal) | `keyboard` (`core/keyboard.mjs`) | `{}` | A modal opens: it takes the keyboard, with the keys given to `keyboard.setModalKeys()`. |
 | `dropdownClose` | the application; `keyboard` when `Escape` is pressed in a modal | `keyboard`, the application | `{}` | The modal closes: its keys are forgotten. The modal listens to it to close itself when `Escape` is pressed. |
 | `moduleFocus` | the application; `keyboard` when `Escape` is pressed in a module | `keyboard`, the application | `{module: string}` | A module takes the keyboard focus (`module: ''`: none). Its keys are those given to `keyboard.setModuleKeys()`. |
-
-The router will add `routeChanged`, `routeLoading` and `routeError` (see principle 8 of [DESIGN](DESIGN.md)).
+| `routeChanged` | `router` (`core/router.mjs`) | the application | the route: `{path, terms, scope, …}` | The route changed. The scope of the configuration items is already set, and the module of the route loaded. A component that listens to it also receives the current route at the end of the current task. |
+| `routeLoading` | `router` | the application | `{path}` | The module of a route is loading: a view can show that it is busy. |
+| `routeError` | `router` | the application | `{path, error}` | The resolver or the module of a route failed; the former route stays. |
 
 ## Internal events
 
