@@ -19,6 +19,7 @@ application never emits nor listens to them, and does not create names with this
 | `routeChanged` | `router` (`core/router.mjs`) | the application | the route: `{path, terms, scope, …}` | The route changed. The scope of the configuration items is already set, and the module of the route loaded. A component that listens to it also receives the current route at the end of the current task. |
 | `routeLoading` | `router` | the application | `{path}` | The module of a route is loading: a view can show that it is busy. |
 | `routeError` | `router` | the application | `{path, error}` | The resolver or the module of a route failed; the former route stays. |
+| `themeChanged` | `theme` (`ui/theme.mjs`) | the application | `{theme, scheme}` | The theme (`system`, `day`, `night`) or the setting of the computer changed; `scheme` is the one shown, `day` or `night`. For the views that draw colours themselves, such as a canvas. |
 
 ## Internal events
 

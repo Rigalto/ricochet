@@ -197,13 +197,17 @@ server and open `ricochet/tests/browser/`.
 | `release()` | Stops every subscription, timer and loop of the instance; called automatically on detach. |
 
 The events that Ricochet emits and listens to, and the `rc` prefix reserved for its internal events, are listed in
-[docs/EVENTS.md](docs/EVENTS.md).
+[docs/EVENTS.md](docs/EVENTS.md); the configuration items it uses, and the `ricochet-` prefix reserved for them, in
+[docs/ITEMS.md](docs/ITEMS.md).
 
 ## Also included
 
 - **UI components** (`rc-*`): buttons, icon buttons, inputs, selects, checkboxes, radio buttons, sliders, tabs,
   dropdowns, alerts — all sharing the same `data-*` action contract.
-- **Colour palettes** driven by CSS custom properties (`--color-*`).
+- **Palettes and themes** (`ui/theme.mjs`): components use colour tokens (`--rc-surface`, `--rc-text`,
+  `--rc-danger`…), computed in `oklch()` from the palette of their block (`palette="view"`, `shade="deep"`), with a
+  day and a night value (`light-dark()`). A palette is three numbers; the day/night choice is one configuration item.
+  See [demo/theme.html](demo/theme.html).
 - **An icon set** drawn on a common 24×24 grid with uniform stroke rules.
 - **A Markdown converter** for a [restricted, standard-compatible Markdown](docs/MARKDOWN.md), with hooks for
   application links.

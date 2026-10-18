@@ -1,0 +1,93 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Copyright (c) 2026 Rigalto -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ricochet — palettes</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 0; padding: 1rem; }
+    h1 { font-size: 1.25rem; margin: 0 0 .5rem; color: var(--rc-text-strong); }
+    .toolbar { display: flex; gap: .5rem; align-items: center; margin-bottom: 1rem; }
+    .toolbar button { font: inherit; padding: .25rem .75rem; border: 1px solid var(--rc-border); border-radius: 6px;
+      background: var(--rc-surface-raised); color: var(--rc-text); cursor: pointer; }
+    .toolbar button:hover { background: var(--rc-accent); }
+    .schemes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 34rem), 1fr)); gap: 1rem; }
+    .scheme { padding: 1rem; border-radius: 10px; }
+    .scheme > h2 { margin: 0 0 .75rem; font-size: 1rem; color: var(--rc-text-strong); }
+    .palettes { display: grid; gap: .75rem; }
+    .palette { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+    .sample { padding: .75rem; border-radius: 8px; border: 1px solid var(--rc-border); min-width: 0; }
+    .sample h3 { margin: 0; font-size: .95rem; color: var(--rc-text-strong); }
+    .muted { color: var(--rc-text-muted); font-size: .85rem; }
+    .faint { color: var(--rc-text-faint); font-size: .85rem; }
+    .sample a { color: var(--rc-link); }
+    .raised { margin: .4rem 0; padding: .2rem .4rem; border: 1px solid var(--rc-border); border-radius: 4px;
+      background: var(--rc-surface-raised); }
+    .states { display: flex; flex-wrap: wrap; gap: .25rem; }
+    .chip { padding: 0 .4rem; border-radius: 4px; font-size: .8rem; border: 1px solid; }
+    .danger { color: var(--rc-danger); background: var(--rc-danger-surface); }
+    .warning { color: var(--rc-warning); background: var(--rc-warning-surface); }
+    .success { color: var(--rc-success); background: var(--rc-success-surface); }
+    .info { color: var(--rc-info); background: var(--rc-info-surface); }
+    .selected { background: var(--rc-selected); color: var(--rc-text-strong); }
+    .hover { background: var(--rc-accent); color: var(--rc-text-strong); }
+    .disabled { color: var(--rc-disabled); background: var(--rc-disabled-surface); }
+    .shadow { text-shadow: var(--rc-shadow); }
+  </style>
+</head>
+<body>
+  <h1>Ricochet — palettes, shades, day and night</h1>
+  <div class="toolbar">
+    <span>Theme of the page (item <code>ricochet-theme</code>):</span>
+    <button data-theme="system">system</button>
+    <button data-theme="day">day</button>
+    <button data-theme="night">night</button>
+    <span id="current" class="muted"></span>
+  </div>
+  <div class="schemes" id="schemes"></div>
+
+  <script type="module">
+    import {config} from '../src/core/config.mjs'
+    import {MemoryAdapter} from '../src/adapters/memory.mjs'
+    import {setTheme, theme} from '../src/ui/theme.mjs'
+    import {bus} from '../src/core/bus.mjs'
+
+    const sample = shade => `
+      <div class="sample" shade="${shade}">
+        <h3>Title · ${shade}</h3>
+        <div>Text of the block, <a href="#">a link</a>.</div>
+        <div class="muted">Label or help text</div>
+        <div class="faint">Dimmed text</div>
+        <div class="raised">Input on the block</div>
+        <div class="states">
+          <span class="chip danger">error</span><span class="chip warning">warning</span>
+          <span class="chip success">success</span><span class="chip info">info</span>
+        </div>
+        <div class="states" style="margin-top: .25rem">
+          <span class="chip selected">selected</span><span class="chip hover">hover</span>
+          <span class="chip disabled">disabled</span><span class="chip shadow">shadow</span>
+        </div>
+      </div>`
+    const palette = name => `
+      <div class="muted">${name === '' ? 'page (no palette)' : `palette="${name}"`}</div>
+      <div class="palette" ${name === '' ? '' : `palette="${name}"`}>${['light', 'medium', 'deep'].map(sample).join('')}</div>`
+    const column = (scheme, title) => `
+      <section class="scheme" ${scheme === '' ? 'palette=""' : `scheme="${scheme}"`}>
+        <h2>${title}</h2>
+        <div class="palettes">${['', 'header', 'view', 'module'].map(palette).join('')}</div>
+      </section>`
+    document.getElementById('schemes').innerHTML = column('day', 'scheme="day"') + column('night', 'scheme="night"')
+
+    const show = () => { document.getElementById('current').textContent = `${theme.theme} → ${theme.scheme}` }
+    bus.on('themeChanged', show)
+    config.setAdapter(new MemoryAdapter({'ricochet-theme': 'system'}))
+    await config.load()
+    for (const button of document.querySelectorAll('[data-theme]')) {
+      button.addEventListener('click', () => setTheme(button.dataset.theme))
+    }
+    setTimeout(show, 0)
+  </script>
+</body>
+</html>
