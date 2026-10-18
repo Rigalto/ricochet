@@ -6,33 +6,33 @@
 
 | Name | Kind |
 | --- | --- |
-| [memory](memory.md) | module |
+| [memory](memory.module.md) | module |
 | [MemoryAdapter](MemoryAdapter.md) | class |
 
 ## core
 
 | Name | Kind | Extends |
 | --- | --- | --- |
-| [bus](bus.md) | module |  |
-| [clock](clock.md) | module |  |
-| [config](config.md) | module |  |
+| [bus](bus.module.md) | module |  |
+| [clock](clock.module.md) | module |  |
+| [config](config.module.md) | module |  |
 | [ConfigStore](ConfigStore.md) | class |  |
-| [css](css.md) | module |  |
-| [debug](debug.md) | module |  |
+| [css](css.module.md) | module |  |
+| [debug](debug.module.md) | module |  |
 | [EventBus](EventBus.md) | class |  |
 | [FrameLoop](FrameLoop.md) | class |  |
 | [GameClock](GameClock.md) | class |  |
-| [global](global.md) | module |  |
-| [items](items.md) | module |  |
-| [keyboard](keyboard.md) | module |  |
+| [global](global.module.md) | module |  |
+| [items](items.module.md) | module |  |
+| [keyboard](keyboard.module.md) | module |  |
 | [KeyboardController](KeyboardController.md) | class |  |
-| [loop](loop.md) | module |  |
-| [microtasker](microtasker.md) | module |  |
+| [loop](loop.module.md) | module |  |
+| [microtasker](microtasker.module.md) | module |  |
 | [Microtasker](Microtasker.md) | class |  |
-| [scheduler](scheduler.md) | module |  |
+| [scheduler](scheduler.module.md) | module |  |
 | [Scheduler](Scheduler.md) | class |  |
-| [w-component](w-component.md) | module |  |
-| [w-controller](w-controller.md) | module |  |
+| [w-component](w-component.module.md) | module |  |
+| [w-controller](w-controller.module.md) | module |  |
 | [WComponent](WComponent.md) | class | `WController` |
 | [WController](WController.md) | class |  |
 
@@ -40,11 +40,11 @@
 
 | Name | Kind |
 | --- | --- |
-| [iconset](iconset.md) | module |
+| [iconset](iconset.module.md) | module |
 
 ## utils
 
 | Name | Kind |
 | --- | --- |
-| [dom](dom.md) | module |
-| [markdown](markdown.md) | module |
+| [dom](dom.module.md) | module |
+| [markdown](markdown.module.md) | module |

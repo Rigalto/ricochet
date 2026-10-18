@@ -4,4 +4,6 @@
 # Regenerates the API documentation (docs/api) and adds it to the commit.
 # Enabled once per clone with:  git config core.hooksPath .githooks
 node tools/doc.mjs || exit 1
+# the index is emptied first, so that a page whose name changed only by case (on Windows and macOS) is renamed too
+git rm -r -q --cached --ignore-unmatch docs/api
 git add docs/api

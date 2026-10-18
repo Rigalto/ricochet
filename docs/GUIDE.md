@@ -113,7 +113,10 @@ Without a registered sanitizer, `sanitizeHtml()` shows the HTML as text and repo
 
 The documentation of Ricochet is generated from the `/** … */` blocks of its source files by `tools/doc.mjs`. The
 same blocks feed three readers: the tooltips of VSCode, the Markdown pages of `docs/api/` that GitHub displays, and
-your application, which can read `docs/api/index.json` and show the pages with `markdownToHtml()`.
+your application, which can read `docs/api/index.json` and show the pages with `markdownToHtml()`. Each entry of
+the index gives the name (`n`), the kind (`k`: `c` class, `m` module), the parent class (`e`), the group (`g`), the
+source file (`s`) and the page (`p`): `<Class>.md` for a class, `<module>.module.md` for a module, so that a class
+and a module whose names differ only by case (`Scheduler`, `scheduler`) do not share a file on Windows or macOS.
 
 Your application can use the same tool for its own components. From the application folder:
 
