@@ -34,6 +34,7 @@ computed from three parameters, set by the palette of the block the component is
 | `--rc-danger-surface`, `--rc-warning-surface`, `--rc-success-surface`, `--rc-info-surface` | states: background, mixed with the surface of the block |
 | `--rc-shadow` | text shadow (`--rc-shadow-color`: its colour) |
 | `--rc-elevation-1`, `-2`, `-3` | box shadows, from close to the surface to high above it |
+| `--rc-elevation-inset` | box shadow inside the block: the block is sunk into the surface |
 
 Errors, warnings, successes and information are **states** of a component (`state="error"`…), not palettes: their
 colours are mixed with the surface of the block, so they fit any palette, by day and by night.
@@ -65,8 +66,19 @@ A palette may also set any token directly, or define its own tokens (a gradient,
 | Class | Effect |
 | --- | --- |
 | `rc-shadow-1`, `rc-shadow-2`, `rc-shadow-3` | box shadow (`--rc-elevation-1`…) |
+| `rc-shadow-inset` | shadow inside the block (`--rc-elevation-inset`): sunk |
 | `rc-shadow-none` | no box shadow |
 | `rc-text-shadow` | text shadow (`--rc-shadow`) |
+
+## Panels
+
+The class `rc-panel` makes a block of an element: rounded corners and a padding. With a palette, a shade and the
+shadow classes, it isolates a group of elements:
+
+```html
+<section class="rc-panel rc-shadow-2 rc-text-shadow" palette="module" shade="medium">…</section>
+<div class="rc-panel rc-shadow-inset" shade="deep">…</div>
+```
 
 ## Day and night
 

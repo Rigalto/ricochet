@@ -39,6 +39,17 @@ await describe('Theme — states mixed with the surface', async () => {
   assert('the same state differs from one palette to another', background(document.getElementById('a')) !== background(document.getElementById('b')))
 })
 
+await describe('Theme — panels and shadows', async () => {
+  sandbox.innerHTML = '<span id="p" class="rc-panel rc-shadow-inset" shade="deep">x</span><span id="q" class="rc-shadow-2">y</span>'
+  const p = document.getElementById('p')
+  const style = getComputedStyle(p)
+  assert('rc-panel: a block with rounded corners and a padding', style.display === 'block' && style.borderTopLeftRadius !== '0px' && style.paddingTop !== '0px')
+  assert('rc-shadow-inset: a shadow inside', style.boxShadow.includes('inset'))
+  assert('rc-shadow-2: a shadow outside', !getComputedStyle(document.getElementById('q')).boxShadow.includes('inset') &&
+    getComputedStyle(document.getElementById('q')).boxShadow !== 'none')
+  sandbox.innerHTML = ''
+})
+
 await describe('Theme — day and night', async () => {
   const events = []
   const onTheme = payload => events.push(payload)

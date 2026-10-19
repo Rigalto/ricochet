@@ -34,6 +34,7 @@
  * | `--rc-danger-surface`, `--rc-warning-surface`, `--rc-success-surface`, `--rc-info-surface` | states: background, mixed with the surface of the block |
  * | `--rc-shadow` | text shadow (`--rc-shadow-color`: its colour) |
  * | `--rc-elevation-1`, `-2`, `-3` | box shadows, from close to the surface to high above it |
+ * | `--rc-elevation-inset` | box shadow inside the block: the block is sunk into the surface |
  *
  * Errors, warnings, successes and information are **states** of a component (`state="error"`…), not palettes: their
  * colours are mixed with the surface of the block, so they fit any palette, by day and by night.
@@ -65,8 +66,19 @@
  * | Class | Effect |
  * | --- | --- |
  * | `rc-shadow-1`, `rc-shadow-2`, `rc-shadow-3` | box shadow (`--rc-elevation-1`…) |
+ * | `rc-shadow-inset` | shadow inside the block (`--rc-elevation-inset`): sunk |
  * | `rc-shadow-none` | no box shadow |
  * | `rc-text-shadow` | text shadow (`--rc-shadow`) |
+ *
+ * ## Panels
+ *
+ * The class `rc-panel` makes a block of an element: rounded corners and a padding. With a palette, a shade and the
+ * shadow classes, it isolates a group of elements:
+ *
+ * ```html
+ * <section class="rc-panel rc-shadow-2 rc-text-shadow" palette="module" shade="medium">…</section>
+ * <div class="rc-panel rc-shadow-inset" shade="deep">…</div>
+ * ```
  *
  * ## Day and night
  *
@@ -130,12 +142,15 @@ const TOKENS = `
   --rc-elevation-1: 0 1px 2px var(--rc-shadow-color);
   --rc-elevation-2: 0 2px 4px var(--rc-shadow-color), 0 1px 2px var(--rc-shadow-color);
   --rc-elevation-3: 0 6px 12px var(--rc-shadow-color), 0 2px 4px var(--rc-shadow-color);
+  --rc-elevation-inset: inset 0 2px 4px var(--rc-shadow-color), inset 0 1px 1px var(--rc-shadow-color);
 }
 .rc-shadow-1 { box-shadow: var(--rc-elevation-1); }
 .rc-shadow-2 { box-shadow: var(--rc-elevation-2); }
 .rc-shadow-3 { box-shadow: var(--rc-elevation-3); }
+.rc-shadow-inset { box-shadow: var(--rc-elevation-inset); }
 .rc-shadow-none { box-shadow: none; }
 .rc-text-shadow { text-shadow: var(--rc-shadow); }
+.rc-panel { display: block; border-radius: .5rem; padding: .375rem .5rem; }
 :root {
   --rc-hue: 250;
   --rc-chroma: .015;
