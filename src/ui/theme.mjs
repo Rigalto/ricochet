@@ -150,7 +150,8 @@ const TOKENS = `
 .rc-shadow-inset { box-shadow: var(--rc-elevation-inset); }
 .rc-shadow-none { box-shadow: none; }
 .rc-text-shadow { text-shadow: var(--rc-shadow); }
-.rc-panel { display: block; border-radius: .5rem; padding: .375rem .5rem; }
+.rc-panel:not([hidden]) { display: block; }
+.rc-panel { border-radius: .5rem; padding: .375rem .5rem; }
 :root {
   --rc-hue: 250;
   --rc-chroma: .015;

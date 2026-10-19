@@ -1,0 +1,103 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Copyright (c) 2026 Rigalto -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ricochet — floating buttons</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 0; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; padding: .75rem 1rem; }
+    header h1 { font-size: 1.1rem; margin: 0; color: var(--rc-text-strong); }
+    #log { font-family: ui-monospace, monospace; font-size: .8rem; color: var(--rc-text-muted); }
+    /* the layout of the application: the view, and the modules on the right */
+    .page { display: flex; gap: 1rem; align-items: flex-start; padding: 0 1rem; }
+    .view { flex: 1 1 auto; min-width: 0; }
+    .modules { flex: 0 0 18rem; position: sticky; top: .5rem; }
+    table { width: 100%; border-collapse: collapse; }
+    td, th { padding: .45rem .6rem; border-bottom: 1px solid var(--rc-border); text-align: left; }
+    /* the colours of the floating buttons, set by the application */
+    rc-floating-group.arrows { --rc-floating: light-dark(oklch(72% .14 10), oklch(60% .14 10)); }
+    rc-floating-group.card { --rc-floating: light-dark(oklch(82% .09 275), oklch(66% .11 275)); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Ricochet — floating buttons</h1>
+    <rc-checkbox data-item="demo-modules" checked>Modules</rc-checkbox>
+    <rc-checkbox data-item="demo-short">Short view</rc-checkbox>
+    <rc-checkbox data-item="demo-hide-two">Hide the second card button</rc-checkbox>
+    <rc-icon-button icon="trash" data-dialog="demo-dialog">Open a dialog</rc-icon-button>
+    <span id="log">Scroll the view; use the buttons, or Ctrl + ← → D M Enter.</span>
+  </header>
+  <rc-dialog id="demo-dialog" label="A window">
+    <p>While a window is open, the floating buttons are hidden.</p>
+    <footer><rc-text-button data-close="ok" default>Close</rc-text-button></footer>
+  </rc-dialog>
+
+  <div class="page">
+    <main class="view">
+      <section class="rc-panel rc-shadow-2" palette="view"><table id="rows"></table></section>
+      <rc-floating-bar>
+        <rc-floating-group name="arrows" class="arrows">
+          <rc-floating-button icon="caretleft" key="Ctrl-ArrowLeft" title="Previous card (Ctrl ←)"
+            data-event="demoFloating" data-param='{"button": "previous"}'></rc-floating-button>
+          <rc-floating-button icon="caretright" key="Ctrl-ArrowRight" title="Next card (Ctrl →)"
+            data-event="demoFloating" data-param='{"button": "next"}'></rc-floating-button>
+        </rc-floating-group>
+        <rc-floating-group name="card" class="card" side="right" gradient="right">
+          <rc-floating-button icon="add" title="New card" data-event="demoFloating" data-param='{"button": "new"}'></rc-floating-button>
+          <rc-floating-button id="two" icon="copy" key="Ctrl-d" title="Duplicate (Ctrl D)"
+            data-event="demoFloating" data-param='{"button": "duplicate"}'></rc-floating-button>
+          <rc-floating-button icon="pen" key="Ctrl-m" title="Edit (Ctrl M)"
+            data-event="demoFloating" data-param='{"button": "edit"}'></rc-floating-button>
+          <rc-floating-button icon="check" key="Ctrl-Enter" title="Open (Ctrl Enter)"
+            data-event="demoFloating" data-param='{"button": "open"}'></rc-floating-button>
+        </rc-floating-group>
+      </rc-floating-bar>
+    </main>
+    <aside class="modules rc-panel rc-shadow-2" palette="module" shade="medium">
+      <strong>Modules</strong>
+      <p>A panel on the right of the view. Hide it: the view gets wider, and the buttons on the right follow its right
+        side.</p>
+    </aside>
+  </div>
+
+  <script type="module">
+    import {WComponent} from '../src/core/w-component.mjs'
+    import {WController} from '../src/core/w-controller.mjs'
+    import {config} from '../src/core/config.mjs'
+    import {MemoryAdapter} from '../src/adapters/memory.mjs'
+    import '../src/ui/theme.mjs'
+    import '../src/ui/rc-checkbox.mjs'
+    import '../src/ui/rc-dialog.mjs'
+    import '../src/ui/rc-floating.mjs'
+
+    const rows = count => '<tr><th>Title</th><th>Topic</th><th>Words</th></tr>' + Array.from({length: count}, (_, i) =>
+      `<tr><td>Article ${i + 1}</td><td>${['Blog', 'Image', 'JavaScript', 'Documentation'][i % 4]}</td><td>${(i * 397) % 3600}</td></tr>`).join('')
+
+    // the page as an application writes it: a controller, items and events
+    class DemoPage extends WController {
+      constructor () {
+        super()
+        this.observeItems(['demo-modules', 'demo-short', 'demo-hide-two'])
+        this.listen('demoFloating')
+      }
+
+      itemsChanged (items) {
+        document.querySelector('.modules').hidden = items['demo-modules'] === 'no'
+        document.getElementById('rows').innerHTML = rows(items['demo-short'] === 'yes' ? 4 : 40)
+        document.getElementById('two').hidden = items['demo-hide-two'] === 'yes'
+      }
+
+      demoFloatingDispatched ({button, key}) { document.getElementById('log').textContent = `demoFloating: ${button}${key === undefined ? '' : ` (${key})`}` }
+    }
+
+    config.setAdapter(new MemoryAdapter({'ricochet-theme': 'system'}))
+    await config.load()
+    new DemoPage()
+    WComponent.render()
+  </script>
+</body>
+</html>

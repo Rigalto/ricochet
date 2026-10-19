@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Rigalto
 
 // tests/browser/test-overlay.mjs — open tests/browser/index.html in a browser
-// Windows above the page: the layers of the keyboard, rc-dropdown, rc-dialog.
+// Windows above the page: the layers of the keyboard, rc-dropdown, rc-dialog; the floating buttons.
 
 import {describe, assert} from '../kernel.mjs'
 import {WComponent} from '../../src/core/w-component.mjs'
@@ -11,6 +11,7 @@ import {keyboard} from '../../src/core/keyboard.mjs'
 import {RcDropdown} from '../../src/ui/rc-dropdown.mjs'
 import {showAlert, showConfirm} from '../../src/ui/rc-dialog.mjs'
 import '../../src/ui/rc-checkbox.mjs'
+import '../../src/ui/rc-floating.mjs'
 
 const sandbox = document.getElementById('sandbox')
 const tick = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -208,6 +209,53 @@ await describe('rc-dialog', async () => {
   assert('… no event when none is given', got.length === 1 && !shared.querySelector('dialog').open && keyboard.layers === 0)
   shared.remove()
   await tick()
+})
+
+await describe('rc-floating-bar, rc-floating-group, rc-floating-button', async () => {
+  sandbox.innerHTML = `
+    <div id="view" style="height: 3000px">content</div>
+    <rc-floating-bar id="bar">
+      <rc-floating-group name="ovArrows"><rc-floating-button id="f1" icon="caretleft" key="Ctrl-ArrowLeft" data-event="ovAction" data-param='{"from": "left"}'></rc-floating-button></rc-floating-group>
+      <rc-floating-group name="ovCard" side="right" gradient="right">
+        <rc-floating-button id="f2" icon="add" title="New" data-event="ovAction" data-param='{"from": "new"}'></rc-floating-button>
+        <rc-floating-button id="f3" icon="copy" key="Ctrl-d" data-event="ovAction" data-param='{"from": "dup"}'></rc-floating-button>
+        <rc-floating-button id="f4" icon="pen" key="Ctrl-m" data-event="ovAction" data-param='{"from": "edit"}'></rc-floating-button>
+      </rc-floating-group>
+    </rc-floating-bar>`
+  await tick()
+  const bar = $('#bar')
+  const rank = id => $(`#${id}`).style.getPropertyValue('--rc-rank')
+  const ctrl = code => document.body.dispatchEvent(new KeyboardEvent('keydown', {key: code, code: code.length === 1 ? `Key${code.toUpperCase()}` : code, ctrlKey: true, bubbles: true, cancelable: true}))
+  assert('the line sticks to the bottom of the screen', getComputedStyle(bar).position === 'sticky' && getComputedStyle(bar).bottom === '11px')
+  const b = bar.getBoundingClientRect()
+  assert('… while the view is longer than the screen', Math.round(b.bottom) === window.innerHeight - 11)
+  const button = $('#f2 > button')
+  assert('a round button of 55 px, its icon of 33 px, named by its title', button.offsetHeight === 55 && $('#f2 rc-icon').getAttribute('size') === '33' &&
+    button.getAttribute('aria-label') === 'New' && getComputedStyle(button).borderRadius !== '0px')
+  assert('side="right": the group is on the right', $('rc-floating-group[side="right"]').getBoundingClientRect().right === b.right)
+  assert('gradient="right": ranks 0, 1, 2 from the left', rank('f2') === '0' && rank('f3') === '1' && rank('f4') === '2' && rank('f1') === '0')
+  assert('… each button darker', getComputedStyle(button).backgroundColor !== getComputedStyle($('#f4 > button')).backgroundColor)
+  got.length = 0
+  ctrl('d')
+  ctrl('ArrowLeft')
+  assert('the keys of the buttons click them', got.map(p => p.from).join() === 'dup,left')
+  $('#f3').hidden = true
+  await tick()
+  got.length = 0
+  ctrl('d')
+  assert('a hidden button: out of the gradient, no key', rank('f4') === '1' && got.length === 0 && getComputedStyle($('#f3')).display === 'none')
+  $('#f4').setAttribute('disabled', '')
+  await tick()
+  ctrl('m')
+  assert('a disabled button: no key', got.length === 0)
+  keyboard.openLayer(bar, [])
+  assert('hidden while a window is open', getComputedStyle(bar).visibility === 'hidden')
+  keyboard.closeLayer(bar)
+  assert('… shown again', getComputedStyle(bar).visibility === 'visible')
+  sandbox.innerHTML = ''
+  await tick()
+  ctrl('ArrowLeft')
+  assert('removed: the keys are forgotten', got.length === 0)
   bus.off('ovAction', onEvent)
   bus.off('overlayChanged', onOverlay)
 })
