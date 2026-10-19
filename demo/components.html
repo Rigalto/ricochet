@@ -27,7 +27,7 @@
   </style>
 </head>
 <body>
-  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea and rc-select</h1>
+  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select and rc-tabs</h1>
   <div class="bar">
     <span>Theme of the page:</span>
     <rc-icon-button icon="computerclassic" data-item="ricochet-theme" data-value="system">system</rc-icon-button>
@@ -54,6 +54,7 @@
     import {defineChecks} from '../src/ui/rc-input.mjs'
     import '../src/ui/rc-textarea.mjs'
     import {defineOptionSources} from '../src/ui/rc-select.mjs'
+    import '../src/ui/rc-tabs.mjs'
 
     const block = (palette, shade) => `
       <div class="block" palette="${palette}" shade="${shade}">
@@ -116,6 +117,12 @@
           <div class="rc-panel rc-shadow-2 rc-text-shadow" palette="module">rc-panel, rc-shadow-2, rc-text-shadow, palette="module"</div>
           <div class="rc-panel rc-shadow-inset" shade="deep">rc-panel, rc-shadow-inset, shade="deep"</div>
         </div>
+        <rc-tabs data-item="demo-tab" data-event="demoTab" data-param='{"tabs": "demo"}'>
+          <rc-tab value="map" label="Map" icon="map">The map (tabs shared by an item: every block shows the same tab).</rc-tab>
+          <rc-tab value="stats" label="Statistics" title="Counts of the last run">The statistics.</rc-tab>
+          <rc-tab value="log" label="Log" disabled>The log.</rc-tab>
+          <rc-tab value="help" label="Help">The help.</rc-tab>
+        </rc-tabs>
         <rc-textarea data-item="demo-note" max-rows="6" class="wide"
           placeholder="A note (item, shared): the field grows with its text, up to 6 lines"></rc-textarea>
       </div>`
@@ -162,7 +169,7 @@
       constructor () {
         super()
         this.count = 0
-        this.listen(['demoClick', 'demoCheck', 'demoRadio', 'demoInput', 'demoSelect', 'demoRemount'])
+        this.listen(['demoClick', 'demoCheck', 'demoRadio', 'demoInput', 'demoSelect', 'demoTab', 'demoRemount'])
       }
 
       demoClickDispatched ({button}) { this.#log(`demoClick: ${button}`) }
@@ -170,6 +177,7 @@
       demoRadioDispatched ({group, value}) { this.#log(`demoRadio: ${group} = ${value}`) }
       demoInputDispatched ({field, value}) { this.#log(`demoInput: ${field} = ${value}`) }
       demoSelectDispatched ({select, value}) { this.#log(`demoSelect: ${select} = ${value}`) }
+      demoTabDispatched ({tabs, value}) { this.#log(`demoTab: ${tabs} = ${value}`) }
 
       demoRemountDispatched () {
         const start = performance.now()

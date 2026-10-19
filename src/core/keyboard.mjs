@@ -12,8 +12,8 @@
  *
  * Keys typed in an `<input>`, a `<textarea>` or a `<select>` are left to the browser, and so are `Tab`, `Space` and
  * `Enter` when a control has the focus (a button, a link, an element with `tabindex`): they move the focus or press the
- * control. The arrows are left to the component when a radio button has the focus (`role="radio"`): they move in its
- * group.
+ * control. The arrows, `Home` and `End` are left to the component when a radio button or a tab has the focus
+ * (`role="radio"`, `role="tab"`): they move in its group.
  *
  * ## Declaring keys
  *
@@ -52,9 +52,9 @@ const CONTROL_KEYS = new Set(['Tab', 'Space', 'Enter', 'NumpadEnter'])
 const CONTROLS = 'button, a[href], select, summary, [contenteditable=""], [contenteditable="true"], [tabindex]'
 // keys typed in a field are left to the browser
 const FIELDS = new Set(['INPUT', 'TEXTAREA', 'SELECT'])
-// keys left to the component on a focused item of a group (a radio button): they move in the group
-const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])
-const GROUP_ITEMS = '[role="radio"]'
+// keys left to the component on a focused item of a group (a radio button, a tab): they move in the group
+const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'])
+const GROUP_ITEMS = '[role="radio"], [role="tab"]'
 
 // the focused element is a control (a button, a link…), not the page or a canvas
 const onControl = target => target instanceof Element && target !== document.body && target.matches(CONTROLS)
@@ -113,7 +113,7 @@ export class KeyboardController {
   keydownHandler (e) {
     if (FIELDS.has(e.target.tagName)) { return }
     // on a focused control, Tab, Space and Enter keep their browser meaning: move the focus, press the control;
-    // on a radio button, the arrows move in its group
+    // on a radio button or a tab, the arrows move in its group
     if (leftToControl(e)) { return }
     if (PREVENTED_CODES.has(e.code)) { e.preventDefault() }
     if (e.getModifierState('CapsLock')) { this.keyboard.add('CapsLock') } else { this.keyboard.delete('CapsLock') }

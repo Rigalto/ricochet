@@ -51,8 +51,8 @@ A radio with `disabled` cannot be selected; a group with `disabled` disables all
 ## Keyboard and screen readers
 
 The group has `role="radiogroup"`, and each radio holds a `<button role="radio">` with `aria-checked`. `Tab` reaches
-each radio, `Space` or `Enter` select it, and the arrows select the next or the previous radio of the group, skipping
-the disabled ones.
+each radio, `Space` or `Enter` select it, the arrows select the next or the previous radio of the group, `Home` and
+`End` the first or the last one, skipping the disabled ones.
 
 ## Exports
 

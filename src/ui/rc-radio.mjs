@@ -51,8 +51,8 @@
  * ## Keyboard and screen readers
  *
  * The group has `role="radiogroup"`, and each radio holds a `<button role="radio">` with `aria-checked`. `Tab` reaches
- * each radio, `Space` or `Enter` select it, and the arrows select the next or the previous radio of the group, skipping
- * the disabled ones.
+ * each radio, `Space` or `Enter` select it, the arrows select the next or the previous radio of the group, `Home` and
+ * `End` the first or the last one, skipping the disabled ones.
  *
  * @module rc-radio
  * @category ui
@@ -168,16 +168,17 @@ export class RcRadioGroup extends WComponent {
    */
   acceptsClick () { return this.changed }
 
-  // the arrows select the next or the previous enabled radio, as a click would
+  // the arrows select the next or the previous enabled radio, Home and End the first or the last one, as a click would
   keyPressed (e) {
     const step = NEXT[e.code]
-    if (step === undefined || isDisabled(this.element)) { return }
+    if ((step === undefined && e.code !== 'Home' && e.code !== 'End') || isDisabled(this.element)) { return }
     const current = e.target.closest('rc-radio')
     const radios = this.#radios().filter(radio => !isDisabled(radio))
     const index = radios.indexOf(current)
     if (index === -1 || radios.length < 2) { return }
     e.preventDefault()
-    const button = radios[(index + step + radios.length) % radios.length].querySelector('button')
+    const next = e.code === 'Home' ? 0 : e.code === 'End' ? radios.length - 1 : (index + step + radios.length) % radios.length
+    const button = radios[next].querySelector('button')
     if (button === null) { return }
     button.focus()
     button.click()

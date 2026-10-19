@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Rigalto
 
 // tests/browser/test-ui.mjs — open tests/browser/index.html in a browser
-// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea and rc-select.
+// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select and rc-tabs.
 
 import {describe, assert, captureConsole, releaseConsole} from '../kernel.mjs'
 import {WComponent} from '../../src/core/w-component.mjs'
@@ -17,6 +17,7 @@ import '../../src/ui/rc-radio.mjs'
 import {RcInput, defineChecks} from '../../src/ui/rc-input.mjs'
 import {RcTextarea} from '../../src/ui/rc-textarea.mjs'
 import {defineOptionSources, parseOptions} from '../../src/ui/rc-select.mjs'
+import '../../src/ui/rc-tabs.mjs'
 
 const sandbox = document.getElementById('sandbox')
 const tick = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -265,6 +266,10 @@ await describe('rc-radio and rc-radio-group', async () => {
   assert('and go round', checked(g) === 'a')
   radios[0].querySelector('button').dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowUp', key: 'ArrowUp', bubbles: true, cancelable: true}))
   assert('up: the previous one', checked(g) === 'd')
+  radios[3].querySelector('button').dispatchEvent(new KeyboardEvent('keydown', {code: 'Home', key: 'Home', bubbles: true, cancelable: true}))
+  assert('Home: the first one', checked(g) === 'a')
+  radios[0].querySelector('button').dispatchEvent(new KeyboardEvent('keydown', {code: 'End', key: 'End', bubbles: true, cancelable: true}))
+  assert('End: the last one', checked(g) === 'd')
   const h = $('#h')
   assert('data-item: the radios show the item', checked(h) === 'b')
   h.querySelector('rc-radio button').click()
@@ -531,6 +536,70 @@ await describe('rc-select', async () => {
   sandbox.insertAdjacentHTML('beforeend', '<rc-select source="tuUnknown x"></rc-select><rc-select source="tuUnknown y"></rc-select>')
   const lines = releaseConsole()
   assert('an unknown source: reported once', lines.filter(l => l.includes('tuUnknown')).length === 1)
+  sandbox.innerHTML = ''
+  await tick()
+})
+
+await describe('rc-tabs', async () => {
+  config.setItem('tu-tab', 'b')
+  sandbox.innerHTML = `
+    <rc-tabs id="t" data-event="tuAction" data-param='{"tabs": "t"}'>
+      <rc-tab value="a" label="Alpha" icon="save" title="First">A <rc-checkbox id="keep">kept</rc-checkbox></rc-tab>
+      <rc-tab value="b" label="Beta">B</rc-tab>
+      <rc-tab value="c" label="Gamma" disabled>C</rc-tab>
+      <rc-tab value="d" label="Delta">D</rc-tab>
+    </rc-tabs>
+    <rc-tabs id="u" data-item="tu-tab"><rc-tab label="a">A</rc-tab><rc-tab label="b">B</rc-tab></rc-tabs>`
+  await tick()
+  const t = $('#t')
+  const bar = t.querySelector('[role="tablist"]')
+  const titles = () => [...bar.children]
+  const shown = el => [...el.querySelectorAll(':scope > rc-tab')].filter(tab => !tab.hidden).map(tab => tab.getAttribute('value') ?? tab.getAttribute('label')).join()
+  assert('a bar of titles, one per tab, before the tabs', bar === t.firstElementChild && titles().map(b => b.textContent).join() === 'Alpha,Beta,Gamma,Delta')
+  assert('roles and links for screen readers', titles()[0].getAttribute('role') === 'tab' && t.querySelector('rc-tab').getAttribute('role') === 'tabpanel' &&
+    titles()[0].getAttribute('aria-controls') === t.querySelector('rc-tab').id && t.querySelector('rc-tab').getAttribute('aria-labelledby') === titles()[0].id)
+  assert('icon, title and disabled on the title', titles()[0].querySelector('rc-icon') !== null && titles()[0].title === 'First' && titles()[2].disabled)
+  assert('no value: the first tab is shown, the others hidden', shown(t) === 'a' && t._component.value === 'a' &&
+    titles()[0].getAttribute('aria-selected') === 'true' && titles()[0].tabIndex === 0 && titles()[1].tabIndex === -1)
+  got.length = 0
+  $('#keep button').click()
+  titles()[1].click()
+  assert('a click shows its tab and runs the actions with its value', shown(t) === 'b' && got.length === 1 && got[0].tabs === 't' && got[0].value === 'b')
+  titles()[1].click()
+  assert('a click on the tab shown runs nothing', got.length === 1)
+  titles()[2].click()
+  assert('a disabled tab cannot be shown', shown(t) === 'b')
+  assert('the content of a hidden tab keeps its state', $('#keep')._component.value === 'yes')
+  t.setAttribute('value', 'd')
+  assert('the value attribute shows a tab, no action', shown(t) === 'd' && got.length === 1)
+  t.setAttribute('value', 'c')
+  assert('a disabled or unknown value: the first enabled tab', shown(t) === 'a')
+  const key = (button, code) => button.dispatchEvent(new KeyboardEvent('keydown', {code, key: code, bubbles: true, cancelable: true}))
+  key(titles()[0], 'ArrowRight')
+  assert('→ shows the next tab and moves the focus', shown(t) === 'b' && document.activeElement === titles()[1] && got.length === 2)
+  key(titles()[1], 'ArrowRight')
+  assert('… skipping the disabled tabs', shown(t) === 'd')
+  key(titles()[3], 'ArrowRight')
+  assert('… and going round', shown(t) === 'a')
+  key(titles()[0], 'End')
+  key(titles()[3], 'ArrowLeft')
+  assert('End, ←', shown(t) === 'b')
+  key(titles()[1], 'Home')
+  assert('Home', shown(t) === 'a')
+  t.insertAdjacentHTML('beforeend', '<rc-tab value="e" label="Epsilon">E</rc-tab>')
+  t.querySelector('rc-tab[value="b"]').setAttribute('label', 'Bêta')
+  await tick()
+  assert('a tab added, a label changed: the bar follows', titles().map(b => b.textContent).join() === 'Alpha,Bêta,Gamma,Delta,Epsilon' && shown(t) === 'a')
+  t.querySelector('rc-tab[value="a"]').remove()
+  await tick()
+  assert('the tab shown removed: the first enabled one', shown(t) === 'b')
+  const u = $('#u')
+  assert('data-item: the tab of the item; value defaults to the label', shown(u) === 'b')
+  u.querySelector('[role="tab"]').click()
+  assert('a click sets the item', config.get('tu-tab') === 'a')
+  config.setItem('tu-tab', 'b')
+  await tick()
+  assert('the tabs follow the item', shown(u) === 'b')
   sandbox.innerHTML = ''
   await tick()
   bus.off('tuAction', onEvent)
