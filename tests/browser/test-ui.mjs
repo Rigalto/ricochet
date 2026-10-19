@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Rigalto
 
 // tests/browser/test-ui.mjs — open tests/browser/index.html in a browser
-// Actions declared in HTML (delegation), rc-icon, rc-icon-button and rc-checkbox.
+// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-checkbox and rc-radio.
 
 import {describe, assert, captureConsole, releaseConsole} from '../kernel.mjs'
 import {WComponent} from '../../src/core/w-component.mjs'
@@ -12,6 +12,7 @@ import {MemoryAdapter} from '../../src/adapters/memory.mjs'
 import {iconset} from '../../src/icons/iconset.mjs'
 import '../../src/ui/rc-icon-button.mjs'
 import '../../src/ui/rc-checkbox.mjs'
+import '../../src/ui/rc-radio.mjs'
 
 const sandbox = document.getElementById('sandbox')
 const tick = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -188,6 +189,61 @@ await describe('rc-checkbox', async () => {
   $('#d').click()
   assert('disabled: neither the state nor the actions change', $('#d')._component.value === 'yes' && got.length === 0)
   assert('no background', getComputedStyle(button).backgroundColor === 'rgba(0, 0, 0, 0)')
+  sandbox.innerHTML = ''
+  await tick()
+})
+
+await describe('rc-radio and rc-radio-group', async () => {
+  config.setItem('tu-radio', 'b')
+  sandbox.innerHTML = `
+    <rc-radio-group id="g" value="a" data-event="tuAction" data-param='{"group": "g"}'>
+      <rc-radio value="a">A</rc-radio><rc-radio value="b">B</rc-radio><rc-radio value="c" disabled>C</rc-radio><rc-radio value="d">D</rc-radio>
+    </rc-radio-group>
+    <rc-radio-group id="h" data-item="tu-radio"><rc-radio value="a">A</rc-radio><rc-radio value="b">B</rc-radio></rc-radio-group>
+    <rc-radio-group id="k" data-item="tu-radio-unset" value="y"><rc-radio>x</rc-radio><rc-radio>y</rc-radio></rc-radio-group>
+    <rc-radio-group id="off" disabled value="a"><rc-radio value="a">A</rc-radio><rc-radio value="b">B</rc-radio></rc-radio-group>`
+  await tick()
+  const g = $('#g')
+  const radios = [...g.querySelectorAll('rc-radio')]
+  const checked = group => [...group.querySelectorAll('rc-radio[checked]')].map(r => r.getAttribute('value')).join()
+  const icon = radio => radio.querySelector('rc-icon').getAttribute('icon')
+  assert('a radio group for screen readers', g.getAttribute('role') === 'radiogroup' && radios[0].querySelector('button').getAttribute('role') === 'radio')
+  assert('the value attribute checks its radio', checked(g) === 'a' && icon(radios[0]) === 'radioon' && icon(radios[1]) === 'radiooff' &&
+    radios[0].querySelector('button').getAttribute('aria-checked') === 'true')
+  got.length = 0
+  radios[1].querySelector('button').click()
+  assert('a click selects the radio', g.getAttribute('value') === 'b' && checked(g) === 'b' && g.dataset.value === 'b')
+  assert('the actions of the group get the new value', got.length === 1 && got[0].group === 'g' && got[0].value === 'b')
+  radios[1].querySelector('button').click()
+  assert('a click on the checked radio runs nothing', got.length === 1)
+  radios[2].querySelector('button').click()
+  assert('a disabled radio cannot be selected', g.getAttribute('value') === 'b' && got.length === 1)
+  g.setAttribute('value', 'd')
+  assert('the value attribute changes the selection, with no action', checked(g) === 'd' && got.length === 1)
+  g._component.value = 'a'
+  assert('the value property', checked(g) === 'a' && g._component.value === 'a')
+  radios[0].querySelector('button').dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowRight', key: 'ArrowRight', bubbles: true, cancelable: true}))
+  assert('an arrow selects the next radio', checked(g) === 'b' && document.activeElement === radios[1].querySelector('button') && got.length === 2)
+  radios[1].querySelector('button').dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowRight', key: 'ArrowRight', bubbles: true, cancelable: true}))
+  assert('the arrows skip the disabled radios', checked(g) === 'd')
+  radios[3].querySelector('button').dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowDown', key: 'ArrowDown', bubbles: true, cancelable: true}))
+  assert('and go round', checked(g) === 'a')
+  radios[0].querySelector('button').dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowUp', key: 'ArrowUp', bubbles: true, cancelable: true}))
+  assert('up: the previous one', checked(g) === 'd')
+  const h = $('#h')
+  assert('data-item: the radios show the item', checked(h) === 'b')
+  h.querySelector('rc-radio button').click()
+  assert('a click sets the item', config.get('tu-radio') === 'a' && checked(h) === 'a')
+  config.setItem('tu-radio', 'b')
+  await tick()
+  assert('the radios follow the item', checked(h) === 'b')
+  assert('an item not set leaves the initial value; value defaults to the label', checked($('#k')) === 'y')
+  h.insertAdjacentHTML('beforeend', '<rc-radio value="b">B again</rc-radio>')
+  assert('a radio added later follows the group', h.querySelectorAll('rc-radio[checked]').length === 2)
+  got.length = 0
+  const off = $('#off')
+  off.querySelectorAll('rc-radio button')[1].click()
+  assert('a disabled group: nothing changes', off.getAttribute('value') === 'a' && off.getAttribute('aria-disabled') === 'true')
   sandbox.innerHTML = ''
   await tick()
   bus.off('tuAction', onEvent)

@@ -28,6 +28,8 @@
  *   `aria-disabled="true"`: a disabled block disables everything inside.
  * - A component whose `data-*` attributes are not meant for clicks (an input that sets its item when it changes)
  *   declares `static clickActions = false`.
+ * - A component may refuse one click: if it has an `acceptsClick(target)` method that returns `false`, nothing runs
+ *   (a radio group, when the radio clicked is already the selected one).
  * - If the component of the element has a `notify(event, dataset)` method, it is called after the actions.
  * - A component that changes its state on a click (a checkbox) does it in its own click listener: it runs before the
  *   listener of the document, so that the actions see the new state (`data-value`).
@@ -97,7 +99,11 @@ export function actionElement (target) {
   while (owner !== null && !owner._component) { owner = owner.parentElement }
   if (owner !== null) {
     if (owner.hasAttribute('as')) { return null } // the former syntax keeps its own click handlers
-    if (owner === element && owner._component.constructor.clickActions === false) { return null }
+    if (owner === element) {
+      const component = owner._component
+      if (component.constructor.clickActions === false) { return null }
+      if (typeof component.acceptsClick === 'function' && component.acceptsClick(target) === false) { return null }
+    }
   }
   return element
 }

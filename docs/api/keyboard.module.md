@@ -11,7 +11,8 @@ Centralised, layered keyboard handling. A key press is handled by the highest la
 5. the **view**, if no floating button handled the key.
 
 Keys typed in an `<input>` or a `<textarea>` are left to the browser, and so are `Tab`, `Space` and `Enter` when a
-control has the focus (a button, a link, an element with `tabindex`): they move the focus or press the control.
+control has the focus (a button, a link, an element with `tabindex`): they move the focus or press the control. The
+arrows are left to the component when a radio button has the focus (`role="radio"`): they move in its group.
 
 ## Declaring keys
 

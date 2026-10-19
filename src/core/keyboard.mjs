@@ -11,7 +11,8 @@
  * 5. the **view**, if no floating button handled the key.
  *
  * Keys typed in an `<input>` or a `<textarea>` are left to the browser, and so are `Tab`, `Space` and `Enter` when a
- * control has the focus (a button, a link, an element with `tabindex`): they move the focus or press the control.
+ * control has the focus (a button, a link, an element with `tabindex`): they move the focus or press the control. The
+ * arrows are left to the component when a radio button has the focus (`role="radio"`): they move in its group.
  *
  * ## Declaring keys
  *
@@ -48,9 +49,16 @@ const PREVENTED_CODES = new Set(['Space', 'AltLeft', 'AltRight', 'ArrowUp', 'Arr
 // keys left to the browser on a focused control: they move the focus or press it
 const CONTROL_KEYS = new Set(['Tab', 'Space', 'Enter', 'NumpadEnter'])
 const CONTROLS = 'button, a[href], select, summary, [contenteditable=""], [contenteditable="true"], [tabindex]'
+// keys left to the component on a focused item of a group (a radio button): they move in the group
+const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])
+const GROUP_ITEMS = '[role="radio"]'
 
 // the focused element is a control (a button, a link…), not the page or a canvas
 const onControl = target => target instanceof Element && target !== document.body && target.matches(CONTROLS)
+
+// the key keeps its meaning on the focused element
+const leftToControl = e => (CONTROL_KEYS.has(e.code) && onControl(e.target)) ||
+  (ARROW_KEYS.has(e.code) && e.target instanceof Element && e.target.matches(GROUP_ITEMS))
 
 /**
  * The keyboard controller. One instance, `keyboard`, serves the whole application.
@@ -90,7 +98,7 @@ export class KeyboardController {
    * @param {KeyboardEvent} e - The `keyup` event.
    */
   keyupHandler (e) {
-    if (PREVENTED_CODES.has(e.code) && !(CONTROL_KEYS.has(e.code) && onControl(e.target))) { e.preventDefault() }
+    if (PREVENTED_CODES.has(e.code) && !leftToControl(e)) { e.preventDefault() }
     this.keyboard.delete(e.code)
     this.keys.delete(e.key)
   }
@@ -101,8 +109,9 @@ export class KeyboardController {
    */
   keydownHandler (e) {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') { return }
-    // on a focused control, Tab, Space and Enter keep their browser meaning: move the focus, press the control
-    if (CONTROL_KEYS.has(e.code) && onControl(e.target)) { return }
+    // on a focused control, Tab, Space and Enter keep their browser meaning: move the focus, press the control;
+    // on a radio button, the arrows move in its group
+    if (leftToControl(e)) { return }
     if (PREVENTED_CODES.has(e.code)) { e.preventDefault() }
     if (e.getModifierState('CapsLock')) { this.keyboard.add('CapsLock') } else { this.keyboard.delete('CapsLock') }
     const pressed = e.key
