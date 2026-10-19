@@ -34,6 +34,26 @@ The value, or `null` when it is invalid.
 
 An attribute read by a named check changed: the value is checked again.
 
+### createField()
+
+Creates the field. To override for another kind of field (`rc-textarea` returns a `<textarea>`).
+
+**Returns** `HTMLInputElement|HTMLTextAreaElement` The field.
+
+### isCommitKey(e)
+
+Whether a key commits the value (`commit="change"` or `"enter"`). To override; the default: `Enter`.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `e` | KeyboardEvent | The `keydown` event. |
+
+**Returns** `boolean` True if the key commits.
+
+### fieldUpdated()
+
+Called each time the value is checked (typed, written, or a rule changed). To override; does nothing.
+
 ### transform(value)
 
 Called at each keystroke: returns the value to put in the field. To override; the default keeps the value.

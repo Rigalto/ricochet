@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Rigalto
 
 // tests/browser/test-ui.mjs — open tests/browser/index.html in a browser
-// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio and rc-input.
+// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input and rc-textarea.
 
 import {describe, assert, captureConsole, releaseConsole} from '../kernel.mjs'
 import {WComponent} from '../../src/core/w-component.mjs'
@@ -15,6 +15,7 @@ import '../../src/ui/rc-text-button.mjs'
 import '../../src/ui/rc-checkbox.mjs'
 import '../../src/ui/rc-radio.mjs'
 import {RcInput, defineChecks} from '../../src/ui/rc-input.mjs'
+import {RcTextarea} from '../../src/ui/rc-textarea.mjs'
 
 const sandbox = document.getElementById('sandbox')
 const tick = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -379,6 +380,74 @@ await describe('rc-input', async () => {
   type('h', '1999')
   assert('a subclass: validate', field('h').hasAttribute('invalid'))
   assert('the field stands on the surface of its block', getComputedStyle(input('a')).backgroundColor !== getComputedStyle(sandbox).backgroundColor)
+  sandbox.innerHTML = ''
+  await tick()
+})
+
+await describe('rc-textarea', async () => {
+  const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+  const lines = n => Array.from({length: n}, (_, i) => `line ${i + 1}`).join('\n')
+  const native = RcTextarea.fieldSizing
+  config.setItem('tu-text', 'from the item')
+  sandbox.innerHTML = `
+    <rc-textarea id="a" style="width: 20em" data-event="tuAction" data-param='{"t": "a"}' placeholder="Text"></rc-textarea>
+    <rc-textarea id="b" style="width: 20em" rows="3" max-rows="5" commit="enter" data-event="tuAction"></rc-textarea>
+    <rc-textarea id="c" data-item="tu-text" required></rc-textarea>`
+  await tick()
+  const field = id => $(`#${id} > textarea`)
+  const type = (id, text) => {
+    field(id).value = text
+    field(id).dispatchEvent(new Event('input', {bubbles: true}))
+  }
+  const key = (id, init) => field(id).dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', code: 'Enter', bubbles: true, cancelable: true, ...init}))
+  assert('a real textarea, with the look of the fields', field('a').tagName === 'TEXTAREA' && field('a').placeholder === 'Text' &&
+    getComputedStyle(field('a')).resize === 'none')
+  got.length = 0
+  type('a', 'one\ntwo')
+  assert('a keystroke runs the actions with the value', got.length === 1 && got[0].t === 'a' && got[0].value === 'one\ntwo')
+  assert('data-item: the field shows the item', field('c').value === 'from the item')
+  type('c', '')
+  assert('required, as rc-input', $('#c').hasAttribute('invalid'))
+  got.length = 0
+  type('b', 'term')
+  key('b')
+  assert('commit=enter: Enter alone starts a line, no action', got.length === 0)
+  key('b', {ctrlKey: true})
+  key('b', {metaKey: true})
+  assert('… Ctrl + Enter or ⌘ + Enter commit', got.length === 2 && got[0].value === 'term')
+  const growth = async (label, id) => {
+    type(id, '')
+    await frame()
+    const empty = field(id).offsetHeight
+    type(id, lines(4))
+    await frame()
+    const four = field(id).offsetHeight
+    type(id, lines(20))
+    await frame()
+    const twenty = field(id).offsetHeight
+    const scrolls = field(id).scrollHeight > field(id).clientHeight
+    type(id, 'x')
+    await frame()
+    const back = field(id).offsetHeight
+    return {empty, four, twenty, back, scrolls}
+  }
+  let h = await growth('native', 'b')
+  assert(`the height follows the text (${native ? 'field-sizing' : 'measured'}): 3 to 5 lines`, h.empty > 0 && h.four > h.empty && h.twenty > h.four && h.back === h.empty)
+  assert('beyond max-rows, the field scrolls', h.scrolls)
+  // the measured height, as in a browser without field-sizing
+  RcTextarea.fieldSizing = false
+  sandbox.insertAdjacentHTML('beforeend', `<rc-textarea id="m" style="width: 20em" rows="3" max-rows="5"></rc-textarea>
+    <div id="hidden" style="display: none"><rc-textarea id="n" style="width: 20em" value="${lines(4)}"></rc-textarea></div>`)
+  RcTextarea.fieldSizing = native
+  await frame()
+  h = await growth('measured', 'm')
+  assert('measured: the same heights', h.empty > 0 && h.four > h.empty && h.twenty > h.four && h.back === h.empty)
+  const b = await growth('native', 'b')
+  assert('measured and native: the same sizes', Math.abs(b.empty - h.empty) <= 1 && Math.abs(b.four - h.four) <= 1 && Math.abs(b.twenty - h.twenty) <= 1)
+  $('#hidden').style.display = 'block'
+  await frame()
+  await frame()
+  assert('measured: a field shown later gets its height', field('n').offsetHeight >= field('n').scrollHeight && field('n').offsetHeight > b.empty)
   sandbox.innerHTML = ''
   await tick()
   bus.off('tuAction', onEvent)

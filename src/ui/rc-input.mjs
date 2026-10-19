@@ -70,11 +70,13 @@
  *
  * ## Extending the field
  *
- * A subclass changes the behaviour with two methods, and is defined with its own tag:
+ * A subclass changes the behaviour with these methods, and is defined with its own tag:
  *
  * - `transform(value)`: called at each keystroke; returns the value to put in the field (a shortcut typed by the user
  *   replaced by its value, for instance).
  * - `validate(value)`: returns whether the value is valid; call `super.validate(value)` to keep the rules above.
+ * - `createField()`, `isCommitKey(e)`, `fieldUpdated()`: another kind of field, another key to commit, a call each
+ *   time the value is checked (`rc-textarea` uses them).
  *
  * ```js
  * class DateInput extends RcInput {
@@ -98,9 +100,10 @@ import {css} from '../core/css.mjs'
 import {runActions} from '../core/actions.mjs'
 import {WComponent} from '../core/w-component.mjs'
 
+// the look of the fields, shared with rc-textarea
 css(`
-rc-input { vertical-align: middle; }
-rc-input > input {
+rc-input, rc-textarea { vertical-align: middle; }
+:is(rc-input > input, rc-textarea > textarea) {
   box-sizing: border-box;
   width: 100%;
   margin: 0;
@@ -113,12 +116,12 @@ rc-input > input {
   line-height: 1.2;
   transition: border-color .12s, box-shadow .12s;
 }
-rc-input > input::placeholder { color: var(--rc-text-faint); opacity: 1; }
-rc-input > input:hover { border-color: color-mix(in oklch, var(--rc-accent) 60%, var(--rc-border)); }
-rc-input > input:focus { outline: none; border-color: var(--rc-focus); box-shadow: 0 0 0 1px var(--rc-focus); }
-rc-input[invalid] > input, rc-input[invalid] > input:hover { border-color: var(--rc-danger); }
-rc-input[invalid] > input:focus { border-color: var(--rc-danger); box-shadow: 0 0 0 1px var(--rc-danger); }
-rc-input > input:disabled {
+:is(rc-input > input, rc-textarea > textarea)::placeholder { color: var(--rc-text-faint); opacity: 1; }
+:is(rc-input > input, rc-textarea > textarea):hover { border-color: color-mix(in oklch, var(--rc-accent) 60%, var(--rc-border)); }
+:is(rc-input > input, rc-textarea > textarea):focus { outline: none; border-color: var(--rc-focus); box-shadow: 0 0 0 1px var(--rc-focus); }
+:is(rc-input[invalid] > input, rc-textarea[invalid] > textarea), :is(rc-input[invalid] > input, rc-textarea[invalid] > textarea):hover { border-color: var(--rc-danger); }
+:is(rc-input[invalid] > input, rc-textarea[invalid] > textarea):focus { border-color: var(--rc-danger); box-shadow: 0 0 0 1px var(--rc-danger); }
+:is(rc-input > input, rc-textarea > textarea):disabled {
   color: var(--rc-disabled);
   background: var(--rc-disabled-surface);
   border-color: transparent;
@@ -185,13 +188,13 @@ export class RcInput extends WComponent {
   static display = 'inline-block'
 
   /** The value, or `null` when it is invalid. */
-  get value () { return this.valid ? this.elInput.value : null }
+  get value () { return this.valid ? this.elField.value : null }
   set value (value) { this.#set(`${value ?? ''}`) }
 
   attach () {
-    this.elInput = document.createElement('input')
-    this.elInput.type = 'text'
-    this.element.replaceChildren(this.elInput)
+    /** The field: an `<input>`, or what `createField()` returns. */
+    this.elField = this.createField()
+    this.element.replaceChildren(this.elField)
     /** Whether the value is valid. */
     this.valid = true
     this.rules = {required: false, min: null, max: null, pattern: null, checks: []}
@@ -199,9 +202,9 @@ export class RcInput extends WComponent {
     const commit = this.element.getAttribute('commit') ?? 'input'
     if (!COMMITS.has(commit)) { console.warn(`rc-input: unknown commit '${commit}', 'input' used`) }
     this.commit = COMMITS.has(commit) ? commit : 'input'
-    this.observeDom(this.elInput, 'input', 'inputTyped')
-    this.observeDom(this.elInput, 'change', 'inputLeft')
-    this.observeDom(this.elInput, 'keydown', 'inputKeyPressed')
+    this.observeDom(this.elField, 'input', 'inputTyped')
+    this.observeDom(this.elField, 'change', 'inputLeft')
+    this.observeDom(this.elField, 'keydown', 'inputKeyPressed')
     this.item = this.element.dataset.item
     if (this.item !== undefined && this.item !== '') { this.observeItems([this.item]) }
   }
@@ -257,10 +260,30 @@ export class RcInput extends WComponent {
   itemsChanged (items) {
     const value = items[this.item]
     if (value === undefined || value === null) { return } // not set yet: the initial value stays
-    if (value !== this.elInput.value) { this.#set(value) } // the item just set by the field: the caret stays
+    if (value !== this.elField.value) { this.#set(value) } // the item just set by the field: the caret stays
   }
 
   // ------------------------------------------------------------------ to extend
+
+  /**
+   * Creates the field. To override for another kind of field (`rc-textarea` returns a `<textarea>`).
+   * @returns {HTMLInputElement|HTMLTextAreaElement} The field.
+   */
+  createField () {
+    const field = document.createElement('input')
+    field.type = 'text'
+    return field
+  }
+
+  /**
+   * Whether a key commits the value (`commit="change"` or `"enter"`). To override; the default: `Enter`.
+   * @param {KeyboardEvent} e - The `keydown` event.
+   * @returns {boolean} True if the key commits.
+   */
+  isCommitKey (e) { return e.key === 'Enter' }
+
+  /** Called each time the value is checked (typed, written, or a rule changed). To override; does nothing. */
+  fieldUpdated () {}
 
   /**
    * Called at each keystroke: returns the value to put in the field. To override; the default keeps the value.
@@ -300,19 +323,19 @@ export class RcInput extends WComponent {
   // ------------------------------------------------------------------ DOM events
 
   inputTyped () {
-    const typed = this.elInput.value
+    const typed = this.elField.value
     const value = this.transform(typed)
-    if (value !== typed) { this.elInput.value = value }
+    if (value !== typed) { this.elField.value = value }
     if (this.#check() && this.commit === 'input') { this.#commit() }
   }
 
   inputLeft () {
-    if (this.commit === 'change' && this.valid && this.elInput.value !== this.committed) { this.#commit() }
+    if (this.commit === 'change' && this.valid && this.elField.value !== this.committed) { this.#commit() }
   }
 
   inputKeyPressed (e) {
-    if (e.key !== 'Enter' || !this.valid) { return }
-    if (this.commit === 'enter' || (this.commit === 'change' && this.elInput.value !== this.committed)) { this.#commit() }
+    if (!this.isCommitKey(e) || !this.valid) { return }
+    if (this.commit === 'enter' || (this.commit === 'change' && this.elField.value !== this.committed)) { this.#commit() }
   }
 
   // ------------------------------------------------------------------ internals
@@ -320,9 +343,9 @@ export class RcInput extends WComponent {
   #pass (attribute, value) {
     const name = PASSED[attribute]
     if (value === null) {
-      this.elInput.removeAttribute(name)
+      this.elField.removeAttribute(name)
     } else {
-      this.elInput.setAttribute(name, value)
+      this.elField.setAttribute(name, value)
     }
   }
 
@@ -338,25 +361,26 @@ export class RcInput extends WComponent {
 
   // checks the value, shows the result, returns it
   #check () {
-    this.valid = this.validate(this.elInput.value)
+    this.valid = this.validate(this.elField.value)
     this.element.toggleAttribute('invalid', !this.valid)
     if (this.valid) {
-      this.elInput.removeAttribute('aria-invalid')
+      this.elField.removeAttribute('aria-invalid')
     } else {
-      this.elInput.setAttribute('aria-invalid', 'true')
+      this.elField.setAttribute('aria-invalid', 'true')
     }
+    this.fieldUpdated()
     return this.valid
   }
 
   // a value written by the application: shown and checked, no action
   #set (value) {
-    this.elInput.value = value
+    this.elField.value = value
     this.committed = value
     this.#check()
   }
 
   #commit () {
-    const value = this.elInput.value
+    const value = this.elField.value
     this.committed = value
     this.element.dataset.value = value
     runActions(this.element.dataset)

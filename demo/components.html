@@ -22,12 +22,12 @@
       --rc-surface: light-dark(oklch(48% .12 235), oklch(42% .1 235));
       --rc-text: oklch(98% .01 235);
     }
-    .w6 { width: 6em; } .w8 { width: 8em; } .w10 { width: 10em; } .w12 { width: 12em; }
+    .w6 { width: 6em; } .w8 { width: 8em; } .w10 { width: 10em; } .w12 { width: 12em; } .wide { width: 100%; }
     #log, #timing { font-family: ui-monospace, monospace; font-size: .8rem; color: var(--rc-text-muted); min-height: 1.5em; }
   </style>
 </head>
 <body>
-  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio and rc-input</h1>
+  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input and rc-textarea</h1>
   <div class="bar">
     <span>Theme of the page:</span>
     <rc-icon-button icon="computerclassic" data-item="ricochet-theme" data-value="system">system</rc-icon-button>
@@ -52,6 +52,7 @@
     import '../src/ui/rc-checkbox.mjs'
     import '../src/ui/rc-radio.mjs'
     import {defineChecks} from '../src/ui/rc-input.mjs'
+    import '../src/ui/rc-textarea.mjs'
 
     const block = (palette, shade) => `
       <div class="block" palette="${palette}" shade="${shade}">
@@ -100,6 +101,8 @@
             data-event="demoInput" data-param='{"field": "search"}'></rc-input>
           <rc-input value="locked" disabled class="w6"></rc-input>
         </div>
+        <rc-textarea data-item="demo-note" max-rows="6" class="wide"
+          placeholder="A note (item, shared): the field grows with its text, up to 6 lines"></rc-textarea>
       </div>`
     const column = scheme => `
       <section class="scheme" scheme="${scheme}">

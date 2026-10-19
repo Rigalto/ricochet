@@ -70,11 +70,13 @@ A check not declared is reported once in the console, and ignored.
 
 ## Extending the field
 
-A subclass changes the behaviour with two methods, and is defined with its own tag:
+A subclass changes the behaviour with these methods, and is defined with its own tag:
 
 - `transform(value)`: called at each keystroke; returns the value to put in the field (a shortcut typed by the user
   replaced by its value, for instance).
 - `validate(value)`: returns whether the value is valid; call `super.validate(value)` to keep the rules above.
+- `createField()`, `isCommitKey(e)`, `fieldUpdated()`: another kind of field, another key to commit, a call each
+  time the value is checked (`rc-textarea` uses them).
 
 ```js
 class DateInput extends RcInput {
