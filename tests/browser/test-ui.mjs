@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Rigalto
 
 // tests/browser/test-ui.mjs — open tests/browser/index.html in a browser
-// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-checkbox, rc-radio and rc-input.
+// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio and rc-input.
 
 import {describe, assert, captureConsole, releaseConsole} from '../kernel.mjs'
 import {WComponent} from '../../src/core/w-component.mjs'
@@ -11,6 +11,7 @@ import {config} from '../../src/core/config.mjs'
 import {MemoryAdapter} from '../../src/adapters/memory.mjs'
 import {iconset} from '../../src/icons/iconset.mjs'
 import '../../src/ui/rc-icon-button.mjs'
+import '../../src/ui/rc-text-button.mjs'
 import '../../src/ui/rc-checkbox.mjs'
 import '../../src/ui/rc-radio.mjs'
 import {RcInput, defineChecks} from '../../src/ui/rc-input.mjs'
@@ -144,6 +145,37 @@ await describe('rc-icon-button', async () => {
   a.setAttribute('icon', 'pen')
   assert('a change of icon', a.querySelector('rc-icon').getAttribute('icon') === 'pen')
   assert('it stands on the surface of its block', getComputedStyle(button).backgroundColor !== getComputedStyle(sandbox).backgroundColor)
+  sandbox.innerHTML = ''
+  await tick()
+})
+
+await describe('rc-text-button', async () => {
+  sandbox.innerHTML = `
+    <rc-text-button id="a" data-event="tuAction" data-param='{"n": 1}'>Start <rc-icon icon="save"></rc-icon></rc-text-button>
+    <rc-text-button id="b" flat>Flat</rc-text-button>
+    <rc-text-button id="c" link>Link</rc-text-button>
+    <rc-text-button id="d" shade="deep">Deep</rc-text-button>`
+  await tick()
+  const a = $('#a')
+  const button = a.querySelector('button')
+  assert('the content moves into a real button, components included', button.type === 'button' && button.textContent.trim() === 'Start' &&
+    button.querySelector('rc-icon')?._component !== undefined && a.children.length === 1)
+  got.length = 0
+  button.click()
+  assert('a click runs the actions', got.length === 1 && got[0].n === 1)
+  a.setAttribute('label', 'Go')
+  assert('label replaces the content', button.textContent === 'Go')
+  a.removeAttribute('label')
+  assert('back to the content', button.textContent.trim() === 'Start' && button.querySelector('rc-icon') !== null)
+  a.setAttribute('disabled', '')
+  button.click()
+  assert('disabled: no action', button.disabled && got.length === 1)
+  const bg = id => getComputedStyle($(`#${id} > button`)).backgroundColor
+  assert('the default look stands on the block', bg('a') !== getComputedStyle(sandbox).backgroundColor)
+  assert('flat and link: no background', bg('b') === 'rgba(0, 0, 0, 0)' && bg('c') === 'rgba(0, 0, 0, 0)')
+  assert('link: the colour of links, underlined', getComputedStyle($('#c > button')).textDecorationLine === 'underline')
+  assert('a shade: the surface of the shade, not around the button', bg('d') !== bg('a') &&
+    getComputedStyle($('#d')).backgroundColor === 'rgba(0, 0, 0, 0)')
   sandbox.innerHTML = ''
   await tick()
 })

@@ -16,12 +16,18 @@
     .block { padding: .75rem; border-radius: 8px; border: 1px solid var(--rc-border); display: grid; gap: .5rem; }
     .block > .title { color: var(--rc-text-muted); font-size: .85rem; }
     .row { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+    /* a palette of the application, for the actions that stand out: it sets two tokens directly */
+    [palette="action"] {
+      --rc-hue: 225;
+      --rc-surface: light-dark(oklch(48% .12 235), oklch(42% .1 235));
+      --rc-text: oklch(98% .01 235);
+    }
     .w6 { width: 6em; } .w8 { width: 8em; } .w10 { width: 10em; } .w12 { width: 12em; }
     #log, #timing { font-family: ui-monospace, monospace; font-size: .8rem; color: var(--rc-text-muted); min-height: 1.5em; }
   </style>
 </head>
 <body>
-  <h1>Ricochet — rc-icon, rc-icon-button, rc-checkbox, rc-radio and rc-input</h1>
+  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio and rc-input</h1>
   <div class="bar">
     <span>Theme of the page:</span>
     <rc-icon-button icon="computerclassic" data-item="ricochet-theme" data-value="system">system</rc-icon-button>
@@ -42,6 +48,7 @@
     import {WController} from '../src/core/w-controller.mjs'
     import '../src/ui/theme.mjs'
     import '../src/ui/rc-icon-button.mjs'
+    import '../src/ui/rc-text-button.mjs'
     import '../src/ui/rc-checkbox.mjs'
     import '../src/ui/rc-radio.mjs'
     import {defineChecks} from '../src/ui/rc-input.mjs'
@@ -59,6 +66,15 @@
           <rc-icon-button icon="lock" disabled data-event="demoClick" data-param='{"button": "disabled"}'>Disabled</rc-icon-button>
           <rc-icon-button icon="star" class="rc-shadow-2" data-event="demoClick" data-param='{"button": "shadow"}'>Shadow</rc-icon-button>
           <rc-icon-button icon="bold" class="rc-text-shadow" data-event="demoClick" data-param='{"button": "text shadow"}'>Text shadow</rc-icon-button>
+        </div>
+        <div class="row">
+          <rc-text-button data-event="demoClick" data-param='{"button": "text"}'>Text button</rc-text-button>
+          <rc-text-button flat data-event="demoClick" data-param='{"button": "breadcrumb"}'>Home</rc-text-button>›
+          <rc-text-button flat data-event="demoClick" data-param='{"button": "breadcrumb"}'>Books</rc-text-button>
+          <rc-text-button link data-event="demoClick" data-param='{"button": "link"}'>A link</rc-text-button>
+          <rc-text-button palette="action" class="rc-shadow-2 rc-text-shadow" data-event="demoClick"
+            data-param='{"button": "action"}'>Action <rc-icon icon="save" size="18"></rc-icon></rc-text-button>
+          <rc-text-button disabled data-event="demoClick" data-param='{"button": "disabled"}'>Disabled</rc-text-button>
         </div>
         <div class="row">
           <rc-checkbox data-item="demo-grid">Grid (item, shared by every block)</rc-checkbox>

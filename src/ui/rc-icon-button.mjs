@@ -31,44 +31,10 @@
  */
 
 import {WComponent} from '../core/w-component.mjs'
-import {css} from '../core/css.mjs'
 import '../core/actions.mjs'
 import './rc-icon.mjs'
+import './button-style.mjs'
 
-// the look is shared with the components built on the button: rc-checkbox and rc-radio look like a flat button
-css(`
-:is(rc-icon-button, rc-checkbox, rc-radio) { vertical-align: middle; }
-:is(rc-icon-button, rc-checkbox, rc-radio) > button {
-  display: inline-flex;
-  align-items: center;
-  gap: .35em;
-  margin: 0;
-  padding: .3em .55em;
-  border: 1px solid color-mix(in oklch, var(--rc-border) 55%, transparent);
-  border-radius: 6px;
-  background: var(--rc-surface-raised);
-  color: inherit;
-  font: inherit;
-  line-height: 1.2;
-  text-align: start;
-  cursor: pointer;
-  transition: background-color .12s, border-color .12s;
-}
-:is(rc-icon-button, rc-checkbox, rc-radio) > button:hover { background: color-mix(in oklch, var(--rc-accent) 30%, var(--rc-surface-raised)); }
-:is(rc-icon-button, rc-checkbox, rc-radio) > button:active { background: color-mix(in oklch, var(--rc-accent-active) 55%, var(--rc-surface-raised)); }
-:is(rc-icon-button, rc-checkbox, rc-radio) > button:focus-visible { outline: 2px solid var(--rc-focus); outline-offset: 1px; }
-:is(rc-icon-button, rc-checkbox, rc-radio) > button:disabled {
-  color: var(--rc-disabled);
-  background: var(--rc-disabled-surface);
-  border-color: transparent;
-  cursor: not-allowed;
-}
-:is(rc-icon-button, rc-checkbox, rc-radio) > button > span:empty { display: none; }
-:is(rc-icon-button[flat], rc-checkbox, rc-radio) > button { background: transparent; border-color: transparent; padding: .2em .3em; }
-:is(rc-icon-button[flat], rc-checkbox, rc-radio) > button:hover { background: color-mix(in oklch, var(--rc-accent) 25%, transparent); }
-:is(rc-icon-button[flat], rc-checkbox, rc-radio) > button:active { background: color-mix(in oklch, var(--rc-accent-active) 45%, transparent); }
-:is(rc-icon-button[flat], rc-checkbox, rc-radio) > button:disabled { background: transparent; }
-`, {layer: 'ricochet'})
 
 /**
  * The component of `<rc-icon-button>`.
