@@ -10,9 +10,10 @@
  * 4. the **floating buttons**, all groups together;
  * 5. the **view**, if no floating button handled the key.
  *
- * Keys typed in an `<input>` or a `<textarea>` are left to the browser, and so are `Tab`, `Space` and `Enter` when a
- * control has the focus (a button, a link, an element with `tabindex`): they move the focus or press the control. The
- * arrows are left to the component when a radio button has the focus (`role="radio"`): they move in its group.
+ * Keys typed in an `<input>`, a `<textarea>` or a `<select>` are left to the browser, and so are `Tab`, `Space` and
+ * `Enter` when a control has the focus (a button, a link, an element with `tabindex`): they move the focus or press the
+ * control. The arrows are left to the component when a radio button has the focus (`role="radio"`): they move in its
+ * group.
  *
  * ## Declaring keys
  *
@@ -49,6 +50,8 @@ const PREVENTED_CODES = new Set(['Space', 'AltLeft', 'AltRight', 'ArrowUp', 'Arr
 // keys left to the browser on a focused control: they move the focus or press it
 const CONTROL_KEYS = new Set(['Tab', 'Space', 'Enter', 'NumpadEnter'])
 const CONTROLS = 'button, a[href], select, summary, [contenteditable=""], [contenteditable="true"], [tabindex]'
+// keys typed in a field are left to the browser
+const FIELDS = new Set(['INPUT', 'TEXTAREA', 'SELECT'])
 // keys left to the component on a focused item of a group (a radio button): they move in the group
 const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])
 const GROUP_ITEMS = '[role="radio"]'
@@ -98,7 +101,7 @@ export class KeyboardController {
    * @param {KeyboardEvent} e - The `keyup` event.
    */
   keyupHandler (e) {
-    if (PREVENTED_CODES.has(e.code) && !leftToControl(e)) { e.preventDefault() }
+    if (PREVENTED_CODES.has(e.code) && !leftToControl(e) && !FIELDS.has(e.target.tagName)) { e.preventDefault() }
     this.keyboard.delete(e.code)
     this.keys.delete(e.key)
   }
@@ -108,7 +111,7 @@ export class KeyboardController {
    * @param {KeyboardEvent} e - The `keydown` event.
    */
   keydownHandler (e) {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') { return }
+    if (FIELDS.has(e.target.tagName)) { return }
     // on a focused control, Tab, Space and Enter keep their browser meaning: move the focus, press the control;
     // on a radio button, the arrows move in its group
     if (leftToControl(e)) { return }

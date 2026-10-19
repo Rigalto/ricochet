@@ -88,7 +88,7 @@
  *
  * ## Look
  *
- * The field stands on the surface of its block (`--rc-surface-raised`), with the border `--rc-border`, the focus ring
+ * The field (see the `field-style` module) stands on the surface of its block (`--rc-surface-raised`), with the border `--rc-border`, the focus ring
  * `--rc-focus`, the placeholder in `--rc-text-faint`, and the disabled tokens. It takes the width of `rc-input`, set by
  * the application; without one, the width of the browser.
  *
@@ -96,39 +96,9 @@
  * @category ui
  */
 
-import {css} from '../core/css.mjs'
 import {runActions} from '../core/actions.mjs'
 import {WComponent} from '../core/w-component.mjs'
-
-// the look of the fields, shared with rc-textarea
-css(`
-rc-input, rc-textarea { vertical-align: middle; }
-:is(rc-input > input, rc-textarea > textarea) {
-  box-sizing: border-box;
-  width: 100%;
-  margin: 0;
-  padding: .3em .5em;
-  border: 1px solid var(--rc-border);
-  border-radius: 6px;
-  background: var(--rc-surface-raised);
-  color: var(--rc-text);
-  font: inherit;
-  line-height: 1.2;
-  transition: border-color .12s, box-shadow .12s;
-}
-:is(rc-input > input, rc-textarea > textarea)::placeholder { color: var(--rc-text-faint); opacity: 1; }
-:is(rc-input > input, rc-textarea > textarea):hover { border-color: color-mix(in oklch, var(--rc-accent) 60%, var(--rc-border)); }
-:is(rc-input > input, rc-textarea > textarea):focus { outline: none; border-color: var(--rc-focus); box-shadow: 0 0 0 1px var(--rc-focus); }
-:is(rc-input[invalid] > input, rc-textarea[invalid] > textarea), :is(rc-input[invalid] > input, rc-textarea[invalid] > textarea):hover { border-color: var(--rc-danger); }
-:is(rc-input[invalid] > input, rc-textarea[invalid] > textarea):focus { border-color: var(--rc-danger); box-shadow: 0 0 0 1px var(--rc-danger); }
-:is(rc-input > input, rc-textarea > textarea):disabled {
-  color: var(--rc-disabled);
-  background: var(--rc-disabled-surface);
-  border-color: transparent;
-  box-shadow: none;
-  cursor: not-allowed;
-}
-`, {layer: 'ricochet'})
+import './field-style.mjs'
 
 const checks = new Map() // name → {test, attributes}
 const warned = new Set()

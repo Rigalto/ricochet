@@ -208,8 +208,9 @@ The events that Ricochet emits and listens to, and the `rc` prefix reserved for 
   [`rc-text-button`](docs/api/rc-text-button.module.md) (looks of the buttons:
   [`button-style`](docs/api/button-style.module.md)), [`rc-checkbox`](docs/api/rc-checkbox.module.md),
   [`rc-radio-group` and `rc-radio`](docs/api/rc-radio.module.md), [`rc-input`](docs/api/rc-input.module.md),
-  [`rc-textarea`](docs/api/rc-textarea.module.md) ([demo/components.html](demo/components.html), which also shows the
-  mounting time); selects, tabs, dropdowns… to come, one at a time.
+  [`rc-textarea`](docs/api/rc-textarea.module.md), [`rc-select`](docs/api/rc-select.module.md) (looks of the fields:
+  [`field-style`](docs/api/field-style.module.md)) ([demo/components.html](demo/components.html), which also shows the
+  mounting time); tabs, dropdowns… to come, one at a time.
 - **Palettes and themes** (`ui/theme.mjs`): components use colour tokens (`--rc-surface`, `--rc-text`,
   `--rc-danger`…), computed in `oklch()` from the palette of their block (`palette="view"`, `shade="deep"`), with a
   day and a night value (`light-dark()`). A palette is three numbers; the day/night choice is one configuration item.

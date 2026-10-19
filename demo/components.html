@@ -27,7 +27,7 @@
   </style>
 </head>
 <body>
-  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input and rc-textarea</h1>
+  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea and rc-select</h1>
   <div class="bar">
     <span>Theme of the page:</span>
     <rc-icon-button icon="computerclassic" data-item="ricochet-theme" data-value="system">system</rc-icon-button>
@@ -53,6 +53,7 @@
     import '../src/ui/rc-radio.mjs'
     import {defineChecks} from '../src/ui/rc-input.mjs'
     import '../src/ui/rc-textarea.mjs'
+    import {defineOptionSources} from '../src/ui/rc-select.mjs'
 
     const block = (palette, shade) => `
       <div class="block" palette="${palette}" shade="${shade}">
@@ -101,6 +102,16 @@
             data-event="demoInput" data-param='{"field": "search"}'></rc-input>
           <rc-input value="locked" disabled class="w6"></rc-input>
         </div>
+        <div class="row">
+          <rc-select data-item="demo-size" options="Small#small|Medium#medium|Large#large|Huge#huge"></rc-select>
+          <rc-select none="No layer" data-event="demoSelect" data-param='{"select": "layer"}'>
+            <option value="roads">Roads</option>
+            <optgroup label="Water"><option value="rivers">Rivers</option><option value="lakes" disabled>Lakes</option></optgroup>
+          </rc-select>
+          <rc-select source="sheet Animals" value="cat" none="Loading…" class="w10"
+            data-event="demoSelect" data-param='{"select": "animal"}'></rc-select>
+          <rc-select options="Locked" disabled></rc-select>
+        </div>
         <rc-textarea data-item="demo-note" max-rows="6" class="wide"
           placeholder="A note (item, shared): the field grows with its text, up to 6 lines"></rc-textarea>
       </div>`
@@ -114,6 +125,12 @@
 
     // a named check of the application, used by check="even"
     defineChecks({even: value => Number(value) % 2 === 0})
+    // a source of options of the application, used by source="sheet Animals": the options of a sheet, loaded later
+    const ANIMALS = [['Cat', 'cat'], ['Dog', 'dog'], ['Horse', 'horse', 'Farm'], ['Cow', 'cow', 'Farm']]
+    defineOptionSources({
+      sheet: name => new Promise(resolve => setTimeout(() => resolve(
+        ANIMALS.map(([label, value, group]) => ({label: `${label} (${name})`, value, group}))), 500))
+    })
 
     config.setAdapter(new MemoryAdapter({'ricochet-theme': 'system'}))
     await config.load()
@@ -141,13 +158,14 @@
       constructor () {
         super()
         this.count = 0
-        this.listen(['demoClick', 'demoCheck', 'demoRadio', 'demoInput', 'demoRemount'])
+        this.listen(['demoClick', 'demoCheck', 'demoRadio', 'demoInput', 'demoSelect', 'demoRemount'])
       }
 
       demoClickDispatched ({button}) { this.#log(`demoClick: ${button}`) }
       demoCheckDispatched ({box, value}) { this.#log(`demoCheck: ${box} = ${value}`) }
       demoRadioDispatched ({group, value}) { this.#log(`demoRadio: ${group} = ${value}`) }
       demoInputDispatched ({field, value}) { this.#log(`demoInput: ${field} = ${value}`) }
+      demoSelectDispatched ({select, value}) { this.#log(`demoSelect: ${select} = ${value}`) }
 
       demoRemountDispatched () {
         const start = performance.now()

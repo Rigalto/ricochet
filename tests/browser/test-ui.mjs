@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Rigalto
 
 // tests/browser/test-ui.mjs — open tests/browser/index.html in a browser
-// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input and rc-textarea.
+// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea and rc-select.
 
 import {describe, assert, captureConsole, releaseConsole} from '../kernel.mjs'
 import {WComponent} from '../../src/core/w-component.mjs'
@@ -16,6 +16,7 @@ import '../../src/ui/rc-checkbox.mjs'
 import '../../src/ui/rc-radio.mjs'
 import {RcInput, defineChecks} from '../../src/ui/rc-input.mjs'
 import {RcTextarea} from '../../src/ui/rc-textarea.mjs'
+import {defineOptionSources, parseOptions} from '../../src/ui/rc-select.mjs'
 
 const sandbox = document.getElementById('sandbox')
 const tick = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -448,6 +449,88 @@ await describe('rc-textarea', async () => {
   await frame()
   await frame()
   assert('measured: a field shown later gets its height', field('n').offsetHeight >= field('n').scrollHeight && field('n').offsetHeight > b.empty)
+  sandbox.innerHTML = ''
+  await tick()
+})
+
+await describe('rc-select', async () => {
+  const later = []
+  let calls = 0
+  defineOptionSources({
+    tuLater: {
+      options: sheet => new Promise(resolve => later.push(() => resolve([{label: `${sheet} 1`, value: '1'}, {label: `${sheet} 2`, value: '2', group: 'G'}, {label: `${sheet} 3`, value: '3', group: 'G'}]))),
+      events: ['tuRefresh']
+    },
+    tuNow: argument => { calls += 1; return argument.split(',') }
+  })
+  assert('parseOptions: label, label#value', JSON.stringify(parseOptions('A|B#b')) === JSON.stringify([{label: 'A', value: 'A'}, {label: 'B', value: 'b'}]))
+  config.setItem('tu-select', 'm')
+  config.setItem('tu-list', 'Red#r|Green#g')
+  sandbox.innerHTML = `
+    <rc-select id="a" options="Small#s|Medium#m|Large#l" data-event="tuAction" data-param='{"s": "a"}'></rc-select>
+    <rc-select id="b" data-item="tu-select" options="Small#s|Medium#m|Large#l"></rc-select>
+    <rc-select id="c" none="None" value="rivers"><option value="roads">Roads</option><optgroup label="Water"><option value="rivers">Rivers</option><option value="lakes" disabled>Lakes</option></optgroup></rc-select>
+    <rc-select id="d" source="tuLater Sheet" value="2" none="—"></rc-select>
+    <rc-select id="e" source="item tu-list" value="g"></rc-select>
+    <rc-select id="f" source="tuNow x,y,z" required none="" value=""></rc-select>
+    <rc-select id="g" options="A|B" label="Letter" disabled></rc-select>`
+  await tick()
+  const select = id => $(`#${id} > select`)
+  const choose = (id, value) => {
+    select(id).value = value
+    select(id).dispatchEvent(new Event('change', {bubbles: true}))
+  }
+  const labels = id => [...select(id).options].map(o => o.textContent).join()
+  assert('a native select with the options of the attribute', labels('a') === 'Small,Medium,Large' && select('a').value === 's')
+  got.length = 0
+  choose('a', 'l')
+  assert('a choice runs the actions with the value', got.length === 1 && got[0].s === 'a' && got[0].value === 'l' && $('#a').dataset.value === 'l')
+  assert('data-item: the select shows the item', select('b').value === 'm')
+  choose('b', 's')
+  assert('a choice sets the item', config.get('tu-select') === 's')
+  config.setItem('tu-select', 'l')
+  await tick()
+  assert('the select follows the item', select('b').value === 'l')
+  assert('options and groups written in the HTML, the none option first', labels('c') === 'None,Roads,Rivers,Lakes' &&
+    select('c').querySelector('optgroup')?.label === 'Water' && select('c').value === 'rivers' && select('c').options[3].disabled)
+  $('#c').setAttribute('value', 'nothing')
+  assert('a value not in the list: the none option', select('c').value === '' && $('#c')._component.value === '')
+  $('#c')._component.value = 'roads'
+  assert('the value property, no action', select('c').value === 'roads' && got.length === 1)
+  assert('a source that answers later: only the none option for now', labels('d') === '—' && $('#d')._component.value === '')
+  later.shift()()
+  await tick()
+  assert('… then its options, and the value given before', labels('d') === '—,Sheet 1,Sheet 2,Sheet 3' && select('d').value === '2' &&
+    select('d').querySelector('optgroup').label === 'G')
+  bus.emit('tuRefresh', {})
+  assert('an event of the source asks again', later.length === 1)
+  later.shift()()
+  await tick()
+  assert('… and the value stays', select('d').value === '2')
+  $('#d').setAttribute('source', 'tuLater Other')
+  $('#d').setAttribute('source', 'tuLater Third')
+  later.shift()() // the answer to the first request comes after the second request: ignored
+  await tick()
+  assert('an answer to a former request is ignored', !labels('d').includes('Other'))
+  later.shift()()
+  await tick()
+  assert('… the last one is shown', labels('d').includes('Third 1'))
+  assert('the source item: options from a configuration item', labels('e') === 'Red,Green' && select('e').value === 'g')
+  config.setItem('tu-list', 'Red#r|Green#g|Blue#b')
+  await tick()
+  assert('… asked again when the item changes', labels('e') === 'Red,Green,Blue' && select('e').value === 'g')
+  assert('a source that answers at once', labels('f') === ',x,y,z' && calls === 1)
+  assert('required: no choice is invalid', $('#f').hasAttribute('invalid') && !$('#f')._component.valid)
+  got.length = 0
+  choose('f', 'y')
+  assert('… a choice makes it valid', !$('#f').hasAttribute('invalid'))
+  assert('disabled and label', select('g').disabled && select('g').getAttribute('aria-label') === 'Letter')
+  $('#a')._component.options = [{label: 'One', value: '1'}, 'Two']
+  assert('the options property', labels('a') === 'One,Two' && select('a').options[1].value === 'Two')
+  captureConsole()
+  sandbox.insertAdjacentHTML('beforeend', '<rc-select source="tuUnknown x"></rc-select><rc-select source="tuUnknown y"></rc-select>')
+  const lines = releaseConsole()
+  assert('an unknown source: reported once', lines.filter(l => l.includes('tuUnknown')).length === 1)
   sandbox.innerHTML = ''
   await tick()
   bus.off('tuAction', onEvent)

@@ -88,7 +88,7 @@ WComponent.define('app-date-input', DateInput)
 
 ## Look
 
-The field stands on the surface of its block (`--rc-surface-raised`), with the border `--rc-border`, the focus ring
+The field (see the `field-style` module) stands on the surface of its block (`--rc-surface-raised`), with the border `--rc-border`, the focus ring
 `--rc-focus`, the placeholder in `--rc-text-faint`, and the disabled tokens. It takes the width of `rc-input`, set by
 the application; without one, the width of the browser.
 
