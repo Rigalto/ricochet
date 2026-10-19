@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Rigalto
 
 // tests/browser/test-ui.mjs — open tests/browser/index.html in a browser
-// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select and rc-tabs.
+// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-tabs and rc-slider.
 
 import {describe, assert, captureConsole, releaseConsole} from '../kernel.mjs'
 import {WComponent} from '../../src/core/w-component.mjs'
@@ -18,6 +18,7 @@ import {RcInput, defineChecks} from '../../src/ui/rc-input.mjs'
 import {RcTextarea} from '../../src/ui/rc-textarea.mjs'
 import {defineOptionSources, parseOptions} from '../../src/ui/rc-select.mjs'
 import '../../src/ui/rc-tabs.mjs'
+import '../../src/ui/rc-slider.mjs'
 
 const sandbox = document.getElementById('sandbox')
 const tick = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -600,6 +601,51 @@ await describe('rc-tabs', async () => {
   config.setItem('tu-tab', 'b')
   await tick()
   assert('the tabs follow the item', shown(u) === 'b')
+  sandbox.innerHTML = ''
+  await tick()
+})
+
+await describe('rc-slider', async () => {
+  config.setItem('tu-volume', '40')
+  sandbox.innerHTML = `
+    <rc-slider id="a" min="10" max="50" step="5" value="20" unit=" %" label="Volume" data-event="tuAction" data-param='{"s": "a"}'></rc-slider>
+    <rc-slider id="b" data-item="tu-volume"></rc-slider>
+    <rc-slider id="c" commit="change" no-value data-event="tuAction"></rc-slider>
+    <rc-slider id="d" disabled value="30"></rc-slider>`
+  await tick()
+  const field = id => $(`#${id} > input`)
+  const move = (id, value) => {
+    field(id).value = value
+    field(id).dispatchEvent(new Event('input', {bubbles: true}))
+  }
+  const release = id => field(id).dispatchEvent(new Event('change', {bubbles: true}))
+  const shown = id => $(`#${id} > output`).textContent
+  assert('a native range with its bounds, its value shown with the unit', field('a').type === 'range' && field('a').min === '10' &&
+    field('a').max === '50' && field('a').step === '5' && field('a').value === '20' && shown('a') === '20 %' && field('a').getAttribute('aria-label') === 'Volume')
+  assert('the part before the thumb', field('a').style.getPropertyValue('--rc-fill') === '25%')
+  got.length = 0
+  move('a', '35')
+  assert('a move runs the actions with the value, and shows it', got.length === 1 && got[0].s === 'a' && got[0].value === '35' && shown('a') === '35 %' && $('#a').dataset.value === '35')
+  $('#a').setAttribute('value', '99')
+  assert('a value above max: brought back, no action', field('a').value === '50' && $('#a')._component.value === '50' && got.length === 1)
+  $('#a')._component.value = 12
+  assert('… on the step', field('a').value === '10')
+  $('#a').setAttribute('max', '200')
+  $('#a').setAttribute('value', '150')
+  assert('a bound that changes', field('a').value === '150')
+  assert('data-item: the slider shows the item; defaults 0 to 100, step 1', field('b').value === '40' && field('b').max === '100')
+  move('b', '73')
+  assert('a move sets the item', config.get('tu-volume') === '73')
+  config.setItem('tu-volume', '12')
+  await tick()
+  assert('the slider follows the item', field('b').value === '12' && shown('b') === '12')
+  got.length = 0
+  move('c', '60')
+  assert('commit=change: nothing while it moves', got.length === 0)
+  release('c')
+  assert('… the actions run when it is released', got.length === 1 && got[0].value === '60')
+  assert('no-value: the value is not shown', $('#c > output').hidden)
+  assert('disabled', field('d').disabled)
   sandbox.innerHTML = ''
   await tick()
   bus.off('tuAction', onEvent)

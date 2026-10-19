@@ -27,7 +27,7 @@
   </style>
 </head>
 <body>
-  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-tabs, rc-dropdown and rc-dialog</h1>
+  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-tabs, rc-dropdown, rc-dialog and rc-slider</h1>
   <div class="bar">
     <span>Theme of the page:</span>
     <rc-icon-button icon="computerclassic" data-item="ricochet-theme" data-value="system">system</rc-icon-button>
@@ -70,6 +70,7 @@
     import {defineOptionSources} from '../src/ui/rc-select.mjs'
     import '../src/ui/rc-tabs.mjs'
     import '../src/ui/rc-dropdown.mjs'
+    import '../src/ui/rc-slider.mjs'
     import {showAlert, showConfirm} from '../src/ui/rc-dialog.mjs'
 
     const block = (palette, shade) => `
@@ -132,6 +133,12 @@
         <div class="row">
           <div class="rc-panel rc-shadow-2 rc-text-shadow" palette="module">rc-panel, rc-shadow-2, rc-text-shadow, palette="module"</div>
           <div class="rc-panel rc-shadow-inset" shade="deep">rc-panel, rc-shadow-inset, shade="deep"</div>
+        </div>
+        <div class="row">
+          <rc-slider data-item="demo-volume" min="0" max="100" step="5" unit=" %" class="w12" label="Volume"></rc-slider>
+          <rc-slider min="1" max="8" value="3" commit="change" class="w10" label="Zoom"
+            data-event="demoSlider" data-param='{"slider": "zoom"}'></rc-slider>
+          <rc-slider value="40" disabled class="w8"></rc-slider>
         </div>
         <div class="row">
           <rc-dropdown icon="filter" label="Filter" title="A dropdown with its content written inside">
@@ -209,7 +216,7 @@
         super()
         this.count = 0
         this.listen(['demoClick', 'demoCheck', 'demoRadio', 'demoInput', 'demoSelect', 'demoTab', 'demoRemount',
-          'demoDialog', 'demoConfirmAsk', 'demoAlertAsk', 'demoConfirm', 'overlayChanged'])
+          'demoDialog', 'demoSlider', 'demoConfirmAsk', 'demoAlertAsk', 'demoConfirm', 'overlayChanged'])
       }
 
       demoClickDispatched ({button}) { this.#log(`demoClick: ${button}`) }
@@ -219,6 +226,7 @@
       demoSelectDispatched ({select, value}) { this.#log(`demoSelect: ${select} = ${value}`) }
       demoTabDispatched ({tabs, value}) { this.#log(`demoTab: ${tabs} = ${value}`) }
       demoDialogDispatched ({dialog, value}) { this.#log(`demoDialog: ${dialog} = ${value}`) }
+      demoSliderDispatched ({slider, value}) { this.#log(`demoSlider: ${slider} = ${value}`) }
       demoConfirmAskDispatched () {
         showConfirm({title: 'Confirm', message: 'Delete the card « Dragon »?', ok: 'Delete', event: 'demoConfirm', param: {card: 'Dragon'}})
       }
