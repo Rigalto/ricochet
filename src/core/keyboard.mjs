@@ -10,7 +10,8 @@
  * 4. the **floating buttons**, all groups together;
  * 5. the **view**, if no floating button handled the key.
  *
- * Keys typed in an `<input>` or a `<textarea>` are left to the browser.
+ * Keys typed in an `<input>` or a `<textarea>` are left to the browser, and so are `Tab`, `Space` and `Enter` when a
+ * control has the focus (a button, a link, an element with `tabindex`): they move the focus or press the control.
  *
  * ## Declaring keys
  *
@@ -44,6 +45,12 @@ import {bus} from './bus.mjs'
 import {itemStore} from './items.mjs'
 
 const PREVENTED_CODES = new Set(['Space', 'AltLeft', 'AltRight', 'ArrowUp', 'ArrowDown', 'Digit4', 'Tab'])
+// keys left to the browser on a focused control: they move the focus or press it
+const CONTROL_KEYS = new Set(['Tab', 'Space', 'Enter', 'NumpadEnter'])
+const CONTROLS = 'button, a[href], select, summary, [contenteditable=""], [contenteditable="true"], [tabindex]'
+
+// the focused element is a control (a button, a link…), not the page or a canvas
+const onControl = target => target instanceof Element && target !== document.body && target.matches(CONTROLS)
 
 /**
  * The keyboard controller. One instance, `keyboard`, serves the whole application.
@@ -83,7 +90,7 @@ export class KeyboardController {
    * @param {KeyboardEvent} e - The `keyup` event.
    */
   keyupHandler (e) {
-    if (PREVENTED_CODES.has(e.code)) { e.preventDefault() }
+    if (PREVENTED_CODES.has(e.code) && !(CONTROL_KEYS.has(e.code) && onControl(e.target))) { e.preventDefault() }
     this.keyboard.delete(e.code)
     this.keys.delete(e.key)
   }
@@ -94,6 +101,8 @@ export class KeyboardController {
    */
   keydownHandler (e) {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') { return }
+    // on a focused control, Tab, Space and Enter keep their browser meaning: move the focus, press the control
+    if (CONTROL_KEYS.has(e.code) && onControl(e.target)) { return }
     if (PREVENTED_CODES.has(e.code)) { e.preventDefault() }
     if (e.getModifierState('CapsLock')) { this.keyboard.add('CapsLock') } else { this.keyboard.delete('CapsLock') }
     const pressed = e.key

@@ -37,7 +37,7 @@
 import {WController, setRenderer} from './w-controller.mjs'
 import {$global} from './global.mjs'
 import {keyboard} from './keyboard.mjs'
-import {writeClipboard} from '../utils/dom.mjs'
+import {runActions} from './actions.mjs'
 import {css} from './css.mjs'
 
 const leaks = $global.memoryLeak
@@ -294,24 +294,12 @@ export class WComponent extends WController {
    * `data-path` navigates, `data-url` opens a new tab, `data-paste` copies a text.
    * @param {DOMStringMap} dataset - The `dataset` of the element.
    */
-  handleDataset (dataset) {
-    const {item, value, event, param = '{}', path, url, paste} = dataset
-    if (item !== undefined && item !== '') { this.setItem(item, `${value}`) }
-    if (event !== undefined && event !== '') {
-      for (const name of event.replaceAll(' ', '').split(',')) {
-        const payload = JSON.parse(param)
-        if (value !== undefined) { payload.value = value }
-        this.emit(name, payload)
-      }
-    }
-    if (path !== undefined && path !== '') { window.location.hash = path }
-    if (url !== undefined && url !== '') { window.open(url, '_blank') }
-    if (paste !== undefined && paste !== '') { writeClipboard(paste) }
-  }
+  handleDataset (dataset) { runActions(dataset) }
 
   /**
    * Click handler that runs the `data-*` actions of the clicked element and of its parents, up to the element that
-   * listens, and calls their `notify(event, dataset)` method if they have one.
+   * listens, and calls their `notify(event, dataset)` method if they have one. Components of the former API use it;
+   * the click then stops there. The new components need no handler: see the `actions` module.
    * @param {MouseEvent} e - The click.
    */
   clickDatasetHandler (e) {

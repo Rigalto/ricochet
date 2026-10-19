@@ -10,7 +10,8 @@ Centralised, layered keyboard handling. A key press is handled by the highest la
 4. the **floating buttons**, all groups together;
 5. the **view**, if no floating button handled the key.
 
-Keys typed in an `<input>` or a `<textarea>` are left to the browser.
+Keys typed in an `<input>` or a `<textarea>` are left to the browser, and so are `Tab`, `Space` and `Enter` when a
+control has the focus (a button, a link, an element with `tabindex`): they move the focus or press the control.
 
 ## Declaring keys
 

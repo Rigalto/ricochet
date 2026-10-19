@@ -94,7 +94,8 @@ configuration item, `data-event` (one or more names, separated by commas) + `dat
 ### clickDatasetHandler(e)
 
 Click handler that runs the `data-*` actions of the clicked element and of its parents, up to the element that
-listens, and calls their `notify(event, dataset)` method if they have one.
+listens, and calls their `notify(event, dataset)` method if they have one. Components of the former API use it;
+the click then stops there. The new components need no handler: see the `actions` module.
 
 | Parameter | Type | Description |
 | --- | --- | --- |

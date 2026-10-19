@@ -63,7 +63,8 @@ What sets it apart:
 - **Shared state that persists by itself.** Configuration items are a reactive key/value store *and* an automatic
   save. Setting an item notifies every observer and schedules its persistence.
 - **Behaviour declared in HTML.** A button needs no JavaScript to set an item, fire an event, navigate or copy text:
-  `data-item`, `data-event`, `data-path`, `data-url`, `data-paste` are handled by one generic click handler.
+  `data-item`, `data-event`, `data-path`, `data-url`, `data-paste` are handled by one click listener on the document
+  (see [docs/api/actions.module.md](docs/api/actions.module.md)).
 - **Centralised, layered keyboard handling.** Alert › modal › focused module › floating buttons › view: each key press
   goes to the highest layer that listens for it, and to no one else.
 - **Styles next to the component.** Each component declares its CSS in its own module; the rules are in the page
@@ -202,8 +203,9 @@ The events that Ricochet emits and listens to, and the `rc` prefix reserved for 
 
 ## Also included
 
-- **UI components** (`rc-*`): buttons, icon buttons, inputs, selects, checkboxes, radio buttons, sliders, tabs,
-  dropdowns, alerts — all sharing the same `data-*` action contract.
+- **UI components** (`rc-*`), built on the colour tokens and the `data-*` actions: `rc-icon`, `rc-icon-button`
+  ([demo/components.html](demo/components.html)); inputs, selects, checkboxes, tabs, dropdowns… to come, one at a
+  time.
 - **Palettes and themes** (`ui/theme.mjs`): components use colour tokens (`--rc-surface`, `--rc-text`,
   `--rc-danger`…), computed in `oklch()` from the palette of their block (`palette="view"`, `shade="deep"`), with a
   day and a night value (`light-dark()`). A palette is three numbers; the day/night choice is one configuration item.
