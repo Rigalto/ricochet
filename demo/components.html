@@ -16,17 +16,18 @@
     .block { padding: .75rem; border-radius: 8px; border: 1px solid var(--rc-border); display: grid; gap: .5rem; }
     .block > .title { color: var(--rc-text-muted); font-size: .85rem; }
     .row { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+    .w6 { width: 6em; } .w8 { width: 8em; } .w10 { width: 10em; } .w12 { width: 12em; }
     #log, #timing { font-family: ui-monospace, monospace; font-size: .8rem; color: var(--rc-text-muted); min-height: 1.5em; }
   </style>
 </head>
 <body>
-  <h1>Ricochet — rc-icon, rc-icon-button, rc-checkbox and rc-radio</h1>
+  <h1>Ricochet — rc-icon, rc-icon-button, rc-checkbox, rc-radio and rc-input</h1>
   <div class="bar">
     <span>Theme of the page:</span>
     <rc-icon-button icon="computerclassic" data-item="ricochet-theme" data-value="system">system</rc-icon-button>
     <rc-icon-button icon="sunglasses" data-item="ricochet-theme" data-value="day">day</rc-icon-button>
     <rc-icon-button icon="moonfirstquarter" data-item="ricochet-theme" data-value="night">night</rc-icon-button>
-    <span id="log">Click a button, a checkbox or a radio: its event is shown here.</span>
+    <span id="log">Use a button, a checkbox, a radio or a field: its event is shown here.</span>
   </div>
   <div class="bar">
     <rc-icon-button icon="sync" data-event="demoRemount" title="Mount every block again, and measure">Mount again</rc-icon-button>
@@ -38,11 +39,12 @@
     import {WComponent} from '../src/core/w-component.mjs'
     import {config} from '../src/core/config.mjs'
     import {MemoryAdapter} from '../src/adapters/memory.mjs'
-    import {bus} from '../src/core/bus.mjs'
+    import {WController} from '../src/core/w-controller.mjs'
     import '../src/ui/theme.mjs'
     import '../src/ui/rc-icon-button.mjs'
     import '../src/ui/rc-checkbox.mjs'
     import '../src/ui/rc-radio.mjs'
+    import {defineChecks} from '../src/ui/rc-input.mjs'
 
     const block = (palette, shade) => `
       <div class="block" palette="${palette}" shade="${shade}">
@@ -74,6 +76,14 @@
           <rc-radio value="roads">Roads</rc-radio>
           <rc-radio value="rivers">Rivers (disabled group)</rc-radio>
         </rc-radio-group>
+        <div class="row">
+          <rc-input data-item="demo-name" placeholder="Name (item, shared)" class="w10"></rc-input>
+          <rc-input value="12" required min="8" max="64" check="even" placeholder="Even, 8 to 64" class="w8"
+            data-event="demoInput" data-param='{"field": "width"}'></rc-input>
+          <rc-input type="search" commit="enter" placeholder="Search, then Enter" class="w12"
+            data-event="demoInput" data-param='{"field": "search"}'></rc-input>
+          <rc-input value="locked" disabled class="w6"></rc-input>
+        </div>
       </div>`
     const column = scheme => `
       <section class="scheme" scheme="${scheme}">
@@ -83,10 +93,9 @@
     const elSchemes = document.getElementById('schemes')
     elSchemes.innerHTML = column('day') + column('night')
 
-    let count = 0
-    bus.on('demoClick', ({button}) => { document.getElementById('log').textContent = `demoClick #${++count}: ${button}` })
-    bus.on('demoCheck', ({box, value}) => { document.getElementById('log').textContent = `demoCheck #${++count}: ${box} = ${value}` })
-    bus.on('demoRadio', ({group, value}) => { document.getElementById('log').textContent = `demoRadio #${++count}: ${group} = ${value}` })
+    // a named check of the application, used by check="even"
+    defineChecks({even: value => Number(value) % 2 === 0})
+
     config.setAdapter(new MemoryAdapter({'ricochet-theme': 'system'}))
     await config.load()
 
@@ -107,11 +116,29 @@
       const frame = performance.now()
       document.getElementById('timing').textContent += ` · first frame ${(frame - start).toFixed(1)} ms after the start of the mount`
     })
-    bus.on('demoRemount', () => {
-      const start = performance.now()
-      elSchemes.innerHTML = column('day') + column('night')
-      show('Mount again', start, performance.now())
-    })
+
+    // the page listens to the events of the components as an application does: a controller and named methods
+    class DemoLog extends WController {
+      constructor () {
+        super()
+        this.count = 0
+        this.listen(['demoClick', 'demoCheck', 'demoRadio', 'demoInput', 'demoRemount'])
+      }
+
+      demoClickDispatched ({button}) { this.#log(`demoClick: ${button}`) }
+      demoCheckDispatched ({box, value}) { this.#log(`demoCheck: ${box} = ${value}`) }
+      demoRadioDispatched ({group, value}) { this.#log(`demoRadio: ${group} = ${value}`) }
+      demoInputDispatched ({field, value}) { this.#log(`demoInput: ${field} = ${value}`) }
+
+      demoRemountDispatched () {
+        const start = performance.now()
+        elSchemes.innerHTML = column('day') + column('night')
+        show('Mount again', start, performance.now())
+      }
+
+      #log (text) { document.getElementById('log').textContent = `#${++this.count} ${text}` }
+    }
+    new DemoLog()
   </script>
 </body>
 </html>

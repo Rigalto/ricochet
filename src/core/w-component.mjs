@@ -335,10 +335,13 @@ export class WComponent extends WController {
 
   /**
    * Observes attributes of the element: `<attribute>Changed(newValue, oldValue)` is called now, with the current
-   * value, then at each change (`no-label` → `noLabelChanged`). Several calls add up.
+   * value, then at each change (`no-label` → `noLabelChanged`). With a method name, that method is called for every
+   * attribute of the list, with `(newValue, oldValue, attribute)`: for attributes known only when the component runs.
+   * Several calls add up.
    * @param {string|string[]} attributes - Attribute name, or an array of names.
+   * @param {string} [handlerName] - Method called for all these attributes.
    */
-  observeAttributes (attributes) {
+  observeAttributes (attributes, handlerName) {
     if (attributes === undefined) {
       console.error(`${this.constructor.name}.observeAttributes: at least one attribute is expected`)
       return
@@ -346,12 +349,13 @@ export class WComponent extends WController {
     const added = []
     for (const attribute of Array.isArray(attributes) ? attributes : [attributes]) {
       if (this.#observedAttributes.has(attribute)) { continue }
-      const name = `${camelCase(attribute)}Changed`
+      const name = handlerName ?? `${camelCase(attribute)}Changed`
       if (typeof this[name] !== 'function') {
         console.error(`${this.constructor.name}.observeAttributes: no method '${name}' for the attribute '${attribute}'`)
         continue
       }
-      this.#observedAttributes.set(attribute, this[name].bind(this))
+      const method = this[name].bind(this)
+      this.#observedAttributes.set(attribute, handlerName === undefined ? method : (value, old) => method(value, old, attribute))
       added.push(attribute)
     }
     if (added.length === 0) { return }

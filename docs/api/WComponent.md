@@ -110,14 +110,17 @@ second click comes first.
 | --- | --- | --- |
 | `e` | Event | The click. |
 
-### observeAttributes(attributes)
+### observeAttributes(attributes, handlerName)
 
 Observes attributes of the element: `<attribute>Changed(newValue, oldValue)` is called now, with the current
-value, then at each change (`no-label` → `noLabelChanged`). Several calls add up.
+value, then at each change (`no-label` → `noLabelChanged`). With a method name, that method is called for every
+attribute of the list, with `(newValue, oldValue, attribute)`: for attributes known only when the component runs.
+Several calls add up.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `attributes` | string\|string[] | Attribute name, or an array of names. |
+| `handlerName` | string | Method called for all these attributes. |
 
 ### unobserveAttributes()
 

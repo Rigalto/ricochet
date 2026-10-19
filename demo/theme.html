@@ -41,9 +41,9 @@
   <h1>Ricochet — palettes, shades, day and night</h1>
   <div class="toolbar">
     <span>Theme of the page (item <code>ricochet-theme</code>):</span>
-    <button data-theme="system">system</button>
-    <button data-theme="day">day</button>
-    <button data-theme="night">night</button>
+    <button data-item="ricochet-theme" data-value="system">system</button>
+    <button data-item="ricochet-theme" data-value="day">day</button>
+    <button data-item="ricochet-theme" data-value="night">night</button>
     <span id="current" class="muted"></span>
   </div>
   <div class="schemes" id="schemes"></div>
@@ -51,8 +51,9 @@
   <script type="module">
     import {config} from '../src/core/config.mjs'
     import {MemoryAdapter} from '../src/adapters/memory.mjs'
-    import {setTheme, theme} from '../src/ui/theme.mjs'
-    import {bus} from '../src/core/bus.mjs'
+    import {WController} from '../src/core/w-controller.mjs'
+    import {theme} from '../src/ui/theme.mjs'
+    import '../src/core/actions.mjs'
 
     const sample = shade => `
       <div class="sample" shade="${shade}">
@@ -80,14 +81,19 @@
       </section>`
     document.getElementById('schemes').innerHTML = column('day', 'scheme="day"') + column('night', 'scheme="night"')
 
-    const show = () => { document.getElementById('current').textContent = `${theme.theme} → ${theme.scheme}` }
-    bus.on('themeChanged', show)
+    // the buttons set the item ricochet-theme (data-item); the page shows the theme each time it changes
+    class ThemeLabel extends WController {
+      constructor () {
+        super()
+        this.listen('themeChanged')
+      }
+
+      themeChangedDispatched ({theme, scheme}) { document.getElementById('current').textContent = `${theme} → ${scheme}` }
+    }
+
     config.setAdapter(new MemoryAdapter({'ricochet-theme': 'system'}))
     await config.load()
-    for (const button of document.querySelectorAll('[data-theme]')) {
-      button.addEventListener('click', () => setTheme(button.dataset.theme))
-    }
-    setTimeout(show, 0)
+    new ThemeLabel().themeChangedDispatched({theme: theme.theme, scheme: theme.scheme}) // the theme at the start
   </script>
 </body>
 </html>

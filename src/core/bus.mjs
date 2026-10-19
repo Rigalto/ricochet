@@ -14,9 +14,12 @@
  * the kernel binds it and calls `on()`. Only kernel code passes functions to the bus.
  *
  * ```js
- * import {bus} from 'ricochet/core/bus.mjs'
+ * // in a component: the kernel subscribes the method tableRowSelectedDispatched
+ * this.listen('tableRowSelected')
+ * this.emit('tableRowSelected', {selected: '42'})
  *
- * bus.on('tableRowSelected', onRowSelected)
+ * // in the kernel only
+ * bus.on('tableRowSelected', fn)
  * bus.emit('tableRowSelected', {selected: '42'})
  * ```
  *

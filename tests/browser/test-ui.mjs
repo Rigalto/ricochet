@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Rigalto
 
 // tests/browser/test-ui.mjs — open tests/browser/index.html in a browser
-// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-checkbox and rc-radio.
+// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-checkbox, rc-radio and rc-input.
 
 import {describe, assert, captureConsole, releaseConsole} from '../kernel.mjs'
 import {WComponent} from '../../src/core/w-component.mjs'
@@ -13,6 +13,7 @@ import {iconset} from '../../src/icons/iconset.mjs'
 import '../../src/ui/rc-icon-button.mjs'
 import '../../src/ui/rc-checkbox.mjs'
 import '../../src/ui/rc-radio.mjs'
+import {RcInput, defineChecks} from '../../src/ui/rc-input.mjs'
 
 const sandbox = document.getElementById('sandbox')
 const tick = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -244,6 +245,108 @@ await describe('rc-radio and rc-radio-group', async () => {
   const off = $('#off')
   off.querySelectorAll('rc-radio button')[1].click()
   assert('a disabled group: nothing changes', off.getAttribute('value') === 'a' && off.getAttribute('aria-disabled') === 'true')
+  sandbox.innerHTML = ''
+  await tick()
+})
+
+await describe('rc-input', async () => {
+  defineChecks({
+    tuEven: value => Number(value) % 2 === 0,
+    tuHex: /^[0-9a-f]+$/g,
+    tuNotIn: {test: (value, element) => !(element.getAttribute('exclude') ?? '').split('|').includes(value), attributes: ['exclude']}
+  })
+  class TuShortcut extends RcInput {
+    transform (value) { return value === '-' ? '2026' : value }
+    validate (value) { return super.validate(value) && value !== '1999' }
+  }
+  WComponent.define('tu-shortcut', TuShortcut)
+  config.setItem('tu-input', 'hello')
+  sandbox.innerHTML = `
+    <rc-input id="a" value="12" required min="10" max="20" placeholder="10 to 20" data-event="tuAction" data-param='{"f": "a"}'></rc-input>
+    <rc-input id="b" data-item="tu-input"></rc-input>
+    <rc-input id="c" commit="change" data-event="tuAction"></rc-input>
+    <rc-input id="d" commit="enter" data-event="tuAction"></rc-input>
+    <rc-input id="e" pattern="[a-z]+" check="tuEven"></rc-input>
+    <rc-input id="f" check="tuHex tuNotIn" exclude="ab|cd"></rc-input>
+    <rc-input id="g" check="tuUnknown"></rc-input>
+    <tu-shortcut id="h"></tu-shortcut>
+    <rc-input id="i" disabled label="Name" type="number"></rc-input>`
+  await tick()
+  const field = id => $(`#${id}`)
+  const input = id => $(`#${id} > input`)
+  const type = (id, text) => {
+    input(id).value = text
+    input(id).dispatchEvent(new Event('input', {bubbles: true}))
+  }
+  const key = (id, k) => input(id).dispatchEvent(new KeyboardEvent('keydown', {key: k, code: k, bubbles: true, cancelable: true}))
+  const leave = id => input(id).dispatchEvent(new Event('change', {bubbles: true}))
+  assert('a real input, with the attributes passed on', input('a').tagName === 'INPUT' && input('a').placeholder === '10 to 20' &&
+    input('i').disabled && input('i').getAttribute('aria-label') === 'Name' && input('i').type === 'number')
+  assert('the value attribute gives the initial value', input('a').value === '12' && field('a')._component.value === '12' && field('a')._component.valid)
+  got.length = 0
+  type('a', '15')
+  assert('a valid keystroke runs the actions with the value', got.length === 1 && got[0].f === 'a' && got[0].value === '15')
+  type('a', '25')
+  assert('above max: invalid, no action', got.length === 1 && field('a').hasAttribute('invalid') &&
+    input('a').getAttribute('aria-invalid') === 'true' && field('a')._component.value === null)
+  type('a', 'x')
+  assert('min and max: a number is expected', field('a').hasAttribute('invalid'))
+  type('a', '')
+  assert('required: empty is invalid', field('a').hasAttribute('invalid'))
+  field('a').setAttribute('value', '11')
+  assert('a new value attribute: shown, checked, no action', input('a').value === '11' && !field('a').hasAttribute('invalid') && got.length === 1)
+  field('a').setAttribute('max', '10')
+  assert('a rule that changes: checked again', field('a').hasAttribute('invalid'))
+  field('a')._component.value = '10'
+  assert('the value property', input('a').value === '10' && field('a')._component.valid && got.length === 1)
+  assert('a click runs nothing', (input('a').click(), got.length === 1))
+  assert('data-item: the field shows the item', input('b').value === 'hello')
+  type('b', 'world')
+  assert('a keystroke sets the item', config.get('tu-input') === 'world')
+  config.setItem('tu-input', 'again')
+  await tick()
+  assert('the field follows the item', input('b').value === 'again')
+  got.length = 0
+  type('c', 'one')
+  assert('commit=change: nothing at the keystroke', got.length === 0)
+  leave('c')
+  assert('… the actions run when the field is left', got.length === 1 && got[0].value === 'one')
+  key('c', 'Enter')
+  leave('c')
+  assert('… once for the same value', got.length === 1)
+  type('c', 'two')
+  key('c', 'Enter')
+  assert('… or on Enter', got.length === 2 && got[1].value === 'two')
+  got.length = 0
+  type('d', 'term')
+  assert('commit=enter: nothing at the keystroke', got.length === 0)
+  key('d', 'Enter')
+  key('d', 'Enter')
+  assert('… the actions run on each Enter', got.length === 2 && got[0].value === 'term')
+  type('e', 'ab')
+  assert('pattern + named check (even): a string is not even', field('e').hasAttribute('invalid'))
+  field('e').removeAttribute('check')
+  assert('pattern alone', !field('e').hasAttribute('invalid'))
+  type('e', 'ab1')
+  assert('the pattern matches the whole value', field('e').hasAttribute('invalid'))
+  type('f', 'ff')
+  type('f', 'ff')
+  assert('a regular expression with the g flag gives the same answer twice', !field('f').hasAttribute('invalid'))
+  type('f', 'ab')
+  assert('a check reading an attribute', field('f').hasAttribute('invalid'))
+  field('f').setAttribute('exclude', 'cd')
+  await tick()
+  assert('… checked again when the attribute changes', !field('f').hasAttribute('invalid'))
+  captureConsole()
+  type('g', 'x')
+  type('g', 'y')
+  const lines = releaseConsole()
+  assert('an unknown check: reported once, ignored', !field('g').hasAttribute('invalid') && lines.filter(l => l.includes('tuUnknown')).length === 1)
+  type('h', '-')
+  assert('a subclass: transform', input('h').value === '2026' && field('h')._component.valid)
+  type('h', '1999')
+  assert('a subclass: validate', field('h').hasAttribute('invalid'))
+  assert('the field stands on the surface of its block', getComputedStyle(input('a')).backgroundColor !== getComputedStyle(sandbox).backgroundColor)
   sandbox.innerHTML = ''
   await tick()
   bus.off('tuAction', onEvent)
