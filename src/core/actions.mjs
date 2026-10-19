@@ -29,6 +29,8 @@
  * - A component whose `data-*` attributes are not meant for clicks (an input that sets its item when it changes)
  *   declares `static clickActions = false`.
  * - If the component of the element has a `notify(event, dataset)` method, it is called after the actions.
+ * - A component that changes its state on a click (a checkbox) does it in its own click listener: it runs before the
+ *   listener of the document, so that the actions see the new state (`data-value`).
  * - The click goes on: the listeners of the components still receive it.
  *
  * **Migration.** The elements mounted with the former syntax (`as="…"`), and the plain elements inside them, keep the
@@ -74,6 +76,14 @@ export function runActions (dataset) {
 }
 
 /**
+ * Whether an element is disabled: it, or any element around it, has the `disabled` attribute or
+ * `aria-disabled="true"`.
+ * @param {Element} target - An element.
+ * @returns {boolean} True if the element is disabled.
+ */
+export const isDisabled = target => target?.closest?.(DISABLED) != null
+
+/**
  * The element whose actions a click runs, or `null`.
  * @param {Element} target - The clicked element.
  * @returns {Element|null} The nearest element with actions, unless it is disabled.
@@ -81,7 +91,7 @@ export function runActions (dataset) {
 export function actionElement (target) {
   const element = target?.closest?.(ACTIONS) ?? null
   if (element === null) { return null }
-  if (target.closest(DISABLED) !== null) { return null } // disabled: the clicked element or any element around it
+  if (isDisabled(target)) { return null } // disabled: the clicked element or any element around it
   // the element of a component, or the nearest component around a plain element
   let owner = element
   while (owner !== null && !owner._component) { owner = owner.parentElement }

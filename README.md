@@ -203,9 +203,10 @@ The events that Ricochet emits and listens to, and the `rc` prefix reserved for 
 
 ## Also included
 
-- **UI components** (`rc-*`), built on the colour tokens and the `data-*` actions: `rc-icon`, `rc-icon-button`
-  ([demo/components.html](demo/components.html)); inputs, selects, checkboxes, tabs, dropdowns… to come, one at a
-  time.
+- **UI components** (`rc-*`), built on the colour tokens and the `data-*` actions:
+  [`rc-icon`](docs/api/rc-icon.module.md), [`rc-icon-button`](docs/api/rc-icon-button.module.md),
+  [`rc-checkbox`](docs/api/rc-checkbox.module.md) ([demo/components.html](demo/components.html)); inputs, selects,
+  tabs, dropdowns… to come, one at a time.
 - **Palettes and themes** (`ui/theme.mjs`): components use colour tokens (`--rc-surface`, `--rc-text`,
   `--rc-danger`…), computed in `oklch()` from the palette of their block (`palette="view"`, `shade="deep"`), with a
   day and a night value (`light-dark()`). A palette is three numbers; the day/night choice is one configuration item.

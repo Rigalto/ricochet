@@ -20,13 +20,13 @@
   </style>
 </head>
 <body>
-  <h1>Ricochet — rc-icon and rc-icon-button</h1>
+  <h1>Ricochet — rc-icon, rc-icon-button and rc-checkbox</h1>
   <div class="bar">
     <span>Theme of the page:</span>
     <rc-icon-button icon="computerclassic" data-item="ricochet-theme" data-value="system">system</rc-icon-button>
     <rc-icon-button icon="sunglasses" data-item="ricochet-theme" data-value="day">day</rc-icon-button>
     <rc-icon-button icon="moonfirstquarter" data-item="ricochet-theme" data-value="night">night</rc-icon-button>
-    <span id="log">Click a button: its event is shown here.</span>
+    <span id="log">Click a button or a checkbox: its event is shown here.</span>
   </div>
   <div class="schemes" id="schemes"></div>
 
@@ -37,6 +37,7 @@
     import {bus} from '../src/core/bus.mjs'
     import '../src/ui/theme.mjs'
     import '../src/ui/rc-icon-button.mjs'
+    import '../src/ui/rc-checkbox.mjs'
 
     const block = (palette, shade) => `
       <div class="block" palette="${palette}" shade="${shade}">
@@ -52,6 +53,12 @@
           <rc-icon-button icon="star" class="rc-shadow-2" data-event="demoClick" data-param='{"button": "shadow"}'>Shadow</rc-icon-button>
           <rc-icon-button icon="bold" class="rc-text-shadow" data-event="demoClick" data-param='{"button": "text shadow"}'>Text shadow</rc-icon-button>
         </div>
+        <div class="row">
+          <rc-checkbox data-item="demo-grid">Grid (item, shared by every block)</rc-checkbox>
+          <rc-checkbox checked data-event="demoCheck" data-param='{"box": "roads"}'>Roads</rc-checkbox>
+          <rc-checkbox data-event="demoCheck" data-param='{"box": "no label"}' title="No label"></rc-checkbox>
+          <rc-checkbox checked disabled>Disabled</rc-checkbox>
+        </div>
       </div>`
     const column = scheme => `
       <section class="scheme" scheme="${scheme}">
@@ -62,6 +69,7 @@
 
     let count = 0
     bus.on('demoClick', ({button}) => { document.getElementById('log').textContent = `demoClick #${++count}: ${button}` })
+    bus.on('demoCheck', ({box, value}) => { document.getElementById('log').textContent = `demoCheck #${++count}: ${box} = ${value}` })
     config.setAdapter(new MemoryAdapter({'ricochet-theme': 'system'}))
     await config.load()
     WComponent.render() // opens the mounting of the custom elements (start() does it in an application)

@@ -35,9 +35,10 @@ import {css} from '../core/css.mjs'
 import '../core/actions.mjs'
 import './rc-icon.mjs'
 
+// the look is shared with the components built on the button: rc-checkbox looks like a flat button
 css(`
-rc-icon-button { vertical-align: middle; }
-rc-icon-button > button {
+:is(rc-icon-button, rc-checkbox) { vertical-align: middle; }
+:is(rc-icon-button, rc-checkbox) > button {
   display: inline-flex;
   align-items: center;
   gap: .35em;
@@ -49,22 +50,24 @@ rc-icon-button > button {
   color: inherit;
   font: inherit;
   line-height: 1.2;
+  text-align: start;
   cursor: pointer;
   transition: background-color .12s, border-color .12s;
 }
-rc-icon-button > button:hover { background: color-mix(in oklch, var(--rc-accent) 30%, var(--rc-surface-raised)); }
-rc-icon-button > button:active { background: color-mix(in oklch, var(--rc-accent-active) 55%, var(--rc-surface-raised)); }
-rc-icon-button > button:focus-visible { outline: 2px solid var(--rc-focus); outline-offset: 1px; }
-rc-icon-button > button:disabled {
+:is(rc-icon-button, rc-checkbox) > button:hover { background: color-mix(in oklch, var(--rc-accent) 30%, var(--rc-surface-raised)); }
+:is(rc-icon-button, rc-checkbox) > button:active { background: color-mix(in oklch, var(--rc-accent-active) 55%, var(--rc-surface-raised)); }
+:is(rc-icon-button, rc-checkbox) > button:focus-visible { outline: 2px solid var(--rc-focus); outline-offset: 1px; }
+:is(rc-icon-button, rc-checkbox) > button:disabled {
   color: var(--rc-disabled);
   background: var(--rc-disabled-surface);
   border-color: transparent;
   cursor: not-allowed;
 }
-rc-icon-button > button > span:empty { display: none; }
-rc-icon-button[flat] > button { background: transparent; border-color: transparent; padding: .2em .3em; }
-rc-icon-button[flat] > button:hover { background: color-mix(in oklch, var(--rc-accent) 25%, transparent); }
-rc-icon-button[flat] > button:disabled { background: transparent; }
+:is(rc-icon-button, rc-checkbox) > button > span:empty { display: none; }
+:is(rc-icon-button[flat], rc-checkbox) > button { background: transparent; border-color: transparent; padding: .2em .3em; }
+:is(rc-icon-button[flat], rc-checkbox) > button:hover { background: color-mix(in oklch, var(--rc-accent) 25%, transparent); }
+:is(rc-icon-button[flat], rc-checkbox) > button:active { background: color-mix(in oklch, var(--rc-accent-active) 45%, transparent); }
+:is(rc-icon-button[flat], rc-checkbox) > button:disabled { background: transparent; }
 `, {layer: 'ricochet'})
 
 /**

@@ -29,6 +29,8 @@ One listener, on the document, handles every click: components do not listen to 
 - A component whose `data-*` attributes are not meant for clicks (an input that sets its item when it changes)
   declares `static clickActions = false`.
 - If the component of the element has a `notify(event, dataset)` method, it is called after the actions.
+- A component that changes its state on a click (a checkbox) does it in its own click listener: it runs before the
+  listener of the document, so that the actions see the new state (`data-value`).
 - The click goes on: the listeners of the components still receive it.
 
 **Migration.** The elements mounted with the former syntax (`as="…"`), and the plain elements inside them, keep the
@@ -42,6 +44,7 @@ The listener is added when the module is imported.
 | Name | Kind | Description |
 | --- | --- | --- |
 | `runActions` | function | Runs the actions of a `dataset`. |
+| `isDisabled` | function | Whether an element is disabled: it, or any element around it, has the `disabled` attribute or `aria-disabled="true"`. |
 | `actionElement` | function | The element whose actions a click runs, or `null`. |
 
 ## Details
@@ -53,6 +56,17 @@ Runs the actions of a `dataset`.
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `dataset` | DOMStringMap\|object | The `dataset` of an element, or an object with the same keys. |
+
+### isDisabled()
+
+Whether an element is disabled: it, or any element around it, has the `disabled` attribute or
+`aria-disabled="true"`.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `target` | Element | An element. |
+
+**Returns** `boolean` True if the element is disabled.
 
 ### actionElement()
 

@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Rigalto
 
 // tests/browser/test-ui.mjs — open tests/browser/index.html in a browser
-// Actions declared in HTML (delegation), rc-icon and rc-icon-button.
+// Actions declared in HTML (delegation), rc-icon, rc-icon-button and rc-checkbox.
 
 import {describe, assert, captureConsole, releaseConsole} from '../kernel.mjs'
 import {WComponent} from '../../src/core/w-component.mjs'
@@ -11,6 +11,7 @@ import {config} from '../../src/core/config.mjs'
 import {MemoryAdapter} from '../../src/adapters/memory.mjs'
 import {iconset} from '../../src/icons/iconset.mjs'
 import '../../src/ui/rc-icon-button.mjs'
+import '../../src/ui/rc-checkbox.mjs'
 
 const sandbox = document.getElementById('sandbox')
 const tick = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -141,6 +142,52 @@ await describe('rc-icon-button', async () => {
   a.setAttribute('icon', 'pen')
   assert('a change of icon', a.querySelector('rc-icon').getAttribute('icon') === 'pen')
   assert('it stands on the surface of its block', getComputedStyle(button).backgroundColor !== getComputedStyle(sandbox).backgroundColor)
+  sandbox.innerHTML = ''
+  await tick()
+})
+
+await describe('rc-checkbox', async () => {
+  config.setItem('tu-box', 'yes')
+  sandbox.innerHTML = `
+    <rc-checkbox id="c">Grid</rc-checkbox>
+    <rc-checkbox id="d" checked data-event="tuAction" data-param='{"layer": "roads"}'></rc-checkbox>
+    <rc-checkbox id="e" data-item="tu-box"></rc-checkbox>
+    <rc-checkbox id="f" data-item="tu-unset" checked></rc-checkbox>`
+  await tick()
+  const c = $('#c')
+  const button = c.querySelector('button')
+  const icon = el => el.querySelector('rc-icon').getAttribute('icon')
+  assert('unchecked by default', c._component.value === 'no' && icon(c) === 'square' && button.getAttribute('aria-checked') === 'false')
+  assert('a checkbox for screen readers, with its label', button.getAttribute('role') === 'checkbox' && button.textContent.trim() === 'Grid')
+  assert('the checked attribute gives the initial state', $('#d')._component.value === 'yes' && icon($('#d')) === 'checksquare')
+  button.click()
+  assert('a click checks the box', c._component.value === 'yes' && c.hasAttribute('checked') && icon(c) === 'checksquare' &&
+    button.getAttribute('aria-checked') === 'true' && c.dataset.value === 'yes')
+  button.click()
+  assert('a second click unchecks it', c._component.value === 'no' && !c.hasAttribute('checked'))
+  c._component.value = 'yes'
+  assert('the value property', c.hasAttribute('checked') && icon(c) === 'checksquare')
+  c.removeAttribute('checked')
+  assert('the checked attribute', c._component.value === 'no' && icon(c) === 'square')
+  got.length = 0
+  $('#d button').click()
+  assert('data-event: the payload gets the new value', got.length === 1 && got[0].layer === 'roads' && got[0].value === 'no')
+  got.length = 0
+  $('#d')._component.value = 'yes'
+  assert('a change by value runs no action', got.length === 0)
+  const e = $('#e')
+  assert('data-item: the box shows the item', e._component.value === 'yes')
+  e.querySelector('button').click()
+  assert('a click sets the item', config.get('tu-box') === 'no' && e._component.value === 'no')
+  config.setItem('tu-box', 'yes')
+  await tick()
+  assert('the box follows the item', e._component.value === 'yes')
+  assert('an item not set leaves the initial state', $('#f')._component.value === 'yes')
+  $('#d').setAttribute('disabled', '')
+  $('#d button').click()
+  $('#d').click()
+  assert('disabled: neither the state nor the actions change', $('#d')._component.value === 'yes' && got.length === 0)
+  assert('no background', getComputedStyle(button).backgroundColor === 'rgba(0, 0, 0, 0)')
   sandbox.innerHTML = ''
   await tick()
   bus.off('tuAction', onEvent)
