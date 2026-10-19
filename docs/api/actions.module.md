@@ -12,6 +12,7 @@ JavaScript in the component.
 | `data-path` | navigates: `#universe/brick/…` |
 | `data-url` | opens a new tab |
 | `data-paste` | copies a text to the clipboard |
+| `data-dialog` | opens the `rc-dialog` with this `id` |
 
 ```html
 <rc-icon-button icon="save" data-event="noteSave" data-param='{"id": 12}'>Save</rc-icon-button>
@@ -22,8 +23,8 @@ JavaScript in the component.
 One listener, on the document, handles every click: components do not listen to clicks to run their actions.
 
 - The **nearest** element that carries actions runs them, as a link would: going up from the clicked element, the
-  first one with `data-item`, `data-event`, `data-path`, `data-url` or `data-paste`. It may combine several actions;
-  the elements with actions above it do not run theirs.
+  first one with `data-item`, `data-event`, `data-path`, `data-url`, `data-paste` or `data-dialog`. It may combine
+  several actions; the elements with actions above it do not run theirs.
 - Nothing runs if the clicked element, or any element around it, has the `disabled` attribute or
   `aria-disabled="true"`: a disabled block disables everything inside.
 - A component whose `data-*` attributes are not meant for clicks (an input that sets its item when it changes)

@@ -27,7 +27,7 @@
   </style>
 </head>
 <body>
-  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select and rc-tabs</h1>
+  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-tabs, rc-dropdown and rc-dialog</h1>
   <div class="bar">
     <span>Theme of the page:</span>
     <rc-icon-button icon="computerclassic" data-item="ricochet-theme" data-value="system">system</rc-icon-button>
@@ -39,6 +39,20 @@
     <rc-icon-button icon="sync" data-event="demoRemount" title="Mount every block again, and measure">Mount again</rc-icon-button>
     <span id="timing"></span>
   </div>
+  <div class="bar">
+    <rc-icon-button icon="trash" data-dialog="demo-dialog">Open a dialog</rc-icon-button>
+    <rc-text-button data-event="demoConfirmAsk">showConfirm()</rc-text-button>
+    <rc-text-button data-event="demoAlertAsk">showAlert()</rc-text-button>
+    <span id="overlays"></span>
+  </div>
+  <rc-dialog id="demo-dialog" label="Delete the card" data-event="demoDialog" data-param='{"dialog": "delete"}'>
+    <p>The card « Dragon » will be deleted. This cannot be undone.</p>
+    <rc-checkbox data-item="demo-grid">Grid (the item of the blocks)</rc-checkbox>
+    <footer>
+      <rc-text-button data-close="cancel">Cancel</rc-text-button>
+      <rc-text-button data-close="ok" default palette="action" class="rc-shadow-2">Delete</rc-text-button>
+    </footer>
+  </rc-dialog>
   <div class="schemes" id="schemes"></div>
 
   <script type="module">
@@ -55,6 +69,8 @@
     import '../src/ui/rc-textarea.mjs'
     import {defineOptionSources} from '../src/ui/rc-select.mjs'
     import '../src/ui/rc-tabs.mjs'
+    import '../src/ui/rc-dropdown.mjs'
+    import {showAlert, showConfirm} from '../src/ui/rc-dialog.mjs'
 
     const block = (palette, shade) => `
       <div class="block" palette="${palette}" shade="${shade}">
@@ -117,6 +133,21 @@
           <div class="rc-panel rc-shadow-2 rc-text-shadow" palette="module">rc-panel, rc-shadow-2, rc-text-shadow, palette="module"</div>
           <div class="rc-panel rc-shadow-inset" shade="deep">rc-panel, rc-shadow-inset, shade="deep"</div>
         </div>
+        <div class="row">
+          <rc-dropdown icon="filter" label="Filter" title="A dropdown with its content written inside">
+            <div style="display: grid; gap: .3rem; min-width: 12rem">
+              <rc-checkbox data-item="demo-grid">Grid</rc-checkbox>
+              <rc-select data-item="demo-size" options="Small#small|Medium#medium|Large#large"></rc-select>
+              <rc-dropdown label="More…" flat><div style="padding: .25rem">A dropdown in a dropdown: Escape closes this one only.</div></rc-dropdown>
+              <rc-text-button data-event="demoClick" data-param='{"button": "apply"}' data-close>Apply and close</rc-text-button>
+            </div>
+          </rc-dropdown>
+          <rc-dropdown label="Columns" content="demo-columns" content-attr='sheet="Animals"'></rc-dropdown>
+          <rc-dropdown icon="menu" flat no-label title="Menu"><div style="display: grid">
+            <rc-text-button flat data-event="demoClick" data-param='{"button": "copy"}' data-close>Copy</rc-text-button>
+            <rc-text-button flat data-event="demoClick" data-param='{"button": "paste"}' data-close>Paste</rc-text-button>
+          </div></rc-dropdown>
+        </div>
         <rc-tabs data-item="demo-tab" data-event="demoTab" data-param='{"tabs": "demo"}'>
           <rc-tab value="map" label="Map" icon="map">The map (tabs shared by an item: every block shows the same tab).</rc-tab>
           <rc-tab value="stats" label="Statistics" title="Counts of the last run">The statistics.</rc-tab>
@@ -134,6 +165,14 @@
     const elSchemes = document.getElementById('schemes')
     elSchemes.innerHTML = column('day') + column('night')
 
+    // a component of the application, created in the window of a dropdown at each opening (content="demo-columns")
+    class DemoColumns extends WComponent {
+      attach () {
+        this.element.innerHTML = `<div style="display: grid; gap: .2rem">Columns of ${this.element.getAttribute('sheet')}, created at ${new Date().toLocaleTimeString()}
+          <rc-checkbox checked>Name</rc-checkbox><rc-checkbox>Weight</rc-checkbox><rc-text-button data-close>Close</rc-text-button></div>`
+      }
+    }
+    WComponent.define('demo-columns', DemoColumns)
     // a named check of the application, used by check="even"
     defineChecks({even: value => Number(value) % 2 === 0})
     // a source of options of the application, used by source="sheet Animals": the options of a sheet, loaded later
@@ -169,7 +208,8 @@
       constructor () {
         super()
         this.count = 0
-        this.listen(['demoClick', 'demoCheck', 'demoRadio', 'demoInput', 'demoSelect', 'demoTab', 'demoRemount'])
+        this.listen(['demoClick', 'demoCheck', 'demoRadio', 'demoInput', 'demoSelect', 'demoTab', 'demoRemount',
+          'demoDialog', 'demoConfirmAsk', 'demoAlertAsk', 'demoConfirm', 'overlayChanged'])
       }
 
       demoClickDispatched ({button}) { this.#log(`demoClick: ${button}`) }
@@ -178,6 +218,14 @@
       demoInputDispatched ({field, value}) { this.#log(`demoInput: ${field} = ${value}`) }
       demoSelectDispatched ({select, value}) { this.#log(`demoSelect: ${select} = ${value}`) }
       demoTabDispatched ({tabs, value}) { this.#log(`demoTab: ${tabs} = ${value}`) }
+      demoDialogDispatched ({dialog, value}) { this.#log(`demoDialog: ${dialog} = ${value}`) }
+      demoConfirmAskDispatched () {
+        showConfirm({title: 'Confirm', message: 'Delete the card « Dragon »?', ok: 'Delete', event: 'demoConfirm', param: {card: 'Dragon'}})
+      }
+
+      demoAlertAskDispatched () { showAlert({title: 'Saved', message: 'The card is saved.'}) }
+      demoConfirmDispatched ({card, value}) { this.#log(`demoConfirm: ${card} = ${value}`) }
+      overlayChangedDispatched ({open}) { document.getElementById('overlays').textContent = `overlayChanged: ${open} open` }
 
       demoRemountDispatched () {
         const start = performance.now()

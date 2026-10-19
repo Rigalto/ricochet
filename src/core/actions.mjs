@@ -12,6 +12,7 @@
  * | `data-path` | navigates: `#universe/brick/…` |
  * | `data-url` | opens a new tab |
  * | `data-paste` | copies a text to the clipboard |
+ * | `data-dialog` | opens the `rc-dialog` with this `id` |
  *
  * ```html
  * <rc-icon-button icon="save" data-event="noteSave" data-param='{"id": 12}'>Save</rc-icon-button>
@@ -22,8 +23,8 @@
  * One listener, on the document, handles every click: components do not listen to clicks to run their actions.
  *
  * - The **nearest** element that carries actions runs them, as a link would: going up from the clicked element, the
- *   first one with `data-item`, `data-event`, `data-path`, `data-url` or `data-paste`. It may combine several actions;
- *   the elements with actions above it do not run theirs.
+ *   first one with `data-item`, `data-event`, `data-path`, `data-url`, `data-paste` or `data-dialog`. It may combine
+ *   several actions; the elements with actions above it do not run theirs.
  * - Nothing runs if the clicked element, or any element around it, has the `disabled` attribute or
  *   `aria-disabled="true"`: a disabled block disables everything inside.
  * - A component whose `data-*` attributes are not meant for clicks (an input that sets its item when it changes)
@@ -48,7 +49,7 @@ import {bus} from './bus.mjs'
 import {itemStore} from './items.mjs'
 import {writeClipboard} from '../utils/dom.mjs'
 
-const ACTIONS = '[data-item], [data-event], [data-path], [data-url], [data-paste]'
+const ACTIONS = '[data-item], [data-event], [data-path], [data-url], [data-paste], [data-dialog]'
 const DISABLED = '[disabled], [aria-disabled="true"]'
 
 /**
@@ -56,7 +57,7 @@ const DISABLED = '[disabled], [aria-disabled="true"]'
  * @param {DOMStringMap|object} dataset - The `dataset` of an element, or an object with the same keys.
  */
 export function runActions (dataset) {
-  const {item, value, event, param = '{}', path, url, paste} = dataset
+  const {item, value, event, param = '{}', path, url, paste, dialog} = dataset
   if (item !== undefined && item !== '') { itemStore().setItem(item, `${value}`) }
   if (event !== undefined && event !== '') {
     let payload
@@ -75,6 +76,14 @@ export function runActions (dataset) {
   if (path !== undefined && path !== '') { globalThis.location.hash = path }
   if (url !== undefined && url !== '') { window.open(url, '_blank') }
   if (paste !== undefined && paste !== '') { writeClipboard(paste) }
+  if (dialog !== undefined && dialog !== '') {
+    const element = document.getElementById(dialog)
+    if (element?.localName === 'rc-dialog') {
+      element.setAttribute('open', '')
+    } else {
+      console.error(`actions: data-dialog='${dialog}' is not the id of an rc-dialog`)
+    }
+  }
 }
 
 /**

@@ -22,7 +22,7 @@
   <div id="nothing"></div>
   <script type="module">
     import {results} from '../kernel.mjs'
-    const done = await import('./test-elements.mjs').then(() => import('./test-theme.mjs')).then(() => import('./test-ui.mjs')).then(() => true, error => { console.error(error); return false })
+    const done = await import('./test-elements.mjs').then(() => import('./test-theme.mjs')).then(() => import('./test-ui.mjs')).then(() => import('./test-overlay.mjs')).then(() => true, error => { console.error(error); return false })
     let passed = 0
     let failed = 0
     const out = document.getElementById('results')

@@ -126,7 +126,7 @@ export class WComponent extends WController {
   // the default display of a custom element, in the 'ricochet' layer: any rule of the application wins over it
   static #addDisplay (tag, display) {
     if (display === 'inline') { return } // the default of the browser
-    WComponent.#displayRules.push(`${tag} { display: ${display}; }`)
+    WComponent.#displayRules.push(`${tag}:not([hidden]) { display: ${display}; }`) // the hidden attribute still hides it
     if (WComponent.#displayStyle === null) {
       WComponent.#displayStyle = css('', {name: 'custom elements: default display', layer: 'ricochet'})
       // the rules are collected in one <style>, rewritten once per task

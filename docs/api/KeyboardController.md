@@ -22,9 +22,41 @@ Records a key press and hands it to the highest layer that listens for it.
 | --- | --- | --- |
 | `e` | KeyboardEvent | The `keydown` event. |
 
+### openLayer(owner, keys = [])
+
+Opens the layer of a window, on top of the others; called again by the same owner, it changes the keys and the
+window stays where it is in the stack.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `owner` | object | The window (a component). |
+| `keys` | Array | Array of `{key, action}`. |
+
+### closeLayer(owner)
+
+Closes the layer of a window.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `owner` | object | The window given to `openLayer()`. |
+
+### get layers
+
+Number of open windows.
+
+### get modal
+
+Whether a window opens on top of the page.
+
+### get alert
+
+Whether an alert of the former API is shown.
+
 ### setAlertKeys(keys)
 
-Keys of the alert shown; `null` when the alert closes. While an alert is shown, no other layer receives keys.
+> **Deprecated.** Open a window with `openLayer()`.
+
+Keys of the alert shown; `null` when the alert closes.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
@@ -32,7 +64,9 @@ Keys of the alert shown; `null` when the alert closes. While an alert is shown, 
 
 ### setModalKeys(keys)
 
-Keys of the open modal.
+> **Deprecated.** Open a window with `openLayer()`.
+
+Keys of the modal opened by `dropdownOpen`.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
@@ -68,8 +102,9 @@ Keys of the current view; `null` forgets them.
 
 ### release(owner)
 
-Forgets the module and view keys declared by a component, unless another component has replaced them since.
-Called when a component is detached: a new view is often mounted before the former one is detached.
+Forgets the module and view keys declared by a component, unless another component has replaced them since, and
+closes its windows. Called when a component is detached: a new view is often mounted before the former one is
+detached.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
