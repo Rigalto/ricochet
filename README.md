@@ -65,7 +65,8 @@ What sets it apart:
   save. Setting an item notifies every observer and schedules its persistence.
 - **Behaviour declared in HTML.** A button needs no JavaScript to set an item, fire an event, navigate, copy text or
   open a dialog: `data-item`, `data-event`, `data-path`, `data-url`, `data-paste`, `data-dialog` are handled by one
-  click listener on the document (see [docs/api/actions.module.md](docs/api/actions.module.md)).
+  click listener on the document (see [docs/api/actions.module.md](docs/api/actions.module.md)). A double click has
+  its own event, `data-dblclick`, and the click is never delayed to tell them apart.
 - **Centralised, layered keyboard handling.** Open windows (dropdowns, dialogs, alerts, the one on top first) ›
   focused module › floating buttons › view: each key press goes to the highest layer that listens for it, and to no
   one else.

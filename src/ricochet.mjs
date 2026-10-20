@@ -22,7 +22,7 @@
  * | `config`, `itemStore`, `setItemStore` | [config](config.module.md), [items](items.module.md) |
  * | `MemoryAdapter` | [memory](memory.module.md) |
  * | `keyboard` | [keyboard](keyboard.module.md) |
- * | `runActions`, `isDisabled` | [actions](actions.module.md) |
+ * | `runActions`, `runDoubleClickActions`, `isDisabled` | [actions](actions.module.md) |
  * | `css` | [css](css.module.md) |
  * | `declareTasks`, `defer`, `schedule`, `cancel` | [microtasker](microtasker.module.md), [scheduler](scheduler.module.md) |
  * | `loop`, `realClock`, `gameClock` | [loop](loop.module.md), [clock](clock.module.md) |
@@ -46,7 +46,7 @@ export {config} from './core/config.mjs'
 export {itemStore, setItemStore} from './core/items.mjs'
 export {MemoryAdapter} from './adapters/memory.mjs'
 export {keyboard} from './core/keyboard.mjs'
-export {runActions, isDisabled} from './core/actions.mjs'
+export {runActions, runDoubleClickActions, isDisabled} from './core/actions.mjs'
 export {css} from './core/css.mjs'
 export {declareTasks, defer} from './core/microtasker.mjs'
 export {schedule, cancel} from './core/scheduler.mjs'

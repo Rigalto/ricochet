@@ -106,8 +106,11 @@ the click then stops there. The new components need no handler: see the `actions
 
 ### doubleClickHandler(e)
 
+> **Deprecated.** Use `data-dblclick` (see the `actions` module): the click runs at once, the double click emits its own
+  event.
+
 Tells a single click from a double click: calls `singleClick(e)` 400 ms after a click, or `doubleClick(e)` if a
-second click comes first.
+second click comes first. Components of the former API use it; every single click waits 400 ms.
 
 | Parameter | Type | Description |
 | --- | --- | --- |

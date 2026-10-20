@@ -13,17 +13,38 @@ JavaScript in the component.
 | `data-url` | opens a new tab |
 | `data-paste` | copies a text to the clipboard |
 | `data-dialog` | opens the `rc-dialog` with this `id` |
+| `data-dblclick` + `data-param` | on a double click: emits one event, or several separated by commas, with the same payload as `data-event` |
 
 ```html
 <rc-icon-button icon="save" data-event="noteSave" data-param='{"id": 12}'>Save</rc-icon-button>
 ```
+
+## Click and double click
+
+A double click is two clicks, then a `dblclick`. On an element with `data-dblclick`, the first click runs the
+actions of the click at once, the second click is ignored (its `detail` is 2), and the `dblclick` emits the events of
+`data-dblclick`. Nothing waits: the click is never delayed to see whether a second one comes.
+
+```html
+<tr data-event="tableRowSelected" data-dblclick="tableRowOpened" data-param='{"selected": "123"}'>…</tr>
+```
+
+A double click on that row selects it, then opens it. The action of the click must therefore make sense before
+the one of the double click: to select, then to open. A component that toggles on a click should not toggle off
+the selected row (a table selects a row on a click, and unselects it with Escape or a click elsewhere), or the
+double click would unselect the row before opening it.
+
+The `dblclick` follows the rule of the click: it runs only if the nearest element with actions is the one with
+`data-dblclick` (a double click on a checkbox inside the row does not open the row), and not if it is disabled.
+On a touch screen, a double tap does not give a `dblclick` on every browser: give another way to do the same thing
+(a button, the Enter key).
 
 ## Delegation
 
 One listener, on the document, handles every click: components do not listen to clicks to run their actions.
 
 - The **nearest** element that carries actions runs them, as a link would: going up from the clicked element, the
-  first one with `data-item`, `data-event`, `data-path`, `data-url`, `data-paste` or `data-dialog`. It may combine
+  first one with `data-item`, `data-event`, `data-path`, `data-url`, `data-paste`, `data-dialog` or `data-dblclick`. It may combine
   several actions; the elements with actions above it do not run theirs.
 - Nothing runs if the clicked element, or any element around it, has the `disabled` attribute or
   `aria-disabled="true"`: a disabled block disables everything inside.
@@ -40,13 +61,14 @@ One listener, on the document, handles every click: components do not listen to 
 former behaviour: their clicks are left to their own handlers (`clickDatasetHandler`). A custom element inside them,
 such as an `rc-icon-button`, runs its actions.
 
-The listener is added when the module is imported.
+The listeners (`click` and `dblclick`) are added when the module is imported.
 
 ## Exports
 
 | Name | Kind | Description |
 | --- | --- | --- |
 | `runActions` | function | Runs the actions of a `dataset`. |
+| `runDoubleClickActions` | function | Runs the double click action of a `dataset`: emits the events of `data-dblclick`, with the payload of `data-param` (and `data-value`). |
 | `isDisabled` | function | Whether an element is disabled: it, or any element around it, has the `disabled` attribute or `aria-disabled="true"`. |
 | `actionElement` | function | The element whose actions a click runs, or `null`. |
 
@@ -55,6 +77,15 @@ The listener is added when the module is imported.
 ### runActions()
 
 Runs the actions of a `dataset`.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `dataset` | DOMStringMap\|object | The `dataset` of an element, or an object with the same keys. |
+
+### runDoubleClickActions()
+
+Runs the double click action of a `dataset`: emits the events of `data-dblclick`, with the payload of
+`data-param` (and `data-value`).
 
 | Parameter | Type | Description |
 | --- | --- | --- |

@@ -22,7 +22,7 @@ application imports once, at startup, when it uses them. Each module stays impor
 | `config`, `itemStore`, `setItemStore` | [config](config.module.md), [items](items.module.md) |
 | `MemoryAdapter` | [memory](memory.module.md) |
 | `keyboard` | [keyboard](keyboard.module.md) |
-| `runActions`, `isDisabled` | [actions](actions.module.md) |
+| `runActions`, `runDoubleClickActions`, `isDisabled` | [actions](actions.module.md) |
 | `css` | [css](css.module.md) |
 | `declareTasks`, `defer`, `schedule`, `cancel` | [microtasker](microtasker.module.md), [scheduler](scheduler.module.md) |
 | `loop`, `realClock`, `gameClock` | [loop](loop.module.md), [clock](clock.module.md) |

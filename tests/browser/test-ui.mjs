@@ -84,6 +84,55 @@ await describe('Actions — delegation of data-* clicks', async () => {
   await tick()
 })
 
+await describe('Actions — click and double click', async () => {
+  const opened = []
+  const onOpen = payload => opened.push(payload)
+  bus.on('tuOpen', onOpen)
+  sandbox.innerHTML = `
+    <table><tbody>
+      <tr id="row" data-event="tuAction" data-dblclick="tuOpen" data-param='{"selected": "123"}'>
+        <td id="cell">Row</td><td><span id="inside" data-event="tuOther">x</span></td>
+      </tr>
+      <tr id="only" data-dblclick="tuOpen, tuOther" data-param='{"selected": "7"}'><td id="cell2">Only</td></tr>
+      <tr id="offrow" disabled data-event="tuAction" data-dblclick="tuOpen"><td id="cell3">Off</td></tr>
+    </tbody></table>
+    <span id="plain" data-event="tuAction"></span>`
+  WComponent.render(sandbox)
+  const mouse = (target, type, detail) => target.dispatchEvent(new MouseEvent(type, {bubbles: true, cancelable: true, detail}))
+  const double = target => {
+    mouse(target, 'click', 1)
+    mouse(target, 'click', 2)
+    mouse(target, 'dblclick', 2)
+  }
+  got.length = 0
+  mouse($('#cell'), 'click', 1)
+  assert('a click: the actions of the click, at once', got.length === 1 && got[0].selected === '123' && opened.length === 0)
+  got.length = 0
+  double($('#cell'))
+  assert('a double click: the click once, then the double click', got.length === 1 && opened.length === 1 &&
+    opened[0].selected === '123')
+  assert('each event its own payload', got[0] !== opened[0])
+  got.length = 0
+  opened.length = 0
+  mouse($('#cell'), 'click', 0)
+  assert('a click from the keyboard (detail 0) runs', got.length === 1)
+  got.length = 0
+  double($('#inside'))
+  assert('a double click on an element with its own actions does not open the row', opened.length === 0 && got.length === 2)
+  got.length = 0
+  double($('#cell2'))
+  assert('data-dblclick alone: several events', opened.length === 1 && got.length === 1 && got[0].selected === '7')
+  got.length = 0
+  opened.length = 0
+  double($('#cell3'))
+  assert('disabled: nothing runs', got.length === 0 && opened.length === 0)
+  double($('#plain'))
+  assert('without data-dblclick: the second click runs too', got.length === 2 && opened.length === 0)
+  bus.off('tuOpen', onOpen)
+  sandbox.innerHTML = ''
+  await tick()
+})
+
 await describe('Actions — a former handler stops the click first', async () => {
   class Former extends WComponent {
     attach () {
