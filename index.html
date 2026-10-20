@@ -1,0 +1,83 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Copyright (c) 2026 Rigalto -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ricochet</title>
+  <link rel="icon" href="ricochet.svg">
+  <style>
+    body { font: 16px/1.6 system-ui, sans-serif; margin: 0; }
+    main { max-width: 46rem; margin: 0 auto; padding: 2rem 1rem 3rem; }
+    header { text-align: center; }
+    header img { width: 96px; height: 96px; }
+    h1 { margin: .25rem 0; font-size: 2rem; color: var(--rc-text-strong); }
+    h2 { font-size: 1.15rem; color: var(--rc-text-strong); margin: 0 0 .5rem; }
+    .tagline { color: var(--rc-text-muted); }
+    .theme { display: flex; justify-content: center; gap: .4rem; margin: 1rem 0 2rem; }
+    section { margin-bottom: 1.25rem; }
+    ul { margin: 0; padding-left: 1.2rem; }
+    a { color: var(--rc-link); }
+    code { font-size: .9em; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <img src="ricochet.svg" alt="">
+      <h1>Ricochet</h1>
+      <p class="tagline">A zero-dependency JavaScript kernel where components react to events, act on their own DOM, and
+        emit events. No virtual DOM, no build step.</p>
+      <div class="theme">
+        <rc-icon-button icon="computerclassic" data-item="ricochet-theme" data-value="system">System</rc-icon-button>
+        <rc-icon-button icon="sunglasses" data-item="ricochet-theme" data-value="day">Day</rc-icon-button>
+        <rc-icon-button icon="moonfirstquarter" data-item="ricochet-theme" data-value="night">Night</rc-icon-button>
+      </div>
+    </header>
+
+    <section class="rc-panel rc-shadow-1" palette="view">
+      <h2>Demos</h2>
+      <ul>
+        <li><a href="demo/components.html">Components</a>: every <code>rc-*</code> component in each palette, by day
+          and by night, with the time they take to mount.</li>
+        <li><a href="demo/floating.html">Floating buttons</a>: buttons that stay at the bottom of the screen.</li>
+        <li><a href="demo/theme.html">Palettes and themes</a>: the colour tokens, their palettes and their shades.</li>
+      </ul>
+    </section>
+
+    <section class="rc-panel rc-shadow-1" palette="view">
+      <h2>Documentation</h2>
+      <ul>
+        <li><a href="https://github.com/Rigalto/ricochet#readme">Read me</a>: why Ricochet, its concepts, a quick look.</li>
+        <li><a href="https://github.com/Rigalto/ricochet/blob/main/docs/GUIDE.md">Guide</a>: get the kernel, start an
+          application, document your code.</li>
+        <li><a href="https://github.com/Rigalto/ricochet/blob/main/docs/THEME.md">Themes</a>: palettes, day and night,
+          the look of your interface.</li>
+        <li><a href="https://github.com/Rigalto/ricochet/blob/main/docs/api/README.md">API reference</a>, generated from
+          the sources.</li>
+        <li><a href="https://github.com/Rigalto/ricochet/blob/main/docs/DESIGN.md">Design decisions</a>.</li>
+      </ul>
+    </section>
+
+    <section class="rc-panel rc-shadow-1" palette="module">
+      <h2>Use it</h2>
+      <p>Add Ricochet to your project as a Git submodule or a copy, or load it from a CDN pinned to a release, but not
+        from this site, which always serves the latest code. See the
+        <a href="https://github.com/Rigalto/ricochet/blob/main/docs/GUIDE.md">guide</a>.</p>
+    </section>
+  </main>
+
+  <script type="module">
+    import {WComponent} from './src/core/w-component.mjs'
+    import {config} from './src/core/config.mjs'
+    import {MemoryAdapter} from './src/adapters/memory.mjs'
+    import './src/ui/theme.mjs'
+    import './src/ui/rc-icon-button.mjs'
+
+    config.setAdapter(new MemoryAdapter({'ricochet-theme': 'system'}))
+    await config.load()
+    WComponent.render()
+  </script>
+</body>
+</html>

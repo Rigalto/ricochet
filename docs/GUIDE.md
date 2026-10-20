@@ -1,11 +1,8 @@
 # Using Ricochet
 
-This guide explains how to set up an application on top of Ricochet: getting the files, loading them, running the
-application on your computer, and documenting your own code.
-
-> **Status:** the kernel is being moved into this repository file by file. The sections below describe what is
-> available today; a complete minimal application will be added once the core classes (`WComponent`, `WController`)
-> are here.
+This guide explains how to set up an application on top of Ricochet: getting the files, loading them, starting the
+application, running it on your computer, and documenting your own code. The look of the interface (palettes, day and
+night) has a guide of its own: [THEME.md](THEME.md).
 
 ## 1. Get the kernel
 
@@ -78,7 +75,75 @@ It can be written by a small script when the place depends on where the page run
 > **Load each module from one URL only.** A module imported through two different URLs is run twice: for the kernel,
 > that would mean two event buses and two keyboard controllers.
 
-## 3. Run the application on your computer
+## 3. Start the application
+
+An application is a page, a few components, and a call to `start()`. Here is a complete one: a header with the choice
+of the theme, two pages reached by their address (`#home`, `#about`), and a setting kept in a configuration item.
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>My application</title>
+  <script type="importmap">{"imports": {"ricochet/": "./ricochet/src/"}}</script>
+</head>
+<body>
+  <header palette="header">
+    <rc-text-button flat data-path="#home">Home</rc-text-button>
+    <rc-text-button flat data-path="#about">About</rc-text-button>
+    <rc-select data-item="ricochet-theme" options="System#system|Day#day|Night#night" label="Theme"></rc-select>
+  </header>
+  <app-page palette="view"></app-page>
+  <script type="module">
+    import {start} from 'ricochet/core/start.mjs'
+    import {MemoryAdapter} from 'ricochet/adapters/memory.mjs'
+    import 'ricochet/ui/theme.mjs'
+    import 'ricochet/ui/rc-text-button.mjs'
+    import 'ricochet/ui/rc-select.mjs'
+    import './app-page.mjs'
+
+    await start({
+      storage: new MemoryAdapter({'ricochet-theme': 'system'}), // an HTTP or a Drive adapter in a real application
+      router: ({path}) => ['home', 'about'].includes(path) ? {path, page: path} : {redirect: 'home'},
+    })
+  </script>
+</body>
+</html>
+```
+
+```javascript
+// app-page.mjs
+import {WComponent} from 'ricochet/core/w-component.mjs'
+import 'ricochet/ui/rc-checkbox.mjs'
+
+const PAGES = {
+  home: '<h1>Home</h1><rc-checkbox data-item="app-compact">Compact view</rc-checkbox>',
+  about: '<h1>About</h1><p>Built with Ricochet.</p>',
+}
+
+class AppPage extends WComponent {
+  attach () {
+    this.listen('routeChanged') // the current route at once, then each change of the address
+    this.observeItems(['app-compact'])
+  }
+
+  routeChangedDispatched (route) { this.innerHTML(PAGES[route.page]) }
+
+  itemsChanged (items) { this.element.classList.toggle('compact', items['app-compact'] === 'yes') }
+}
+WComponent.define('app-page', AppPage)
+```
+
+`start()` loads the configuration items, resolves the current address (here `#home` when the address is empty or
+unknown), then mounts the page: the components of the page see the items and the route from their first `attach()`.
+No component calls another one: the buttons change the address or an item, and the components that care listen.
+
+The kernel is a set of modules: an application imports what it uses, the components of the interface included
+(`ricochet/ui/rc-*.mjs`, listed in the [API reference](api/README.md)). The demos, `demo/components.html`,
+`demo/floating.html` and `demo/theme.html`, show each component at work.
+
+## 4. Run the application on your computer
 
 Browsers refuse to load modules from `file://` addresses. Open the application through a local web server instead,
 for instance one of these, started from the application folder:
@@ -94,7 +159,7 @@ and cookies of the remote server are not sent. The usual answer is a small devel
 application, that serves your files from the disk and relays the API calls to the remote server: for the browser,
 everything then comes from `localhost`. Node.js can do this in about a hundred lines, with no dependency.
 
-## 4. Display HTML of external origin
+## 5. Display HTML of external origin
 
 Ricochet never interprets HTML coming from data: Markdown is converted by `markdownToHtml()`, which escapes every
 character before adding its own tags. When your application must display HTML or SVG coming from elsewhere (a stored
@@ -109,7 +174,7 @@ setSanitizer(html => DOMPurify.sanitize(html))
 
 Without a registered sanitizer, `sanitizeHtml()` shows the HTML as text and reports it in the console.
 
-## 5. Document your own code
+## 6. Document your own code
 
 The documentation of Ricochet is generated from the `/** … */` blocks of its source files by `tools/doc.mjs`. The
 same blocks feed three readers: the tooltips of VSCode, the Markdown pages of `docs/api/` that GitHub displays, and
@@ -172,7 +237,7 @@ git add docs/api
 and enable it once per clone with `git config core.hooksPath .githooks`. On macOS and Linux, the hook must be
 executable: `chmod +x .githooks/pre-commit`.
 
-## 6. Publish the application
+## 7. Publish the application
 
 Once Ricochet is in your application (step 1), the application is a set of static files: any static host works,
 GitHub Pages included. With GitHub Pages, add an empty `.nojekyll` file at the root of your repository; without it,

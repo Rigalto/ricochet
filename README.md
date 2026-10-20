@@ -11,8 +11,9 @@
 
 ---
 
-> **Status: early.** Ricochet is being extracted from a personal application where it has run in production for several years.
-> The API described here is the current one; it will evolve as the kernel moves to native Custom Elements (see [Roadmap](#roadmap)).
+> **Status: young.** Ricochet is extracted from a personal application where it has run in production for several
+> years. The kernel and the components of the interface are here; the application is moving onto them one component at
+> a time, and the API may still change (see [Roadmap](#roadmap)).
 
 ## Why Ricochet?
 
@@ -62,11 +63,12 @@ What sets it apart:
   do not bubble "up": everything travels flat.
 - **Shared state that persists by itself.** Configuration items are a reactive key/value store *and* an automatic
   save. Setting an item notifies every observer and schedules its persistence.
-- **Behaviour declared in HTML.** A button needs no JavaScript to set an item, fire an event, navigate or copy text:
-  `data-item`, `data-event`, `data-path`, `data-url`, `data-paste` are handled by one click listener on the document
-  (see [docs/api/actions.module.md](docs/api/actions.module.md)).
-- **Centralised, layered keyboard handling.** Alert › modal › focused module › floating buttons › view: each key press
-  goes to the highest layer that listens for it, and to no one else.
+- **Behaviour declared in HTML.** A button needs no JavaScript to set an item, fire an event, navigate, copy text or
+  open a dialog: `data-item`, `data-event`, `data-path`, `data-url`, `data-paste`, `data-dialog` are handled by one
+  click listener on the document (see [docs/api/actions.module.md](docs/api/actions.module.md)).
+- **Centralised, layered keyboard handling.** Open windows (dropdowns, dialogs, alerts, the one on top first) ›
+  focused module › floating buttons › view: each key press goes to the highest layer that listens for it, and to no
+  one else.
 - **Styles next to the component.** Each component declares its CSS in its own module; the rules are in the page
   before it is mounted, isolated from the others, and named in the inspector.
 - **Built-in instrumentation.** Leak counters (attached components, listeners, timers, animation frames) and timelines of
@@ -86,7 +88,7 @@ Ricochet has two base classes and three communication channels.
 | `WController` | No DOM. A singleton created when its module is imported (keyboard, data proxies, business logic). Same API as `WComponent` for signals. |
 | **Event bus** | Volatile signals: `emit(name, payload)` / `listen(name)`. |
 | **Configuration items** | Persistent shared state: `setItem(item, value)` / `observeItems([items])`. Observers are called once per task; changes are saved after 2 s, or at once when the page closes, through a storage adapter. |
-| **Data proxy** | Complex records: create / update / delete, memory cache, change notification for observers. |
+| **Storage adapters** | Where the configuration items are loaded from and saved to: in memory (provided), an HTTP server or Google Drive (a few lines in the application). |
 
 Everything a component subscribes to — events, items, attributes, window events, intervals, animation frames — is
 released when it is detached. No manual cleanup in normal use.
@@ -94,26 +96,20 @@ released when it is detached. No manual cleanup in normal use.
 ## A quick look
 
 ```html
-<like-button data-event="liked" data-param='{"id": 42}'></like-button>
+<rc-icon-button icon="heart" data-event="liked" data-param='{"id": 42}'>Like</rc-icon-button>
 <like-counter></like-counter>
 ```
 
 ```javascript
 import {WComponent} from 'ricochet/core/w-component.mjs'
 import {css} from 'ricochet/core/css.mjs'
+import 'ricochet/ui/rc-icon-button.mjs'
 
 css(`
 like-counter { font-weight: bold; }
 `)
 
-class LikeButton extends WComponent {
-  attach () {
-    this.innerHTML('<button>Like</button>')
-    // the generic handler reads data-event / data-param and emits 'liked'
-    this.observeDom(this.element, 'click', 'clickDatasetHandler')
-  }
-}
-WComponent.define('like-button', LikeButton)
+// the button needs no code: a click emits 'liked' with the payload of data-param
 
 class LikeCounter extends WComponent {
   attach () {
@@ -133,7 +129,7 @@ WComponent.render() // mounts the components of the page (start() does it for an
 ```
 
 Custom elements live in the light DOM: global styles and utility classes apply to them. The former syntax,
-`<div as="like-button">`, mounts the same class, so that an application can migrate one component at a time.
+`<div as="like-counter">`, mounts the same class, so that an application can migrate one component at a time.
 
 > **Note:** configuration items are loaded and saved by a storage adapter that the application gives to the store,
 > before loading it: `config.setAdapter(adapter)`, then `await config.load()` (`ricochet/core/config.mjs`). Ricochet
@@ -167,7 +163,8 @@ import map, and serve the page from any local web server.
 of the interface, then listening to the address.
 
 The [guide](docs/GUIDE.md) explains each step, how to run the application on your computer, and how to generate the
-documentation of your own components. The [API reference](docs/api/README.md) is generated from the sources.
+documentation of your own components; the [guide of the themes](docs/THEME.md) explains palettes, day and night, and
+how to give the interface a look of its own. The [API reference](docs/api/README.md) is generated from the sources.
 
 The unit tests of the kernel run with Node.js 18 or later, without any package to install:
 
@@ -187,10 +184,11 @@ server and open `ricochet/tests/browser/`.
 | `attach()` / `detach()` | Mount and optional extra cleanup. |
 | `innerHTML(html)` | Replaces the component's content and mounts nested components. |
 | `static observedAttributes = [names]` | Calls `nameChanged(newValue, oldValue)` after `attach()`, then on every change. |
+| `observeAttributes(names, handler)` | The same for attributes known only at run time, with one method for all. |
 | `listen(name)` / `emit(name, payload)` | Event bus; the handler is `nameDispatched(payload)` by convention. |
 | `observeItems([items])` / `setItem(item, value)` | Configuration items; handler is `itemsChanged(items)` by convention. |
 | `observeWindowEvents(type, handler)` / `observeDom(target, type, handler)` | Window and DOM events, released on detach. |
-| `observeKeyboard(layer, keys)` | Registers keys for a layer: `modal`, `module`, `view`, floating groups. |
+| `observeKeyboard(layer, keys)` | Registers keys for a layer: `module`, `view`, floating groups; a window opens its own layer with `keyboard.openLayer(owner, keys)`. |
 | `listen('routeChanged')` / `router.navigate(path)` | The current route at once, then each change; navigation. |
 | `defer(name, payload)` / `schedule(name, payload, ms)` | Microtasks and scheduled tasks, cancelled on detach. |
 | `setAnimationFrame(update, render)` | The animation of the component in the frame loop, released on detach. |
@@ -219,12 +217,13 @@ The events that Ricochet emits and listens to, and the `rc` prefix reserved for 
   day and a night value (`light-dark()`). A palette is three numbers; the day/night choice is one configuration item.
   Shadow classes (`rc-shadow-1…3`, `rc-shadow-inset`, `rc-text-shadow`) and a panel class (`rc-panel`) complete them.
   The parameters, tokens, attributes and classes are listed in [docs/api/theme.module.md](docs/api/theme.module.md);
-  see them at work in [demo/theme.html](demo/theme.html).
+  see them at work in [demo/theme.html](demo/theme.html). The [guide of the themes](docs/THEME.md) shows how to write a
+  palette of your own.
 - **An icon set** drawn on a common 24×24 grid with uniform stroke rules.
 - **A Markdown converter** for a [restricted, standard-compatible Markdown](docs/MARKDOWN.md), with hooks for
   application links.
 - **A documentation generator** (`tools/doc.mjs`), usable on your own code.
-- **Utilities** for the DOM, the clipboard, dates, strings, hashing and seeded random numbers.
+- **Utilities** for the DOM and the clipboard, and a hook for the sanitizer of your choice (`utils/dom.mjs`).
 
 ## Browser support
 
@@ -234,14 +233,17 @@ uses JavaScript up to ES2022, so that it also runs in slightly older browsers an
 ## Roadmap
 
 Done: the event bus, relative imports with an import map, the base classes `WController` and `WComponent`, the
-layered keyboard, component styles, the store of configuration items with storage adapters, microtasks, scheduled
-tasks, clocks and the frame loop, the router with a universe/brick resolver, `start()`, native Custom Elements
-(`<like-button>`, light DOM) alongside the former `<div as="like-button">`, unit tests.
+layered keyboard with its stack of windows, component styles, the store of configuration items with storage adapters,
+microtasks, scheduled tasks, clocks and the frame loop, the router with a universe/brick resolver, `start()`, native
+Custom Elements (`<like-counter>`, light DOM) alongside the former `<div as="like-counter">`, the `data-*` actions,
+palettes and themes, the UI components `rc-*`, unit and browser tests.
 
-1. **UI components `rc-*`.** Buttons, inputs, selects, tabs, dropdowns… styled with CSS custom properties, with a
-   light and a dark theme, usable on a phone screen.
+1. **Tools for palettes.** A page that shows which classes and attributes give an element a look, and an editor to
+   design a palette (hue, intensity, day and night, shade).
 2. **Storage in Google Drive.** An adapter for configuration items and data records, with IndexedDB as a cache.
-3. **Documentation and a demo page.**
+
+The demos and the documentation are gathered on the home page,
+[rigalto.github.io/ricochet](https://rigalto.github.io/ricochet/).
 
 The design decisions behind Ricochet are recorded in [docs/DESIGN.md](docs/DESIGN.md).
 
