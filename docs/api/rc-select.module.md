@@ -76,6 +76,12 @@ defineOptionSources({
 | `items` | the configuration items whose change asks the options again: an array, or `argument => array` |
 | `events` | the events that ask the options again: an array, or `argument => array` |
 
+**One request for several selects.** While the options of a source and an argument are being loaded, the other
+selects that ask for them wait for the same answer: three selects `source="groups hom-not"` in a view, or asked
+again by the same event, make one request. Nothing is kept once the answer has come: the next request asks the
+source again. The function is then called once, with the element of the first select; each select gets its own copy
+of the options. Keeping the data between requests is the job of the application (its data layer).
+
 A source given as a function is `{options: function}`. One source is built in: `item`, whose argument is the name of
 a configuration item holding options in the format of the `options` attribute (`source="item font-list"`).
 

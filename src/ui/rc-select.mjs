@@ -76,6 +76,12 @@
  * | `items` | the configuration items whose change asks the options again: an array, or `argument => array` |
  * | `events` | the events that ask the options again: an array, or `argument => array` |
  *
+ * **One request for several selects.** While the options of a source and an argument are being loaded, the other
+ * selects that ask for them wait for the same answer: three selects `source="groups hom-not"` in a view, or asked
+ * again by the same event, make one request. Nothing is kept once the answer has come: the next request asks the
+ * source again. The function is then called once, with the element of the first select; each select gets its own copy
+ * of the options. Keeping the data between requests is the job of the application (its data layer).
+ *
  * A source given as a function is `{options: function}`. One source is built in: `item`, whose argument is the name of
  * a configuration item holding options in the format of the `options` attribute (`source="item font-list"`).
  *
@@ -117,6 +123,7 @@ rc-select[disabled]::after { border-color: var(--rc-disabled); }
 
 const sources = new Map() // name → {options, items, events}
 const warned = new Set()
+const pending = new Map() // 'name argument' → the Promise of options being loaded, shared by the selects
 
 /**
  * Reads options written as a text: options separated by `|`, each `label` or `label#value`.
@@ -243,7 +250,7 @@ export class RcSelect extends WComponent {
       }
       return
     }
-    this.source = {source, argument: rest.join(' ')}
+    this.source = {name, source, argument: rest.join(' ')}
     this.sourceEvents = list(source.events, this.source.argument)
     if (this.sourceEvents.length > 0) { this.listen(this.sourceEvents, 'sourceRefreshed') }
     const items = list(source.items, this.source.argument)
@@ -293,14 +300,24 @@ export class RcSelect extends WComponent {
 
   #load () {
     if (this.source === null) { return }
-    const {source, argument} = this.source
+    const {name, source, argument} = this.source
     const request = ++this.request
-    let result
-    try {
-      result = source.options(argument, this.element)
-    } catch (error) {
-      console.error(`rc-select: the source '${this.element.getAttribute('source')}' failed`, error)
-      return
+    // a request of the same options in progress: this select waits for its answer, as the others
+    const key = `${name} ${argument}`
+    let result = pending.get(key)
+    if (result === undefined) {
+      try {
+        result = source.options(argument, this.element)
+      } catch (error) {
+        console.error(`rc-select: the source '${this.element.getAttribute('source')}' failed`, error)
+        return
+      }
+      if (typeof result?.then === 'function') {
+        const promise = result
+        const forget = () => { if (pending.get(key) === promise) { pending.delete(key) } }
+        pending.set(key, promise)
+        promise.then(forget, forget)
+      }
     }
     Promise.resolve(result).then(options => {
       if (request !== this.request || this.element === null) { return } // a later request, or the select is gone

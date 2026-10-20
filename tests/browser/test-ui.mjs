@@ -590,6 +590,59 @@ await describe('rc-select', async () => {
   await tick()
 })
 
+await describe('rc-select: one request for several selects', async () => {
+  const waiting = []
+  const asked = []
+  defineOptionSources({
+    tuShared: {
+      options: (sheet, element) => {
+        asked.push([sheet, element.id])
+        return new Promise(resolve => waiting.push(() => resolve([{label: `${sheet} A`, value: 'a'}, {label: `${sheet} B`, value: 'b'}])))
+      },
+      events: ['tuSharedRefresh']
+    },
+    tuFailing: () => Promise.reject(new Error('offline'))
+  })
+  sandbox.innerHTML = `
+    <rc-select id="s1" source="tuShared Groups" value="a"></rc-select>
+    <rc-select id="s2" source="tuShared Groups" value="b"></rc-select>
+    <rc-select id="s3" source="tuShared Groups"></rc-select>
+    <rc-select id="s4" source="tuShared Cards"></rc-select>`
+  await tick()
+  const labels = id => [...$(`#${id} > select`).options].map(o => o.textContent).join()
+  assert('three selects, same source and argument: one request', asked.filter(a => a[0] === 'Groups').length === 1)
+  assert('… with the element of the first select', asked[0][1] === 's1')
+  assert('another argument: its own request', asked.filter(a => a[0] === 'Cards').length === 1 && waiting.length === 2)
+  waiting.shift()()
+  waiting.shift()()
+  await tick()
+  assert('every select gets the options', labels('s1') === 'Groups A,Groups B' && labels('s2') === labels('s1') &&
+    labels('s3') === labels('s1') && labels('s4') === 'Cards A,Cards B')
+  assert('… and keeps its own value', $('#s1 > select').value === 'a' && $('#s2 > select').value === 'b')
+  assert('… each its own copy', $('#s1')._component.list[0] !== $('#s2')._component.list[0])
+  asked.length = 0
+  bus.emit('tuSharedRefresh', {})
+  assert('an event asks again: one request per argument', asked.length === 2 && waiting.length === 2)
+  waiting.shift()()
+  waiting.shift()()
+  await tick()
+  asked.length = 0
+  sandbox.insertAdjacentHTML('beforeend', '<rc-select id="s5" source="tuShared Groups"></rc-select>')
+  await tick()
+  assert('once answered, nothing is kept: a new select asks again', asked.length === 1)
+  waiting.shift()()
+  await tick()
+  assert('… and gets the options', labels('s5') === 'Groups A,Groups B')
+  captureConsole()
+  sandbox.insertAdjacentHTML('beforeend', '<rc-select id="s6" source="tuFailing x"></rc-select><rc-select id="s7" source="tuFailing x"></rc-select>')
+  await tick()
+  await tick()
+  const lines = releaseConsole()
+  assert('a failed request is reported, and forgotten', lines.some(l => l.includes('tuFailing')) && labels('s6') === '')
+  sandbox.innerHTML = ''
+  await tick()
+})
+
 await describe('rc-tabs', async () => {
   config.setItem('tu-tab', 'b')
   sandbox.innerHTML = `
