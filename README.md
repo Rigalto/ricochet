@@ -161,8 +161,9 @@ The button does not know the counter exists. Add a second counter anywhere in th
 
 ## Getting started
 
-Ricochet is a folder of plain ES modules: add it to your project (as a Git submodule or a copy), declare it in an
-import map, and serve the page from any local web server.
+Ricochet is a folder of plain ES modules that lives in your project: add it as a Git submodule or a copy, declare it
+in an import map, and serve the page from any local web server. Your application carries its own kernel: you choose
+when to update it, and it depends on no third-party server.
 
 ```html
 <script type="importmap">

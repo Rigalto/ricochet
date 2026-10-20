@@ -6,18 +6,29 @@ night) has a guide of its own: [THEME.md](THEME.md).
 
 ## 1. Get the kernel
 
-Ricochet is a set of plain JavaScript modules: there is nothing to install and nothing to build. Your application
-needs a copy of the `src/` folder. Choose one of these ways:
+Ricochet is a set of plain JavaScript modules: there is nothing to install and nothing to build. It lives **in your
+project**: your application carries its own copy of the `src/` folder and serves it with its own files.
+
+This is a choice, and it brings a lot for a small cost (about 450 kB of code, plus 1.3 MB for the icon set, loaded only
+with the interface):
+
+- **You decide when to update.** The version you have tested is the one your users run; a change to the kernel
+  reaches your application only when you take it.
+- **Nothing depends on a third party.** No CDN that could be slow, blocked or gone: if your site is up, Ricochet is up.
+- **Everything works offline**, on your computer as on the server, with the same paths.
+- **One origin.** The kernel comes from the same place as your pages: no cross-origin request, nothing to declare,
+  the cache of the browser works as for your own files.
+- **You can read it and change it.** The code you run is in your project, next to yours.
+
+Choose one of these ways:
 
 | Way | How | When |
 | --- | --- | --- |
 | Git submodule | `git submodule add https://github.com/Rigalto/ricochet.git ricochet`, then `git submodule update --remote` to follow updates | Your application is in a Git repository and you want to follow Ricochet's updates. Recommended. |
 | Copy | Download the repository and copy its `src/` folder into your project | Your application will keep the version it was built with. |
-| CDN | Load the files from jsDelivr, pinned to a release tag: `https://cdn.jsdelivr.net/gh/Rigalto/ricochet@<tag>/src/` | You want to try Ricochet without copying anything. |
 
-> **Do not load Ricochet from its GitHub Pages site** (`rigalto.github.io/ricochet`). That site always serves the
-> latest, unreleased code: a change made to the kernel would reach your application without warning. Pages is not a
-> CDN either: it is not meant to serve the files of many applications.
+> **The site of Ricochet (`rigalto.github.io/ricochet`) is for its demos and its documentation.** It always shows the
+> latest code, as it is being written: load the kernel from your own copy, never from there.
 
 The files that come with the repository (`.gitattributes`, `.nojekyll`, `.githooks/`) are only used to maintain
 Ricochet itself. Your application does not need them.
@@ -76,20 +87,9 @@ comes from.
 > once per tag, with the component that holds it. While you develop, `$global.debug.strict = true` turns the report
 > into an error that stops the code.
 
-To change where Ricochet comes from (a local copy while developing, a CDN in production), only the import map changes.
-It can be written by a small script when the place depends on where the page runs:
-
-```html
-<script>
-  const local = ['localhost', '127.0.0.1'].includes(location.hostname)
-  const importMap = document.createElement('script')
-  importMap.type = 'importmap'
-  importMap.textContent = JSON.stringify({
-    imports: {'ricochet/': local ? '/ricochet/src/' : 'https://cdn.jsdelivr.net/gh/Rigalto/ricochet@<tag>/src/'},
-  })
-  document.currentScript.after(importMap)
-</script>
-```
+Since Ricochet travels with your application, the import map is the same on your computer and on your server: the
+application and its copy of the kernel move together. If you put the folder somewhere else, only the import map
+changes.
 
 > **Load each module from one URL only.** A module imported through two different URLs is run twice: for the kernel,
 > that would mean two event buses and two keyboard controllers.
@@ -254,6 +254,6 @@ executable: `chmod +x .githooks/pre-commit`.
 
 ## 7. Publish the application
 
-Once Ricochet is in your application (step 1), the application is a set of static files: any static host works,
-GitHub Pages included. With GitHub Pages, add an empty `.nojekyll` file at the root of your repository; without it,
+Once Ricochet is in your application (step 1), the application is a set of static files, the kernel included: any
+static host works, GitHub Pages included, and publishing the application publishes its kernel with it. With GitHub Pages, add an empty `.nojekyll` file at the root of your repository; without it,
 files and folders whose name starts with `_` are not published.
