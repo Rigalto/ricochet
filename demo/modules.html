@@ -1,0 +1,82 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Copyright (c) 2026 Rigalto -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ricochet — modules</title>
+  <script type="importmap">
+  { "imports": { "ricochet/": "../src/" } }
+  </script>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 0; }
+    /* the page of an application: a header, the view, and the zone of the modules on the right */
+    .header { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; padding: .6rem 1rem; }
+    .header h1 { font-size: 1.1rem; margin: 0 auto 0 0; color: var(--rc-text-strong); }
+    .page { display: flex; align-items: flex-start; min-height: calc(100vh - 3rem); }
+    .view { flex: 1 1 auto; min-width: 0; padding: 1rem 1.5rem; align-self: stretch; }
+    .view h2 { margin-top: 0; font-size: 1.05rem; color: var(--rc-text-strong); }
+    .view p { max-width: 42rem; }
+    .modules { flex: 0 0 20rem; align-self: stretch; padding: .75rem; display: grid; gap: .75rem; align-content: start; }
+    .modules[hidden] { display: none; }
+    /* the frame of a module, simpler than the one of the application: a title and the content */
+    .module { border-radius: 8px; overflow: hidden; }
+    .module > h2 { margin: 0; padding: .4rem .75rem; font-size: .95rem; color: var(--rc-text-strong); }
+    .module > .content { padding: .75rem; }
+    @media (max-width: 700px) {
+      .page { flex-direction: column; }
+      .modules { flex-basis: auto; width: 100%; box-sizing: border-box; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header" palette="header">
+    <h1>Ricochet — modules</h1>
+    <rc-checkbox data-item="demo-modules">Modules</rc-checkbox>
+    <rc-icon-button icon="computerclassic" data-item="ricochet-theme" data-value="system" title="Theme of the computer"></rc-icon-button>
+    <rc-icon-button icon="sunglasses" data-item="ricochet-theme" data-value="day" title="Day"></rc-icon-button>
+    <rc-icon-button icon="moonfirstquarter" data-item="ricochet-theme" data-value="night" title="Night"></rc-icon-button>
+  </header>
+  <div class="page">
+    <main class="view" palette="view">
+      <h2>The zone of the modules</h2>
+      <p>On the right, the zone of the modules has the palette <code>module</code>: <code>medium</code> for the zone,
+        <code>deep</code> for the titles of the modules, <code>light</code> for their content. A module may then give
+        its content a palette of its own.</p>
+      <p>The palette editor is a module of an application: its content is the real one, its frame is simpler here. Its
+        settings are configuration items, kept in memory in this demo: they are lost when the page is loaded again.</p>
+      <p>Move the hue and the intensity, switch day and night, show the states: the preview follows. Then copy the CSS
+        rule into the CSS of your application, and give the palette to a block: <code>&lt;section palette="game"&gt;</code>.
+        See the <a href="https://github.com/Rigalto/ricochet/blob/main/docs/THEME.md">guide of the themes</a>.</p>
+    </main>
+    <aside class="modules" palette="module" shade="medium">
+      <section class="module">
+        <h2 shade="deep">Palette editor</h2>
+        <div class="content" shade="light"><mod-palette-editor></mod-palette-editor></div>
+      </section>
+    </aside>
+  </div>
+
+  <script type="module">
+    import {WComponent, WController, config, MemoryAdapter} from 'ricochet/ricochet.mjs'
+    import 'ricochet/ui/all.mjs'
+    import './mod-palette-editor.mjs'
+
+    // the page shows or hides the zone of the modules
+    class DemoPage extends WController {
+      constructor () {
+        super()
+        this.observeItems(['demo-modules'])
+      }
+
+      itemsChanged (items) { document.querySelector('.modules').hidden = items['demo-modules'] === 'no' }
+    }
+
+    config.setAdapter(new MemoryAdapter({'ricochet-theme': 'system', 'demo-modules': 'yes'}))
+    await config.load()
+    new DemoPage()
+    WComponent.render()
+  </script>
+</body>
+</html>

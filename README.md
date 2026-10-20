@@ -243,7 +243,7 @@ The events that Ricochet emits and listens to, and the `rc` prefix reserved for 
   Shadow classes (`rc-shadow-1…3`, `rc-shadow-inset`, `rc-text-shadow`) and a panel class (`rc-panel`) complete them.
   The parameters, tokens, attributes and classes are listed in [docs/api/theme.module.md](docs/api/theme.module.md);
   see them at work in [demo/theme.html](demo/theme.html). The [guide of the themes](docs/THEME.md) shows how to write a
-  palette of your own.
+  palette of your own, and the palette editor of [demo/modules.html](demo/modules.html) finds its numbers.
 - **An icon set** drawn on a common 24×24 grid with uniform stroke rules.
 - **A Markdown converter** for a [restricted, standard-compatible Markdown](docs/MARKDOWN.md), with hooks for
   application links.
@@ -269,8 +269,8 @@ microtasks, scheduled tasks, clocks and the frame loop, the router with a univer
 Custom Elements (`<like-counter>`, light DOM) alongside the former `<div as="like-counter">`, the `data-*` actions,
 palettes and themes, the UI components `rc-*`, unit and browser tests.
 
-1. **Tools for palettes.** A page that shows which classes and attributes give an element a look, and an editor to
-   design a palette (hue, intensity, day and night, shade).
+1. **Tools for palettes.** Done: the palette editor ([demo/modules.html](demo/modules.html)). To come: a helper that
+   shows which classes and attributes give an element a look.
 2. **Storage in Google Drive.** An adapter for configuration items and data records, with IndexedDB as a cache.
 
 The demos and the documentation are gathered on the home page,

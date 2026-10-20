@@ -58,6 +58,9 @@ the application wins over it.
 [palette="game"] { --rc-hue: 140; --rc-chroma: .07; }
 ```
 
+The palette editor of [demo/modules.html](../demo/modules.html) finds the two numbers: move the hue and the
+intensity, look at the interface by day and by night, in each shade, with its states, then copy the rule.
+
 **By setting tokens directly** — for a surface that must stand out (an action button, a coloured band). The other
 tokens are still computed from the parameters; give each token a day and a night value with `light-dark()`.
 
