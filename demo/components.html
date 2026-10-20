@@ -56,22 +56,9 @@
   <div class="schemes" id="schemes"></div>
 
   <script type="module">
-    import {WComponent} from '../src/core/w-component.mjs'
-    import {config} from '../src/core/config.mjs'
-    import {MemoryAdapter} from '../src/adapters/memory.mjs'
-    import {WController} from '../src/core/w-controller.mjs'
-    import '../src/ui/theme.mjs'
-    import '../src/ui/rc-icon-button.mjs'
-    import '../src/ui/rc-text-button.mjs'
-    import '../src/ui/rc-checkbox.mjs'
-    import '../src/ui/rc-radio.mjs'
-    import {defineChecks} from '../src/ui/rc-input.mjs'
-    import '../src/ui/rc-textarea.mjs'
-    import {defineOptionSources} from '../src/ui/rc-select.mjs'
-    import '../src/ui/rc-tabs.mjs'
-    import '../src/ui/rc-dropdown.mjs'
-    import '../src/ui/rc-slider.mjs'
-    import {showAlert, showConfirm} from '../src/ui/rc-dialog.mjs'
+    // the kernel, and every component of the interface: the two entry points of Ricochet
+    import {WComponent, WController, config, MemoryAdapter} from '../src/ricochet.mjs'
+    import {defineChecks, defineOptionSources, showAlert, showConfirm} from '../src/ui/all.mjs'
 
     const block = (palette, shade) => `
       <div class="block" palette="${palette}" shade="${shade}">

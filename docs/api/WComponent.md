@@ -58,6 +58,9 @@ Mounts the components of an element and of every `[as]` element inside it. The f
 custom elements already in the page: until then, they wait, so that the application decides when its interface
 appears (`start()` calls it once the configuration items and the route are ready).
 
+At the end of the task, a custom element of the content that no module defines is reported in the console, once
+per tag: the module of its component is not imported. With `$global.debug.strict`, the error is thrown.
+
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | `element` | Element | `document.body` | Root of the elements to mount. `<body>` itself must not have `as`. |

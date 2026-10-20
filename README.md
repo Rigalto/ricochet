@@ -101,9 +101,8 @@ released when it is detached. No manual cleanup in normal use.
 ```
 
 ```javascript
-import {WComponent} from 'ricochet/core/w-component.mjs'
-import {css} from 'ricochet/core/css.mjs'
-import 'ricochet/ui/rc-icon-button.mjs'
+import {WComponent, css} from 'ricochet/ricochet.mjs'
+import 'ricochet/ui/rc-icon-button.mjs' // or 'ricochet/ui/all.mjs': every component of the interface
 
 css(`
 like-counter { font-weight: bold; }
@@ -147,8 +146,8 @@ import map, and serve the page from any local web server.
 { "imports": { "ricochet/": "./ricochet/src/" } }
 </script>
 <script type="module">
-  import {start} from 'ricochet/core/start.mjs'
-  import {universeBrickResolver} from 'ricochet/routing/universe-brick.mjs'
+  import {start, universeBrickResolver} from 'ricochet/ricochet.mjs'
+  import 'ricochet/ui/all.mjs' // every component of the interface
   import './components/app-main.mjs'
 
   await start({
@@ -160,7 +159,8 @@ import map, and serve the page from any local web server.
 ```
 
 `start()` always runs the same steps: configuration items, current route (with its module and its scope), mounting
-of the interface, then listening to the address.
+of the interface, then listening to the address. `ricochet/ricochet.mjs` gives the kernel, `ricochet/ui/all.mjs` the
+components of the interface; each module can also be imported alone.
 
 The [guide](docs/GUIDE.md) explains each step, how to run the application on your computer, and how to generate the
 documentation of your own components; the [guide of the themes](docs/THEME.md) explains palettes, day and night, and

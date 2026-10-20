@@ -50,12 +50,27 @@ the first `<script type="module">` of the page:
 <script type="module" src="./app.mjs"></script>
 ```
 
-Then, in your code:
+Then, in your code, import from the two entry points of Ricochet:
 
 ```js
-import {markdownToHtml} from 'ricochet/utils/markdown.mjs'
-import {iconset} from 'ricochet/icons/iconset.mjs'
+import {WComponent, start, markdownToHtml} from 'ricochet/ricochet.mjs' // the kernel
+import {setTheme, showConfirm} from 'ricochet/ui/all.mjs'                // every component of the interface
 ```
+
+- **`ricochet/ricochet.mjs`** gives the classes and functions of the kernel, without loading the interface: an
+  application without `rc-*` components, or a test, loads only what it needs.
+- **`ricochet/ui/all.mjs`** loads every component of the interface, the theme and the icon set, and gives their
+  functions. Import it once, at startup, before `start()`: every `rc-*` tag is then defined before the interface is
+  mounted.
+
+Each module can also be imported alone (`ricochet/ui/rc-select.mjs`, `ricochet/utils/markdown.mjs`…): the
+[API reference](api/README.md) is organised by module, and the pages of the two entry points list where each export
+comes from.
+
+> **A tag whose module is not imported** stays an unknown element: the browser shows its content as it is, without
+> any error. Ricochet reports it in the console when a content is mounted (`WComponent: <rc-select> not defined…`),
+> once per tag, with the component that holds it. While you develop, `$global.debug.strict = true` turns the report
+> into an error that stops the code.
 
 To change where Ricochet comes from (a local copy while developing, a CDN in production), only the import map changes.
 It can be written by a small script when the place depends on where the page runs:
@@ -96,11 +111,8 @@ of the theme, two pages reached by their address (`#home`, `#about`), and a sett
   </header>
   <app-page palette="view"></app-page>
   <script type="module">
-    import {start} from 'ricochet/core/start.mjs'
-    import {MemoryAdapter} from 'ricochet/adapters/memory.mjs'
-    import 'ricochet/ui/theme.mjs'
-    import 'ricochet/ui/rc-text-button.mjs'
-    import 'ricochet/ui/rc-select.mjs'
+    import {start, MemoryAdapter} from 'ricochet/ricochet.mjs'
+    import 'ricochet/ui/all.mjs'
     import './app-page.mjs'
 
     await start({
@@ -114,8 +126,7 @@ of the theme, two pages reached by their address (`#home`, `#about`), and a sett
 
 ```javascript
 // app-page.mjs
-import {WComponent} from 'ricochet/core/w-component.mjs'
-import 'ricochet/ui/rc-checkbox.mjs'
+import {WComponent} from 'ricochet/ricochet.mjs'
 
 const PAGES = {
   home: '<h1>Home</h1><rc-checkbox data-item="app-compact">Compact view</rc-checkbox>',
@@ -139,9 +150,9 @@ WComponent.define('app-page', AppPage)
 unknown), then mounts the page: the components of the page see the items and the route from their first `attach()`.
 No component calls another one: the buttons change the address or an item, and the components that care listen.
 
-The kernel is a set of modules: an application imports what it uses, the components of the interface included
-(`ricochet/ui/rc-*.mjs`, listed in the [API reference](api/README.md)). The demos, `demo/components.html`,
-`demo/floating.html` and `demo/theme.html`, show each component at work.
+The components of the interface (`<rc-text-button>`, `<rc-select>`, `<rc-checkbox>`) are defined by
+`ricochet/ui/all.mjs`, imported once by the page. The demos, `demo/components.html`, `demo/floating.html` and
+`demo/theme.html`, show each component at work.
 
 ## 4. Run the application on your computer
 

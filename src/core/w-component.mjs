@@ -247,6 +247,9 @@ export class WComponent extends WController {
    * Mounts the components of an element and of every `[as]` element inside it. The first call also mounts the
    * custom elements already in the page: until then, they wait, so that the application decides when its interface
    * appears (`start()` calls it once the configuration items and the route are ready).
+   *
+   * At the end of the task, a custom element of the content that no module defines is reported in the console, once
+   * per tag: the module of its component is not imported. With `$global.debug.strict`, the error is thrown.
    * @param {Element} [element=document.body] - Root of the elements to mount. `<body>` itself must not have `as`.
    */
   static render (element = document.body) {
@@ -265,6 +268,26 @@ export class WComponent extends WController {
     }
     WComponent._render(element)
     for (const inner of element.querySelectorAll('[as]')) { WComponent._render(inner) }
+    WComponent.#checkDefined(element)
+  }
+
+  static #undefinedTags = new Set() // the tags already reported
+
+  // the custom elements of a content that no module defines: an import is missing; checked at the end of the task,
+  // so that a module may still define them in the same task
+  static #checkDefined (element) {
+    queueMicrotask(() => {
+      if (!element.isConnected) { return }
+      const found = [...element.querySelectorAll(':not(:defined)')]
+      if (element.matches(':not(:defined)')) { found.push(element) }
+      const tags = [...new Set(found.map(e => e.localName))].filter(tag => !WComponent.#undefinedTags.has(tag))
+      if (tags.length === 0) { return }
+      for (const tag of tags) { WComponent.#undefinedTags.add(tag) }
+      const owner = element._component?.constructor.name ?? WComponent._elementName(element)
+      const message = `WComponent: <${tags.join('>, <')}> not defined, in the content of ${owner}: is its module imported?`
+      if ($global.debug.strict) { throw new Error(message) }
+      console.error(message)
+    })
   }
 
   /**

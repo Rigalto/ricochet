@@ -173,3 +173,34 @@ await describe('Elements — errors', async () => {
   const lines = releaseConsole()
   assert('a tag defined twice is reported', lines.some(l => l.includes("'te-basic' is defined twice")))
 })
+
+await describe('Elements — a custom element no module defines', async () => {
+  class Host extends WComponent {
+    attach () { this.innerHTML('<te-forgotten></te-forgotten><te-forgotten></te-forgotten><te-later></te-later><b>plain</b>') }
+  }
+  WComponent.define('te-host', Host)
+  captureConsole()
+  sandbox.innerHTML = '<te-host></te-host>'
+  WComponent.define('te-later', class extends WComponent { attach () {} }) // defined in the same task: not reported
+  await tick()
+  let lines = releaseConsole()
+  assert('reported at the end of the task, with the component whose content holds it', lines.filter(l => l.includes('<te-forgotten>') && l.includes('Host')).length === 1)
+  assert('a tag defined in the same task is not reported', !lines.some(l => l.includes('te-later')))
+  captureConsole()
+  sandbox.innerHTML = '<te-host></te-host>'
+  await tick()
+  lines = releaseConsole()
+  assert('once per tag', !lines.some(l => l.includes('te-forgotten')))
+  $global.debug.strict = true
+  const errors = []
+  const onError = e => { errors.push(e.message); e.preventDefault() }
+  window.addEventListener('error', onError)
+  sandbox.innerHTML = '<te-host2></te-host2>'
+  WComponent.define('te-host2', class extends WComponent { attach () { this.innerHTML('<te-other></te-other>') } })
+  await tick()
+  window.removeEventListener('error', onError)
+  $global.debug.strict = false
+  assert('$global.debug.strict: the error is thrown', errors.some(m => m.includes('<te-other>')))
+  sandbox.innerHTML = ''
+  await tick()
+})

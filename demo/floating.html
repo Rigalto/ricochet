@@ -65,14 +65,8 @@
   </div>
 
   <script type="module">
-    import {WComponent} from '../src/core/w-component.mjs'
-    import {WController} from '../src/core/w-controller.mjs'
-    import {config} from '../src/core/config.mjs'
-    import {MemoryAdapter} from '../src/adapters/memory.mjs'
-    import '../src/ui/theme.mjs'
-    import '../src/ui/rc-checkbox.mjs'
-    import '../src/ui/rc-dialog.mjs'
-    import '../src/ui/rc-floating.mjs'
+    import {WComponent, WController, config, MemoryAdapter} from '../src/ricochet.mjs'
+    import '../src/ui/all.mjs'
 
     const rows = count => '<tr><th>Title</th><th>Topic</th><th>Words</th></tr>' + Array.from({length: count}, (_, i) =>
       `<tr><td>Article ${i + 1}</td><td>${['Blog', 'Image', 'JavaScript', 'Documentation'][i % 4]}</td><td>${(i * 397) % 3600}</td></tr>`).join('')
