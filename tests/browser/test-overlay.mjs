@@ -232,7 +232,11 @@ await describe('rc-floating-bar, rc-floating-group, rc-floating-button', async (
   const button = $('#f2 > button')
   assert('a round button of 55 px, its icon of 33 px, named by its title', button.offsetHeight === 55 && $('#f2 rc-icon').getAttribute('size') === '33' &&
     button.getAttribute('aria-label') === 'New' && getComputedStyle(button).borderRadius !== '0px')
-  assert('side="right": the group is on the right', $('rc-floating-group[side="right"]').getBoundingClientRect().right === b.right)
+  // within 1 px: the browser may place the edges on fractions of a pixel (zoom, scale of the screen)
+  const right = $('rc-floating-group[side="right"]').getBoundingClientRect().right
+  const fits = b.width >= 400 // narrower, the buttons overflow the line: nothing to check
+  assert(`side="right": the group is on the right${fits ? '' : ' (window too narrow, not checked)'}` +
+    (!fits || Math.abs(right - b.right) <= 1 ? '' : ` (group ${right}, line ${b.right})`), !fits || Math.abs(right - b.right) <= 1)
   assert('gradient="right": ranks 0, 1, 2 from the left', rank('f2') === '0' && rank('f3') === '1' && rank('f4') === '2' && rank('f1') === '0')
   assert('… each button darker', getComputedStyle(button).backgroundColor !== getComputedStyle($('#f4 > button')).backgroundColor)
   got.length = 0
@@ -258,4 +262,40 @@ await describe('rc-floating-bar, rc-floating-group, rc-floating-button', async (
   assert('removed: the keys are forgotten', got.length === 0)
   bus.off('ovAction', onEvent)
   bus.off('overlayChanged', onOverlay)
+})
+
+await describe('rc-floating: sizes', async () => {
+  sandbox.innerHTML = `
+    <rc-floating-bar id="sbar" size="24">
+      <rc-floating-group id="sg1"><rc-floating-button id="s1" icon="add"></rc-floating-button>
+        <rc-floating-button id="s2" icon="pen"></rc-floating-button></rc-floating-group>
+      <rc-floating-group id="sg2" side="right" size="30"><rc-floating-button id="s3" icon="copy"></rc-floating-button>
+        <rc-floating-button id="s4" icon="trash" size="12"></rc-floating-button></rc-floating-group>
+    </rc-floating-bar>`
+  WComponent.render(sandbox)
+  await tick()
+  const icon = id => $(`#${id} rc-icon`).getAttribute('size')
+  const height = id => $(`#${id} > button`).offsetHeight
+  const gap = id => getComputedStyle($(`#${id}`)).columnGap
+  assert('size of the bar: icons of 24 px, buttons of 40 px', icon('s1') === '24' && height('s1') === 40 && height('s2') === 40)
+  assert('… space between buttons 16 px, margin 8 px', gap('sg1') === '16px' && getComputedStyle($('#sbar')).bottom === '8px' &&
+    gap('sbar') === '16px')
+  assert('size of a group wins over the bar', icon('s3') === '30' && height('s3') === 50 && gap('sg2') === '20px')
+  assert('size of a button wins over its group', icon('s4') === '12' && height('s4') === 20)
+  $('#sbar').setAttribute('size', '33')
+  await tick()
+  assert('the bar changes size: its buttons follow', icon('s1') === '33' && height('s1') === 55 && gap('sg1') === '22px')
+  assert('… not those with a size of their own or of their group', icon('s3') === '30' && icon('s4') === '12')
+  $('#sg2').removeAttribute('size')
+  await tick()
+  assert('the group loses its size: the size of the bar', icon('s3') === '33' && height('s3') === 55)
+  $('#s4').removeAttribute('size')
+  await tick()
+  assert('the button loses its size: the size of the bar', icon('s4') === '33' && height('s4') === 55)
+  sandbox.innerHTML = '<rc-floating-bar><rc-floating-group><rc-floating-button id="s5" icon="add"></rc-floating-button></rc-floating-group></rc-floating-bar>'
+  WComponent.render(sandbox)
+  await tick()
+  assert('no size: 33 and 55, as before', icon('s5') === '33' && height('s5') === 55)
+  sandbox.innerHTML = ''
+  await tick()
 })

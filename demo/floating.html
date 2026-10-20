@@ -28,6 +28,7 @@
     <rc-checkbox data-item="demo-modules" checked>Modules</rc-checkbox>
     <rc-checkbox data-item="demo-short">Short view</rc-checkbox>
     <rc-checkbox data-item="demo-hide-two">Hide the second card button</rc-checkbox>
+    <rc-checkbox data-item="demo-small">Small buttons (size="22", for a phone)</rc-checkbox>
     <rc-icon-button icon="trash" data-dialog="demo-dialog">Open a dialog</rc-icon-button>
     <span id="log">Scroll the view; use the buttons, or Ctrl + ← → D M Enter.</span>
   </header>
@@ -39,7 +40,7 @@
   <div class="page">
     <main class="view">
       <section class="rc-panel rc-shadow-2" palette="view"><table id="rows"></table></section>
-      <rc-floating-bar>
+      <rc-floating-bar id="bar">
         <rc-floating-group name="arrows" class="arrows">
           <rc-floating-button icon="caretleft" key="Ctrl-ArrowLeft" title="Previous card (Ctrl ←)"
             data-event="demoFloating" data-param='{"button": "previous"}'></rc-floating-button>
@@ -75,7 +76,7 @@
     class DemoPage extends WController {
       constructor () {
         super()
-        this.observeItems(['demo-modules', 'demo-short', 'demo-hide-two'])
+        this.observeItems(['demo-modules', 'demo-short', 'demo-hide-two', 'demo-small'])
         this.listen('demoFloating')
       }
 
@@ -83,6 +84,11 @@
         document.querySelector('.modules').hidden = items['demo-modules'] === 'no'
         document.getElementById('rows').innerHTML = rows(items['demo-short'] === 'yes' ? 4 : 40)
         document.getElementById('two').hidden = items['demo-hide-two'] === 'yes'
+        if (items['demo-small'] === 'yes') {
+          document.getElementById('bar').setAttribute('size', '22')
+        } else {
+          document.getElementById('bar').removeAttribute('size')
+        }
       }
 
       demoFloatingDispatched ({button, key}) { document.getElementById('log').textContent = `demoFloating: ${button}${key === undefined ? '' : ` (${key})`}` }

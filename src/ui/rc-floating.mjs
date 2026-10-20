@@ -35,6 +35,10 @@
  * - **Keys**: the `key` attribute of a button (`Ctrl-ArrowLeft`, see the `keyboard` module) clicks it; the group
  *   declares the keys of its buttons as floating keys of the keyboard, under its `name`. A hidden or disabled button
  *   has no key.
+ * - **Size**: the attribute `size` of the bar, of a group or of a button is the size of the icons, in pixels (33 by
+ *   default); a button measures 5/3 of it (55 px), and the space between buttons 2/3 of it (22 px). A button takes the
+ *   size of its own attribute, else of its group, else of the bar: `<rc-floating-bar size="26">` makes every button
+ *   smaller, for a phone.
  * - **Colours**: the buttons stand on the colour `--rc-floating`, with their icon in `--rc-floating-text`; an
  *   application sets them on a group, in its CSS. With `gradient="right"`, each button is darker than the one on its
  *   left; with `gradient="left"`, than the one on its right.
@@ -49,6 +53,9 @@
  * `rc-floating-button` is a round `rc-icon-button` (55 px, icon of 33 px): `icon`, `size`, `title` (it names the
  * button), `label`, `disabled`, `key`, `hidden`, and the actions `data-*` (see the `actions` module).
  *
+ * The sizes are CSS properties set by the attribute `size`: `--rc-floating-size` (the button), `--rc-floating-gap`
+ * (the space between buttons) and `--rc-floating-margin` (the space below the bar).
+ *
  * @module rc-floating
  * @category ui
  */
@@ -61,15 +68,15 @@ import {RcIconButton} from './rc-icon-button.mjs'
 css(`
 rc-floating-bar {
   position: sticky;
-  bottom: 11px;
+  bottom: var(--rc-floating-margin, 11px);
   z-index: 10;
   align-items: flex-end;
-  gap: 22px;
-  margin-block: 11px;
+  gap: var(--rc-floating-gap, 22px);
+  margin-block: var(--rc-floating-margin, 11px);
   pointer-events: none;
 }
 rc-floating-group {
-  gap: 22px;
+  gap: var(--rc-floating-gap, 22px);
   --rc-floating: light-dark(oklch(66% .13 275), oklch(56% .13 275));
   --rc-floating-text: oklch(99% .005 275);
 }
@@ -81,12 +88,12 @@ rc-floating-button > button {
   align-items: center;
   justify-content: center;
   gap: .35em;
-  min-width: 55px;
-  height: 55px;
+  min-width: var(--rc-floating-size, 55px);
+  height: var(--rc-floating-size, 55px);
   margin: 0;
-  padding: 0 11px;
+  padding: 0 calc(var(--rc-floating-size, 55px) / 5);
   border: none;
-  border-radius: 28px;
+  border-radius: calc(var(--rc-floating-size, 55px) / 2 + 1px);
   background: var(--rc-floating);
   background: oklch(from var(--rc-floating) calc(l - var(--rc-rank, 0) * .07) c h);
   color: var(--rc-floating-text);
@@ -103,10 +110,40 @@ rc-floating-button > button > span:empty { display: none; }
 @media print { rc-floating-bar { display: none; } }
 `, {layer: 'ricochet'})
 
+const DEFAULT_SIZE = 33
+
+// the size of the icons of an element: its own attribute, else that of its group, else that of the bar
+const sizeOf = element => {
+  const holder = element.hasAttribute('size') ? element : element.closest('rc-floating-group[size], rc-floating-bar[size]')
+  return parseInt(holder?.getAttribute('size'), 10) || DEFAULT_SIZE
+}
+
+// writes the sizes of an element that has the attribute size: the button, the space between buttons, the margin
+const setSizes = (element, withSpaces) => {
+  const style = element.style
+  if (!element.hasAttribute('size')) {
+    for (const name of ['--rc-floating-size', '--rc-floating-gap', '--rc-floating-margin']) { style.removeProperty(name) }
+    return
+  }
+  const size = sizeOf(element)
+  style.setProperty('--rc-floating-size', `${Math.round(size * 5 / 3)}px`)
+  if (withSpaces) {
+    style.setProperty('--rc-floating-gap', `${Math.round(size * 2 / 3)}px`)
+    style.setProperty('--rc-floating-margin', `${Math.round(size / 3)}px`)
+  }
+}
+
+// a group or the bar changed its size: its buttons follow, unless they have their own
+const resizeButtons = element => {
+  setSizes(element, true)
+  for (const button of element.querySelectorAll('rc-floating-button')) { button._component?.applySize() }
+}
+
 /**
  * The component of `<rc-floating-button>`: a round icon button.
  * @attr {string} icon - Name of the icon.
- * @attr {number} [size=33] - Size of the icon, in pixels.
+ * @attr {number} [size=33] - Size of the icon, in pixels; the button measures 5/3 of it. Default: the size of the
+ *   group, else of the bar.
  * @attr {string} [title] - Tooltip; names the button.
  * @attr {string} [key] - Key that clicks the button (`Ctrl-ArrowLeft`…).
  * @attr {boolean} [disabled] - The button cannot be clicked.
@@ -115,7 +152,13 @@ rc-floating-button > button > span:empty { display: none; }
 export class RcFloatingButton extends RcIconButton {
   static observedAttributes = ['icon', 'size', 'label', 'title', 'disabled', 'key']
 
-  sizeChanged (size) { super.sizeChanged(size ?? '33') }
+  sizeChanged () { this.applySize() }
+
+  /** Applies the size of the button: its own, else that of its group or of the bar. */
+  applySize () {
+    super.sizeChanged(`${sizeOf(this.element)}`)
+    setSizes(this.element, false)
+  }
 
   keyChanged (key) {
     if (key === null) {
@@ -133,9 +176,13 @@ let groups = 0
  * @attr {string} [name] - Name of the group of floating keys (see the `keyboard` module); default: a name of its own.
  * @attr {string} [side=left] - `left` or `right`: the side of the line.
  * @attr {string} [gradient] - `right`: each button darker than the one on its left; `left`: than the one on its right.
+ * @attr {number} [size] - Size of the icons of its buttons, in pixels; default: that of the bar, else 33.
  */
 export class RcFloatingGroup extends WComponent {
   static display = 'flex'
+  static observedAttributes = ['size']
+
+  sizeChanged () { resizeButtons(this.element) }
 
   attach () {
     this.name = this.element.getAttribute('name') ?? `rc-floating-${++groups}`
@@ -167,10 +214,15 @@ export class RcFloatingGroup extends WComponent {
 
 /**
  * The component of `<rc-floating-bar>`: the line of the floating buttons, at the end of the view.
+ * @attr {number} [size=33] - Size of the icons of every button, in pixels: a button measures 5/3 of it, the space
+ *   between buttons 2/3, the margin below the bar 1/3.
  * @listens {{open: number}} overlayChanged - The bar is hidden while a window is open.
  */
 export class RcFloatingBar extends WComponent {
   static display = 'flex'
+  static observedAttributes = ['size']
+
+  sizeChanged () { resizeButtons(this.element) }
 
   attach () {
     this.listen('overlayChanged')

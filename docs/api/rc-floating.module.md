@@ -35,6 +35,10 @@ the page is printed. A click between the buttons reaches the content below.
 - **Keys**: the `key` attribute of a button (`Ctrl-ArrowLeft`, see the `keyboard` module) clicks it; the group
   declares the keys of its buttons as floating keys of the keyboard, under its `name`. A hidden or disabled button
   has no key.
+- **Size**: the attribute `size` of the bar, of a group or of a button is the size of the icons, in pixels (33 by
+  default); a button measures 5/3 of it (55 px), and the space between buttons 2/3 of it (22 px). A button takes the
+  size of its own attribute, else of its group, else of the bar: `<rc-floating-bar size="26">` makes every button
+  smaller, for a phone.
 - **Colours**: the buttons stand on the colour `--rc-floating`, with their icon in `--rc-floating-text`; an
   application sets them on a group, in its CSS. With `gradient="right"`, each button is darker than the one on its
   left; with `gradient="left"`, than the one on its right.
@@ -48,6 +52,9 @@ rc-floating-group[name="card"] { --rc-floating: light-dark(oklch(78% .1 275), ok
 
 `rc-floating-button` is a round `rc-icon-button` (55 px, icon of 33 px): `icon`, `size`, `title` (it names the
 button), `label`, `disabled`, `key`, `hidden`, and the actions `data-*` (see the `actions` module).
+
+The sizes are CSS properties set by the attribute `size`: `--rc-floating-size` (the button), `--rc-floating-gap`
+(the space between buttons) and `--rc-floating-margin` (the space below the bar).
 
 ## Exports
 
