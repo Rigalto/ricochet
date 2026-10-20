@@ -95,20 +95,36 @@ released when it is detached. No manual cleanup in normal use.
 
 ## A quick look
 
+A page with a button and a counter. The two tags are written in the page like any HTML element; the scripts load
+Ricochet, define the counter, and mount the components.
+
 ```html
-<rc-icon-button icon="heart" data-event="liked" data-param='{"id": 42}'>Like</rc-icon-button>
-<like-counter></like-counter>
+<!-- index.html -->
+<!doctype html>
+<html>
+<body>
+  <rc-icon-button icon="heart" data-event="liked" data-param='{"id": 42}'>Like</rc-icon-button>
+  <like-counter></like-counter>
+
+  <script type="importmap">{"imports": {"ricochet/": "./ricochet/src/"}}</script>
+  <script type="module">
+    import {WComponent} from 'ricochet/ricochet.mjs'
+    import 'ricochet/ui/rc-icon-button.mjs' // or 'ricochet/ui/all.mjs': every component of the interface
+    import './like-counter.mjs'
+
+    WComponent.render() // mounts the components of the page; in an application, start() does it
+  </script>
+</body>
+</html>
 ```
 
 ```javascript
+// like-counter.mjs
 import {WComponent, css} from 'ricochet/ricochet.mjs'
-import 'ricochet/ui/rc-icon-button.mjs' // or 'ricochet/ui/all.mjs': every component of the interface
 
 css(`
 like-counter { font-weight: bold; }
 `)
-
-// the button needs no code: a click emits 'liked' with the payload of data-param
 
 class LikeCounter extends WComponent {
   attach () {
@@ -123,9 +139,15 @@ class LikeCounter extends WComponent {
   }
 }
 WComponent.define('like-counter', LikeCounter)
-
-WComponent.render() // mounts the components of the page (start() does it for an application)
 ```
+
+The button needs no code: a click emits `liked` with the payload of `data-param`, and the counter listens to it. The
+counter needs no attribute: it does not know where the event comes from.
+
+The components written in the page wait for the first `WComponent.render()` before they are mounted, so that an
+application decides when its interface appears (`start()` calls it once the configuration items and the route are
+ready). After that, a component is mounted as soon as its tag enters the page, whatever puts it there: the HTML of
+another component, `innerHTML`, `append()`.
 
 Custom elements live in the light DOM: global styles and utility classes apply to them. The former syntax,
 `<div as="like-counter">`, mounts the same class, so that an application can migrate one component at a time.
