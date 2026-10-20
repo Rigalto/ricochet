@@ -50,11 +50,12 @@ the first `<script type="module">` of the page:
 <script type="module" src="./app.mjs"></script>
 ```
 
-Then, in your code, import from the two entry points of Ricochet:
+Then, in your code, import from the entry points of Ricochet:
 
 ```js
 import {WComponent, start, markdownToHtml} from 'ricochet/ricochet.mjs' // the kernel
-import {setTheme, showConfirm} from 'ricochet/ui/all.mjs'                // every component of the interface
+import {setTheme, showConfirm} from 'ricochet/ui/all.mjs'               // every component of the interface
+import {today, formatDate, debounce} from 'ricochet/ricochet-utils.mjs' // the utilities, if you want them
 ```
 
 - **`ricochet/ricochet.mjs`** gives the classes and functions of the kernel, without loading the interface: an
@@ -62,9 +63,12 @@ import {setTheme, showConfirm} from 'ricochet/ui/all.mjs'                // ever
 - **`ricochet/ui/all.mjs`** loads every component of the interface, the theme and the icon set, and gives their
   functions. Import it once, at startup, before `start()`: every `rc-*` tag is then defined before the interface is
   mounted.
+- **`ricochet/ricochet-utils.mjs`** gives the utilities: calendar dates, texts, numbers, random numbers and noise,
+  complex numbers, hashes, unique identifiers, `debounce` and `throttle`. They are optional: use them, or the library
+  of your choice.
 
 Each module can also be imported alone (`ricochet/ui/rc-select.mjs`, `ricochet/utils/markdown.mjs`…): the
-[API reference](api/README.md) is organised by module, and the pages of the two entry points list where each export
+[API reference](api/README.md) is organised by module, and the pages of the entry points list where each export
 comes from.
 
 > **A tag whose module is not imported** stays an unknown element: the browser shows its content as it is, without

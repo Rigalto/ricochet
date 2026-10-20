@@ -1,0 +1,53 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
+/**
+ * The entry point of the utilities: dates, texts, numbers, random numbers, noise, complex numbers, identifiers,
+ * debounce and throttle. They are apart from the kernel (`ricochet.mjs`): an application may use its own utilities,
+ * or a library it knows, and never load these.
+ *
+ * ```javascript
+ * import {today, addMonths, clamp, random, debounce} from 'ricochet/ricochet-utils.mjs'
+ * ```
+ *
+ * Their names follow the libraries most developers know: lodash and es-toolkit (`clamp`, `deburr`, `upperFirst`,
+ * `uniqueId`, `debounce`), `MathUtils` of Three.js (`lerp`, `damp`, `mapLinear`, `degToRad`), date-fns and
+ * `Temporal` for the dates (`addMonths`, `parseDate`, ISO dates). Where the language already does the work, the
+ * pages say which native function to use (`structuredClone`, `Intl.NumberFormat`…).
+ *
+ * Each module stays importable alone (`ricochet/utils/date.mjs`…), and its page of the [API reference](README.md)
+ * is the reference.
+ *
+ * | Export | Module |
+ * | --- | --- |
+ * | `today`, `isValidDate`, `parseDate`, `formatDate`, `toIsoDate`, `fromDate`, `toDate`, `compareDates`, `addDays`, `addMonths`, `addYears`, `differenceInDays`, `dateDifference`, `dayOfWeek`, `startOfWeek`, `startOfMonth`, `isLeapYear`, `getDaysInMonth`, `splitDuration`, `formatDuration` | [date](date.module.md) |
+ * | `deburr`, `foldCase`, `upperFirst`, `truncateMiddle`, `countWords`, `indexesOf`, `urlHost` | [string](string.module.md) |
+ * | `clamp`, `isBetween`, `approxEqual`, `lerp`, `inverseLerp`, `mapLinear`, `damp`, `smoothstep`, `smootherstep`, `cosineInterpolate`, `sigmoid`, `degToRad`, `radToDeg`, `euclideanModulo`, `roundTo`, `splitNumber`, `isPowerOfTwo`, `isNumber`, `toNumber` | [math](math.module.md) |
+ * | `Random`, `random`, `entropy` | [random](random.module.md) |
+ * | `PerlinNoise`, `ValueNoise` | [noise](noise.module.md) |
+ * | `Complex` | [complex](complex.module.md) |
+ * | `djb2`, `djb2String`, `sha256` | [hash](hash.module.md) |
+ * | `clearObject`, `removeWhere`, `removeUnordered`, `firstOf` | [collection](collection.module.md) |
+ * | `IdGenerator`, `createIdGenerator`, `uniqueId` | [id](id.module.md) |
+ * | `debounce`, `throttle`, `promiseState` | [timing](timing.module.md) |
+ *
+ * The utilities for the DOM and the Markdown (`escapeHtml`, `unescapeHtml`, `sanitizeHtml`, `markdownToHtml`…) are
+ * part of the kernel: the components use them. They are exported by `ricochet.mjs`.
+ *
+ * @module ricochet-utils
+ * @category entry
+ */
+
+export {today, isValidDate, parseDate, formatDate, toIsoDate, fromDate, toDate, compareDates, addDays, addMonths,
+  addYears, differenceInDays, dateDifference, dayOfWeek, startOfWeek, startOfMonth, isLeapYear, getDaysInMonth,
+  splitDuration, formatDuration} from './utils/date.mjs'
+export {deburr, foldCase, upperFirst, truncateMiddle, countWords, indexesOf, urlHost} from './utils/string.mjs'
+export {clamp, isBetween, approxEqual, lerp, inverseLerp, mapLinear, damp, smoothstep, smootherstep, cosineInterpolate,
+  sigmoid, degToRad, radToDeg, euclideanModulo, roundTo, splitNumber, isPowerOfTwo, isNumber, toNumber} from './utils/math.mjs'
+export {Random, random, entropy} from './utils/random.mjs'
+export {PerlinNoise, ValueNoise} from './utils/noise.mjs'
+export {Complex} from './utils/complex.mjs'
+export {djb2, djb2String, sha256} from './utils/hash.mjs'
+export {clearObject, removeWhere, removeUnordered, firstOf} from './utils/collection.mjs'
+export {IdGenerator, createIdGenerator, uniqueId} from './utils/id.mjs'
+export {debounce, throttle, promiseState} from './utils/timing.mjs'

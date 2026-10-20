@@ -19,6 +19,7 @@ const REGISTRY = [
   {name: 'Css', file: './test-css.mjs'},
   {name: 'Events', file: './test-events.mjs'},
   {name: 'Iconset', file: './test-iconset.mjs'},
+  {name: 'Utils', file: './test-utils.mjs'},
 ]
 
 const target = process.argv[2] ?? null

@@ -39,6 +39,22 @@ const HTML_ESCAPES = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}
  */
 export const escapeHtml = text => String(text).replace(/[&<>"]/g, c => HTML_ESCAPES[c])
 
+const HTML_ENTITIES = {amp: '&', lt: '<', gt: '>', quot: '"', apos: '\'', nbsp: ' '}
+
+/**
+ * The inverse of `escapeHtml()`: replaces the entities `&amp;`, `&lt;`, `&gt;`, `&quot;`, `&apos;`, `&nbsp;` and
+ * the numeric ones (`&#39;`, `&#x27;`) by their characters. Other named entities are left as they are.
+ * @param {string} text - Text holding entities.
+ * @returns {string} The text with its characters.
+ */
+export const unescapeHtml = text => String(text).replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (entity, name) => {
+  if (name[0] === '#') {
+    const code = name[1] === 'x' || name[1] === 'X' ? parseInt(name.slice(2), 16) : parseInt(name.slice(1), 10)
+    return code <= 0x10ffff ? String.fromCodePoint(code) : entity
+  }
+  return HTML_ENTITIES[name.toLowerCase()] ?? entity
+})
+
 let sanitizer = null
 
 /**

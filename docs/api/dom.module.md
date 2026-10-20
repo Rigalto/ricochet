@@ -32,6 +32,7 @@ Until a sanitizer is registered, `sanitizeHtml()` escapes its input: the HTML is
 | Name | Kind | Description |
 | --- | --- | --- |
 | `escapeHtml` | function | Escapes `&`, `<`, `>` and `"` so that a text can be inserted in HTML, inside an element or an attribute. |
+| `unescapeHtml` | function | The inverse of `escapeHtml()`: replaces the entities `&amp;`, `&lt;`, `&gt;`, `&quot;`, `&apos;`, `&nbsp;` and the numeric ones (`&#39;`, `&#x27;`) by their characters. Other named entities are left as they are. |
 | `setSanitizer` | function | Registers the function used by `sanitizeHtml()`. Called once by the application, at startup. |
 | `sanitizeHtml` | function | Removes the dangerous parts (scripts, event handlers, `javascript:` links) of an HTML string of external origin, with the sanitizer registered by `setSanitizer()`. Without a registered sanitizer, the input is escaped. |
 | `createElementFromHTML` | function | Builds an element from an HTML string, without inserting it in the page. A `<template>` is used, so images are not loaded and elements such as `<tr>` or `<option>` are accepted. |
@@ -51,6 +52,17 @@ Escapes `&`, `<`, `>` and `"` so that a text can be inserted in HTML, inside an 
 | `text` | string | Text to escape. |
 
 **Returns** `string` The escaped text.
+
+### unescapeHtml()
+
+The inverse of `escapeHtml()`: replaces the entities `&amp;`, `&lt;`, `&gt;`, `&quot;`, `&apos;`, `&nbsp;` and
+the numeric ones (`&#39;`, `&#x27;`) by their characters. Other named entities are left as they are.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `text` | string | Text holding entities. |
+
+**Returns** `string` The text with its characters.
 
 ### setSanitizer()
 

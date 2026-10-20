@@ -182,7 +182,8 @@ import map, and serve the page from any local web server.
 
 `start()` always runs the same steps: configuration items, current route (with its module and its scope), mounting
 of the interface, then listening to the address. `ricochet/ricochet.mjs` gives the kernel, `ricochet/ui/all.mjs` the
-components of the interface; each module can also be imported alone.
+components of the interface, `ricochet/ricochet-utils.mjs` the utilities (optional); each module can also be imported
+alone.
 
 The [guide](docs/GUIDE.md) explains each step, how to run the application on your computer, and how to generate the
 documentation of your own components; the [guide of the themes](docs/THEME.md) explains palettes, day and night, and
@@ -246,6 +247,12 @@ The events that Ricochet emits and listens to, and the `rc` prefix reserved for 
   application links.
 - **A documentation generator** (`tools/doc.mjs`), usable on your own code.
 - **Utilities** for the DOM and the clipboard, and a hook for the sanitizer of your choice (`utils/dom.mjs`).
+- **Optional utilities** ([`ricochet-utils.mjs`](docs/api/ricochet-utils.module.md)), apart from the kernel, named
+  after the libraries developers know (lodash, Three.js `MathUtils`, date-fns): calendar dates in ISO format
+  (`addMonths`, `dateDifference`, `parseDate`, `formatDate` with `Intl`), texts (`deburr`, `foldCase`, `countWords`),
+  numbers (`clamp`, `lerp`, `damp`, `mapLinear`), a seeded random generator (`Random`, sfc32), Perlin and value noise,
+  complex numbers, hashes (`djb2`, `sha256`), short unique identifiers kept in a configuration item, and `debounce` /
+  `throttle`, which emit events through the scheduled tasks and the microtasks of the kernel.
 
 ## Browser support
 
