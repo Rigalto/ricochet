@@ -1,8 +1,8 @@
 # Using Ricochet
 
 This guide explains how to set up an application on top of Ricochet: getting the files, loading them, starting the
-application, running it on your computer, and documenting your own code. The look of the interface (palettes, day and
-night) has a guide of its own: [THEME.md](THEME.md).
+application, running it on your computer, a phone version, and documenting your own code. The look of the interface
+(palettes, day and night) has a guide of its own, [THEME.md](THEME.md), and so has debugging, [DEBUG.md](DEBUG.md).
 
 ## 1. Get the kernel
 
@@ -174,7 +174,34 @@ and cookies of the remote server are not sent. The usual answer is a small devel
 application, that serves your files from the disk and relays the API calls to the remote server: for the browser,
 everything then comes from `localhost`. Node.js can do this in about a hundred lines, with no dependency.
 
-## 5. Display HTML of external origin
+To see what the application does (the events, the changes of the items, the errors, the leaks), see the guide of
+debugging, [DEBUG.md](DEBUG.md).
+
+## 5. A phone and a computer
+
+Ricochet does not make a responsive layout: an application has two versions of its interface, one for a computer and
+one for a phone, and adapts each one with CSS and with code. The display mode is chosen once, when the application
+starts (see the `display` module): `phone` when the shorter side of the screen is below 600 pixels, `pc` otherwise.
+Resizing the window does not change it.
+
+```css
+[display-mode="phone"] rc-floating-bar { gap: 12px; }
+```
+
+```javascript
+import {displayMode} from 'ricochet/ricochet.mjs'
+
+attach () {
+  // on a phone, one button opens a dialog with the six tools; on a computer, the six tools are shown
+  this.innerHTML(displayMode === 'phone' ? toolsButton : tools)
+}
+```
+
+To work on the phone version from a computer, set the configuration item `ricochet-display` to `phone` and load the
+page again (`auto` comes back to the choice by the screen), or use the device mode of the developer tools of the
+browser and load the page again.
+
+## 6. Display HTML of external origin
 
 Ricochet never interprets HTML coming from data: Markdown is converted by `markdownToHtml()`, which escapes every
 character before adding its own tags. When your application must display HTML or SVG coming from elsewhere (a stored
@@ -189,7 +216,7 @@ setSanitizer(html => DOMPurify.sanitize(html))
 
 Without a registered sanitizer, `sanitizeHtml()` shows the HTML as text and reports it in the console.
 
-## 6. Document your own code
+## 7. Document your own code
 
 The documentation of Ricochet is generated from the `/** … */` blocks of its source files by `tools/doc.mjs`. The
 same blocks feed three readers: the tooltips of VSCode, the Markdown pages of `docs/api/` that GitHub displays, and
@@ -252,7 +279,7 @@ git add docs/api
 and enable it once per clone with `git config core.hooksPath .githooks`. On macOS and Linux, the hook must be
 executable: `chmod +x .githooks/pre-commit`.
 
-## 7. Publish the application
+## 8. Publish the application
 
 Once Ricochet is in your application (step 1), the application is a set of static files, the kernel included: any
 static host works, GitHub Pages included, and publishing the application publishes its kernel with it. With GitHub Pages, add an empty `.nojekyll` file at the root of your repository; without it,

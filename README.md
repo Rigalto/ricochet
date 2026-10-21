@@ -189,7 +189,9 @@ alone.
 
 The [guide](docs/GUIDE.md) explains each step, how to run the application on your computer, and how to generate the
 documentation of your own components; the [guide of the themes](docs/THEME.md) explains palettes, day and night, and
-how to give the interface a look of its own. The [API reference](docs/api/README.md) is generated from the sources.
+how to give the interface a look of its own; the [guide of debugging](docs/DEBUG.md) lists the switches, logs, error
+counters and leak counters, and how to add your own. The [API reference](docs/api/README.md) is generated from the
+sources.
 
 The unit tests of the kernel run with Node.js 18 or later, without any package to install:
 
@@ -248,6 +250,10 @@ The events that Ricochet emits and listens to, and the `rc` prefix reserved for 
 - **A Markdown converter** for a [restricted, standard-compatible Markdown](docs/MARKDOWN.md), with hooks for
   application links.
 - **A documentation generator** (`tools/doc.mjs`), usable on your own code.
+- **Two display modes**, `pc` and `phone`, chosen once at startup from the size of the screen (`displayMode`, the
+  attribute `display-mode` of `<html>`): two versions of the interface rather than a responsive layout.
+- **Debugging tools** in `window.$global`: switches for the console, logs of the last events and item changes, error
+  counters, leak counters, and functions to add those of the application ([docs/DEBUG.md](docs/DEBUG.md)).
 - **Utilities** for the DOM and the clipboard, and a hook for the sanitizer of your choice (`utils/dom.mjs`).
 - **Optional utilities** ([`ricochet-utils.mjs`](docs/api/ricochet-utils.module.md)), apart from the kernel, named
   after the libraries developers know (lodash, Three.js `MathUtils`, date-fns): calendar dates in ISO format

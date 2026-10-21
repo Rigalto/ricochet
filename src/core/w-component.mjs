@@ -39,6 +39,7 @@ import {$global} from './global.mjs'
 import {keyboard} from './keyboard.mjs'
 import {runActions} from './actions.mjs'
 import {css} from './css.mjs'
+import {trace} from './debug.mjs'
 
 const leaks = $global.memoryLeak
 
@@ -167,7 +168,7 @@ export class WComponent extends WController {
   static _detach (element) {
     const component = element._component
     if (component === undefined || component === null) { return }
-    console.lifecycle('DETACH -', component.constructor.name, 'from', WComponent._elementName(element))
+    trace('lifecycle', 'DETACH', component.constructor.name, 'from', WComponent._elementName(element))
     leaks.attached -= 1
     // the kernel releases first, so that an error in detach() cannot leave a subscription behind
     component.release()
@@ -218,7 +219,7 @@ export class WComponent extends WController {
       console.error(`WComponent.render: the component '${tag}' has no attach() method`)
       return
     }
-    console.lifecycle('ATTACH -', component.constructor.name, 'to', WComponent._elementName(element))
+    trace('lifecycle', 'ATTACH', component.constructor.name, 'to', WComponent._elementName(element))
     leaks.attached += 1
     component.attach()
     component._mounted = true

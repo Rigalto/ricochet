@@ -43,8 +43,7 @@
  */
 
 import {bus} from './bus.mjs'
-import {$global} from './global.mjs'
-import {logTime, pushLog} from './debug.mjs'
+import {addLog} from './debug.mjs'
 import {setItemStore} from './items.mjs'
 import {declareTasks} from './microtasker.mjs'
 import {scheduler} from './scheduler.mjs'
@@ -250,9 +249,7 @@ export class ConfigStore {
   }
 
   #log (item, previous, current) {
-    const time = logTime()
-    pushLog($global.logs.items, {item, current, previous, time})
-    pushLog($global.logs.timeline, {item, detail: `${previous} => ${current}`, time})
+    addLog('items', {item, current, previous}, {item, detail: `${previous} => ${current}`})
   }
 
   // ------------------------------------------------------------------ observers

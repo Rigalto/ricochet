@@ -14,7 +14,8 @@ The steps always run in this order:
 
 1. internal setup: debugging state, bus, keyboard, frame loop (on import);
 2. the sanitizer, if given, is registered (`setSanitizer()`);
-3. the configuration items are loaded through the storage adapter, if given (`config.setAdapter()`, `config.load()`);
+3. the configuration items are loaded through the storage adapter, if given (`config.setAdapter()`, `config.load()`),
+   and the display mode is chosen (`pc` or `phone`, see the `display` module);
 4. the current route is resolved, with its module and its scope, if a resolver is given;
 5. the interface is mounted from `root` (`WComponent.render()`);
 6. the router listens to the changes of the address.

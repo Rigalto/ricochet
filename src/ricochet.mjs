@@ -26,7 +26,8 @@
  * | `css` | [css](css.module.md) |
  * | `declareTasks`, `defer`, `schedule`, `cancel` | [microtasker](microtasker.module.md), [scheduler](scheduler.module.md) |
  * | `loop`, `realClock`, `gameClock` | [loop](loop.module.md), [clock](clock.module.md) |
- * | `$global`, `quietEvents` | [global](global.module.md), [debug](debug.module.md) |
+ * | `displayMode`, `chooseDisplayMode` | [display](display.module.md) |
+ * | `$global`, `quietEvents`, `addDebugSwitches`, `trace`, `addLog`, `countLeak`, `leakSnapshot`, `leakChanges` | [global](global.module.md), [debug](debug.module.md) |
  * | `escapeHtml`, `unescapeHtml`, `setSanitizer`, `sanitizeHtml`, `createElementFromHTML`, `createSvgElementFromHTML`, `readClipboard`, `writeClipboard`, `svgToWidthHeight` | [dom](dom.module.md) |
  * | `markdownToHtml` | [markdown](markdown.module.md) |
  *
@@ -53,6 +54,7 @@ export {schedule, cancel} from './core/scheduler.mjs'
 export {loop} from './core/loop.mjs'
 export {realClock, gameClock} from './core/clock.mjs'
 export {$global} from './core/global.mjs'
-export {quietEvents} from './core/debug.mjs'
+export {quietEvents, addDebugSwitches, trace, addLog, countLeak, leakSnapshot, leakChanges} from './core/debug.mjs'
+export {displayMode, chooseDisplayMode} from './core/display.mjs'
 export {escapeHtml, unescapeHtml, setSanitizer, sanitizeHtml, createElementFromHTML, createSvgElementFromHTML, readClipboard, writeClipboard, svgToWidthHeight} from './utils/dom.mjs'
 export {markdownToHtml} from './utils/markdown.mjs'

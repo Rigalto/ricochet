@@ -11,12 +11,12 @@
 let currentSuite = null
 export const results = []
 
-const realLog = console.log
-const realError = console.error
-const realWarn = console.warn
+let saved = null // the console methods replaced by captureConsole(), put back by releaseConsole()
 let captured = null // null: no capture in progress
 
 export function captureConsole () {
+  // the methods of the moment, not those of the start: the kernel wraps console.error and console.assert
+  if (saved === null) { saved = {log: console.log, error: console.error, warn: console.warn} }
   captured = []
   console.log = (...args) => captured.push(args.join(' '))
   console.error = (...args) => captured.push(args.join(' '))
@@ -24,9 +24,12 @@ export function captureConsole () {
 }
 
 export function releaseConsole () {
-  console.log = realLog
-  console.error = realError
-  console.warn = realWarn
+  if (saved !== null) {
+    console.log = saved.log
+    console.error = saved.error
+    console.warn = saved.warn
+    saved = null
+  }
   const lines = captured ?? []
   captured = null
   return lines

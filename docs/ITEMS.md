@@ -10,3 +10,4 @@ items with this prefix.
 | Item | Module | Values | Use |
 | --- | --- | --- | --- |
 | `ricochet-theme` | `theme` (`ui/theme.mjs`) | `system` (default), `day`, `night` | Day or night colours. `system` follows the setting of the computer. Changed with `setTheme()`; the `themeChanged` event tells the scheme shown. |
+| `ricochet-display` | `display` (`core/display.mjs`) | `auto` (default), `pc`, `phone` | Display mode of the application, read once by `start()`: `auto` chooses by the size of the screen. A change applies when the page is loaded again. |
