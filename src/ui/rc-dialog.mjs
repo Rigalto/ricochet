@@ -29,6 +29,7 @@
  * | --- | --- |
  * | a click on an element with `data-close`, after the actions of that element | the value of `data-close` |
  * | `Escape` | `cancel` |
+ * | a click outside the window, with `closedby="any"` | `cancel` |
  * | `Enter`, when the focus is on no button nor field | the element with `default` is clicked |
  *
  * When it closes, the dialog runs its actions with the value: `data-event` emits the event with `value` added to the
@@ -98,6 +99,8 @@ let count = 0
  * The component of `<rc-dialog>`.
  * @attr {boolean} [open] - The window is open.
  * @attr {string} [label] - Title of the window.
+ * @attr {string} [closedby] - `any`: a click outside the window closes it too, as `Escape` (the name and the value of
+ *   the attribute of the native `<dialog>`); for a window of choices, not for a form that would lose its content.
  * @attr {string} [data-item] - Configuration item set to the value when the window closes.
  * @attr {string} [data-*] - Other actions run when the window closes (see the `actions` module).
  */
@@ -158,6 +161,15 @@ export class RcDialog extends WComponent {
   // after the actions of the clicked element (the listener of the actions comes first)
   documentClicked (e) {
     if (!this.elDialog.contains(e.target)) { return }
+    // a click on the backdrop has the dialog as target, outside its box
+    if (e.target === this.elDialog && this.element.getAttribute('closedby') === 'any') {
+      const box = this.elDialog.getBoundingClientRect()
+      const inside = e.clientX >= box.left && e.clientX <= box.right && e.clientY >= box.top && e.clientY <= box.bottom
+      if (!inside) {
+        this.#close('cancel')
+        return
+      }
+    }
     const closer = e.target.closest('[data-close]')
     if (closer === null || closer.closest('[disabled], [aria-disabled="true"]') !== null) { return }
     this.#close(closer.getAttribute('data-close'))

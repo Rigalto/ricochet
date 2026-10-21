@@ -193,6 +193,19 @@ await describe('rc-dialog', async () => {
   element.setAttribute('open', '')
   element.removeAttribute('open')
   assert('open removed: closes with an empty value', !dialog.open && got.at(-1).value === '' && keyboard.layers === 0)
+  // a click outside the window: the backdrop, whose target is the dialog itself
+  const outside = (target, x, y) => target.dispatchEvent(new MouseEvent('click', {bubbles: true, clientX: x, clientY: y}))
+  got.length = 0
+  element.setAttribute('open', '')
+  outside(dialog, 2, 2)
+  assert('without closedby: a click outside does not close it', dialog.open && got.length === 0)
+  element.setAttribute('closedby', 'any')
+  const box = dialog.getBoundingClientRect()
+  outside(dialog, box.left + 5, box.top + 5)
+  assert('closedby="any": a click inside, on the window itself, does not close it', dialog.open)
+  outside(dialog, 2, 2)
+  assert('closedby="any": a click outside closes it, cancel', !dialog.open && got.at(-1).value === 'cancel' && keyboard.layers === 0)
+  element.removeAttribute('closedby')
   sandbox.innerHTML = ''
   await tick()
   got.length = 0

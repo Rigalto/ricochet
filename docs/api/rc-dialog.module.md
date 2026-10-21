@@ -29,6 +29,7 @@ the application. Removing `open` closes it, with the value `''`.
 | --- | --- |
 | a click on an element with `data-close`, after the actions of that element | the value of `data-close` |
 | `Escape` | `cancel` |
+| a click outside the window, with `closedby="any"` | `cancel` |
 | `Enter`, when the focus is on no button nor field | the element with `default` is clicked |
 
 When it closes, the dialog runs its actions with the value: `data-event` emits the event with `value` added to the
