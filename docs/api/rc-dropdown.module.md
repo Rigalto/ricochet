@@ -17,7 +17,8 @@ top layer of the browser): no `overflow` cuts it, no `z-index` hides it.
 ## Button
 
 With `icon`, the button looks like an `rc-icon-button`; without, like an `rc-text-button`. `label` is its text
-(`no-label`: none), `size` the size of the icon, `flat` removes its background; `title` is its tooltip.
+(`no-label`: none), `size` the size of the icon, `flat` removes its background; `title` is its tooltip. `icon`,
+`label` and `title` may change later: the button follows (an icon that shows the choice made in the window).
 
 ## Content
 

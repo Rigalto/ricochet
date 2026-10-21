@@ -8,7 +8,7 @@ The component of `<rc-dropdown>`.
 
 | Kind | Name | Direction | Payload | Description |
 | --- | --- | --- | --- | --- |
-| attribute | `icon` | in | `string` | Icon of the button; without it, the button is a text button. |
+| attribute | `icon` | in | `string` | Icon of the button; without it, the button is a text button. It may change later. |
 | attribute | `label` | in | `string` | Text of the button; default: none. |
 | attribute | `no-label` | in | `boolean` | No text on the button. |
 | attribute | `size` | in | `number` | Size of the icon. |

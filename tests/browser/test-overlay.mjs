@@ -89,6 +89,9 @@ await describe('rc-dropdown', async () => {
   assert('a button and a closed window holding the content', trigger !== null && win !== null && !d1._component.open && win.contains($('#box')))
   assert('label and title on the button; aria', d1.querySelector('rc-icon-button').getAttribute('label') === 'Filter' &&
     d1.querySelector('rc-icon-button').title === 'Filter the table' && win.title === '' && trigger.getAttribute('aria-expanded') === 'false')
+  d1.setAttribute('icon', 'sort')
+  assert('the icon may change: the button follows', d1.querySelector('rc-icon-button').getAttribute('icon') === 'sort')
+  d1.setAttribute('icon', 'filter')
   overlays.length = 0
   trigger.click()
   assert('a click opens the window above the page', d1._component.open && keyboard.layers === 1 && overlays.at(-1) === 1 &&

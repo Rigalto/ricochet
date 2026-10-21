@@ -17,7 +17,8 @@
  * ## Button
  *
  * With `icon`, the button looks like an `rc-icon-button`; without, like an `rc-text-button`. `label` is its text
- * (`no-label`: none), `size` the size of the icon, `flat` removes its background; `title` is its tooltip.
+ * (`no-label`: none), `size` the size of the icon, `flat` removes its background; `title` is its tooltip. `icon`,
+ * `label` and `title` may change later: the button follows (an icon that shows the choice made in the window).
  *
  * ## Content
  *
@@ -87,7 +88,7 @@ let count = 0
 
 /**
  * The component of `<rc-dropdown>`.
- * @attr {string} [icon] - Icon of the button; without it, the button is a text button.
+ * @attr {string} [icon] - Icon of the button; without it, the button is a text button. It may change later.
  * @attr {string} [label] - Text of the button; default: none.
  * @attr {boolean} [no-label] - No text on the button.
  * @attr {number} [size] - Size of the icon.
@@ -101,7 +102,7 @@ export class RcDropdown extends WComponent {
   /** Whether the browser places the window itself (CSS anchor positioning); false: the component places it. */
   static anchorPositioning = typeof CSS !== 'undefined' && CSS.supports('anchor-name: --rc')
 
-  static observedAttributes = ['label', 'title']
+  static observedAttributes = ['label', 'title', 'icon']
   static display = 'inline-block'
 
   /** Whether the window is open. */
@@ -142,6 +143,11 @@ export class RcDropdown extends WComponent {
     } else {
       this.elTrigger.setAttribute('label', text ?? '')
     }
+  }
+
+  iconChanged (icon) {
+    // the icon may change later (it shows a state); a dropdown created without icon keeps its text button
+    if (icon !== null && this.elTrigger.localName === 'rc-icon-button') { this.elTrigger.setAttribute('icon', icon) }
   }
 
   titleChanged (title) {
