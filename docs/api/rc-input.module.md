@@ -34,6 +34,8 @@ The `commit` attribute tells when the actions run, always for a valid value only
 | `change` | when the field is left or `Enter` is pressed, if the value changed |
 | `enter` | when `Enter` is pressed |
 
+The key that commits is used by the field: its default action is cancelled (no form is submitted).
+
 A click in the field runs nothing (`static clickActions = false`). `data-value` is written by the field: it must not
 be given.
 

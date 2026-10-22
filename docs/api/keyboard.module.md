@@ -21,7 +21,8 @@ The former API stays, deprecated: the events `dropdownOpen` and `dropdownClose` 
 `Escape` emits `dropdownClose` and whose keys are given by `setModalKeys()`; `setAlertKeys()` opens (or closes, with
 `null`) a window for an alert.
 
-Keys typed in an `<input>`, a `<textarea>` or a `<select>` are left to the browser, and so are `Tab`, `Space` and
+Keys typed in an `<input>`, a `<textarea>` or a `<select>` are left to the browser, except `Escape` while a window
+is open (a dropdown with a field closes on `Escape`, as the window of the browser would); so are `Tab`, `Space` and
 `Enter` when a control has the focus (a button, a link, an element with `tabindex`): they move the focus or press the
 control. The arrows, `Home` and `End` are left to the component when a radio button or a tab has the focus
 (`role="radio"`, `role="tab"`): they move in its group.

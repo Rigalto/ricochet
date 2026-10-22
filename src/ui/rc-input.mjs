@@ -34,6 +34,8 @@
  * | `change` | when the field is left or `Enter` is pressed, if the value changed |
  * | `enter` | when `Enter` is pressed |
  *
+ * The key that commits is used by the field: its default action is cancelled (no form is submitted).
+ *
  * A click in the field runs nothing (`static clickActions = false`). `data-value` is written by the field: it must not
  * be given.
  *
@@ -305,7 +307,12 @@ export class RcInput extends WComponent {
 
   inputKeyPressed (e) {
     if (!this.isCommitKey(e) || !this.valid) { return }
-    if (this.commit === 'enter' || (this.commit === 'change' && this.elField.value !== this.committed)) { this.#commit() }
+    if (this.commit === 'enter' || (this.commit === 'change' && this.elField.value !== this.committed)) {
+      // the key is used: no form is submitted, and no button that gets the focus meanwhile is clicked (a dropdown
+      // closed by the action gives the focus back to its button)
+      e.preventDefault()
+      this.#commit()
+    }
   }
 
   // ------------------------------------------------------------------ internals
