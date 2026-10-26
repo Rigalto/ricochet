@@ -102,7 +102,7 @@ rc-floating-button > button {
   cursor: pointer;
   transition: filter .12s, box-shadow .12s;
 }
-rc-floating-button > button:hover { filter: brightness(1.08); box-shadow: var(--rc-elevation-3); }
+@media (hover: hover) { rc-floating-button > button:hover { filter: brightness(1.08); box-shadow: var(--rc-elevation-3); } }
 rc-floating-button > button:active { filter: brightness(.92); box-shadow: var(--rc-elevation-1); }
 rc-floating-button > button:focus-visible { outline: 3px solid var(--rc-focus); outline-offset: 2px; }
 rc-floating-button > button:disabled { filter: grayscale(1) opacity(.55); box-shadow: none; cursor: not-allowed; }

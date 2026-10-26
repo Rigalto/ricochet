@@ -118,7 +118,7 @@ class MapView extends WComponent {
 | `--rc-text-muted`, `--rc-text-faint` | labels and help texts, dimmed texts and placeholders | fields, tabs, slider |
 | `--rc-border` | borders, separators | buttons, fields, tabs, dropdown, dialog, slider |
 | `--rc-link` | links | `rc-text-button link` |
-| `--rc-accent`, `--rc-accent-active` | hover, pressed | buttons, fields, tabs, slider |
+| `--rc-accent`, `--rc-accent-active` | hover (in `@media (hover: hover)`), pressed | buttons, fields, tabs, slider |
 | `--rc-selected` | what is chosen: a checked box, the tab shown, the filled part of a slider | checkbox, radio, tabs, slider |
 | `--rc-focus` | focus ring of the keyboard | every control |
 | `--rc-disabled`, `--rc-disabled-surface` | disabled text and background | every control |

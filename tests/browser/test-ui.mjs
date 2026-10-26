@@ -149,6 +149,29 @@ await describe('Actions — a former handler stops the click first', async () =>
   await tick()
 })
 
+await describe('Hover only where the pointer can hover', async () => {
+  // on a touch screen, the browser keeps a hover where the finger touched: the hover looks of Ricochet are in
+  // @media (hover: hover); the rules that cancel a hover (a checked radio, a disabled group, an invalid field) may stay out
+  const found = []
+  const walk = (rules, inLayer, inHover) => {
+    for (const rule of rules) {
+      if (rule instanceof CSSLayerBlockRule) {
+        walk(rule.cssRules, inLayer || rule.name === 'ricochet', inHover)
+      } else if (rule instanceof CSSMediaRule) {
+        walk(rule.cssRules, inLayer, inHover || rule.conditionText.includes('(hover: hover)'))
+      } else if (rule instanceof CSSStyleRule && inLayer && rule.selectorText.includes(':hover')) {
+        found.push({selector: rule.selectorText, inHover})
+      }
+    }
+  }
+  for (const sheet of document.styleSheets) { walk(sheet.cssRules, false, false) }
+  const cancelling = rule => /\[(checked|disabled|invalid)\]/.test(rule.selector)
+  const outside = found.filter(rule => !rule.inHover && !cancelling(rule))
+  assert('hover rules found in the ricochet layer', found.filter(rule => rule.inHover).length >= 6)
+  assert(`every hover look is in @media (hover: hover)${outside.length === 0 ? '' : ': ' + outside.map(r => r.selector).join(' ; ')}`,
+    outside.length === 0)
+})
+
 await describe('rc-icon', async () => {
   sandbox.innerHTML = '<rc-icon id="i" icon="save"></rc-icon><rc-icon id="j" icon="trash" size="32" label="Deleted"></rc-icon>'
   const i = $('#i')

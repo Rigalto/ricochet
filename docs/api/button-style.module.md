@@ -13,5 +13,6 @@ The look shared by the components that hold a `<button>`: `rc-icon-button`, `rc-
 | `palette`, `shade` | the button takes the surface of that palette or shade: an action that stands out |
 
 Every look has the hover and pressed states of the palette (`--rc-accent`, `--rc-accent-active`), the focus ring
-`--rc-focus` with the keyboard, and the disabled tokens. Shadows come from the classes of the `theme` module
+`--rc-focus` with the keyboard, and the disabled tokens. The hover applies only where the pointer can hover
+(`@media (hover: hover)`): on a touch screen, it would stay on the button after a tap. Shadows come from the classes of the `theme` module
 (`rc-shadow-2`, `rc-text-shadow`…).

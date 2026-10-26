@@ -36,7 +36,7 @@ ${FIELD} {
   transition: border-color .12s, box-shadow .12s;
 }
 ${FIELD}::placeholder { color: var(--rc-text-faint); opacity: 1; }
-${FIELD}:hover { border-color: color-mix(in oklch, var(--rc-accent) 60%, var(--rc-border)); }
+@media (hover: hover) { ${FIELD}:hover { border-color: color-mix(in oklch, var(--rc-accent) 60%, var(--rc-border)); } }
 ${FIELD}:focus { outline: none; border-color: var(--rc-focus); box-shadow: 0 0 0 1px var(--rc-focus); }
 ${INVALID}, ${INVALID}:hover { border-color: var(--rc-danger); }
 ${INVALID}:focus { border-color: var(--rc-danger); box-shadow: 0 0 0 1px var(--rc-danger); }

@@ -84,7 +84,7 @@ rc-tabs > [role="tablist"] > button {
   cursor: pointer;
   transition: background-color .12s, color .12s;
 }
-rc-tabs > [role="tablist"] > button:hover { color: var(--rc-text); background: color-mix(in oklch, var(--rc-accent) 22%, transparent); }
+@media (hover: hover) { rc-tabs > [role="tablist"] > button:hover { color: var(--rc-text); background: color-mix(in oklch, var(--rc-accent) 22%, transparent); } }
 rc-tabs > [role="tablist"] > button[aria-selected="true"] {
   color: var(--rc-text-strong);
   border-bottom-color: var(--rc-selected);

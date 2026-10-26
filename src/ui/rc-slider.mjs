@@ -81,8 +81,8 @@ rc-slider > input::-moz-range-thumb {
   background: var(--rc-surface-raised);
   box-shadow: var(--rc-elevation-1);
 }
-rc-slider > input:hover::-webkit-slider-thumb { background: color-mix(in oklch, var(--rc-accent) 35%, var(--rc-surface-raised)); }
-rc-slider > input:hover::-moz-range-thumb { background: color-mix(in oklch, var(--rc-accent) 35%, var(--rc-surface-raised)); }
+@media (hover: hover) { rc-slider > input:hover::-webkit-slider-thumb { background: color-mix(in oklch, var(--rc-accent) 35%, var(--rc-surface-raised)); } }
+@media (hover: hover) { rc-slider > input:hover::-moz-range-thumb { background: color-mix(in oklch, var(--rc-accent) 35%, var(--rc-surface-raised)); } }
 rc-slider > input:focus { outline: none; }
 rc-slider > input:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--rc-focus); outline-offset: 1px; }
 rc-slider > input:focus-visible::-moz-range-thumb { outline: 2px solid var(--rc-focus); outline-offset: 1px; }
