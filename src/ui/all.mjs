@@ -25,6 +25,7 @@
  * | `RcSlider` | [rc-slider](rc-slider.module.md) |
  * | `RcTabs`, `RcTab` | [rc-tabs](rc-tabs.module.md) |
  * | `RcDropdown` | [rc-dropdown](rc-dropdown.module.md) |
+ * | `RcBreadcrumb`, `RcCrumb` | [rc-breadcrumb](rc-breadcrumb.module.md) |
  * | `RcDialog`, `showAlert`, `showConfirm` | [rc-dialog](rc-dialog.module.md) |
  * | `RcFloatingBar`, `RcFloatingGroup`, `RcFloatingButton` | [rc-floating](rc-floating.module.md) |
  *
@@ -45,5 +46,6 @@ export {RcSelect, defineOptionSources, parseOptions} from './rc-select.mjs'
 export {RcSlider} from './rc-slider.mjs'
 export {RcTabs, RcTab} from './rc-tabs.mjs'
 export {RcDropdown} from './rc-dropdown.mjs'
+export {RcBreadcrumb, RcCrumb} from './rc-breadcrumb.mjs'
 export {RcDialog, showAlert, showConfirm} from './rc-dialog.mjs'
 export {RcFloatingBar, RcFloatingGroup, RcFloatingButton} from './rc-floating.mjs'

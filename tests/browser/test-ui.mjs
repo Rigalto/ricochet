@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Rigalto
 
 // tests/browser/test-ui.mjs — open tests/browser/index.html in a browser
-// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-tabs and rc-slider.
+// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-tabs, rc-slider and rc-breadcrumb.
 
 import {describe, assert, captureConsole, releaseConsole} from '../kernel.mjs'
 import {WComponent} from '../../src/core/w-component.mjs'
@@ -19,6 +19,7 @@ import {RcTextarea} from '../../src/ui/rc-textarea.mjs'
 import {defineOptionSources, parseOptions} from '../../src/ui/rc-select.mjs'
 import '../../src/ui/rc-tabs.mjs'
 import '../../src/ui/rc-slider.mjs'
+import '../../src/ui/rc-breadcrumb.mjs'
 
 const sandbox = document.getElementById('sandbox')
 const tick = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -145,6 +146,79 @@ await describe('Actions — a former handler stops the click first', async () =>
   got.length = 0
   $('#f').click()
   assert('the action runs once', got.length === 1)
+  sandbox.innerHTML = ''
+  await tick()
+})
+
+await describe('rc-breadcrumb', async () => {
+  const frames = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+  const errors = window.$global.errors.error
+  sandbox.innerHTML = `
+    <div id="box" style="width: 700px">
+      <rc-breadcrumb id="bc">
+        <rc-crumb id="c1" icon="home" label="Home of the family" data-event="tuAction" data-param='{"step": 1}'></rc-crumb>
+        <rc-crumb id="c2" icon="save" prefix="1.2" label="A rather long chapter title" data-event="tuAction" data-param='{"step": 2}'></rc-crumb>
+        <span id="other">other</span>
+        <rc-crumb id="c3" prefix="[12]" label="The place where the user is"></rc-crumb>
+      </rc-breadcrumb>
+    </div>`
+  WComponent.render(sandbox)
+  await frames()
+  const bc = $('#bc')
+  const collapsed = () => [...bc.querySelectorAll('rc-crumb[collapsed]')].map(crumb => crumb.id).join(',')
+  const sep = id => getComputedStyle($(`#${id}`), '::before').content
+  assert('one line, a navigation named Breadcrumb', getComputedStyle(bc).display === 'flex' &&
+    bc.getAttribute('role') === 'navigation' && bc.getAttribute('aria-label') === 'Breadcrumb')
+  assert('a separator before each step but the first, any element included', sep('c1') === 'none' &&
+    sep('c2').includes('›') && sep('other').includes('›') && sep('c3').includes('›'))
+  assert('a crumb with actions is a flat button; without, a text', $('#c1 > rc-text-button[flat] > button') !== null &&
+    $('#c3 > .rc-crumb-text') !== null && $('#c3 button') === null)
+  assert('icon, prefix, label; no icon element without icon', $('#c2 rc-icon').getAttribute('icon') === 'save' &&
+    $('#c2 .rc-crumb-prefix').textContent === '1.2' && $('#c3 rc-icon') === null && $('#c1 .rc-crumb-prefix').hidden)
+  assert('the last step is the current page', $('#c3').getAttribute('aria-current') === 'page' && !$('#c2').hasAttribute('aria-current'))
+  assert('wide enough: every label shown', collapsed() === '')
+  got.length = 0
+  $('#c2 button').click()
+  assert('a click runs the actions of the crumb', got.length === 1 && got[0].step === 2)
+  // a click on a separator runs nothing: it belongs to the line, not to the crumb after it
+  const r = $('#c2').getBoundingClientRect()
+  const hit = document.elementFromPoint(r.left + 3, r.top + r.height / 2)
+  assert('the separator is not part of the button', hit !== null && !$('#c2').contains(hit))
+  $('#box').style.width = '420px'
+  await frames()
+  assert('shorter: the first labels are hidden first', collapsed() === 'c1' || collapsed() === 'c1,c2')
+  assert('the line fits', bc.scrollWidth <= bc.clientWidth + 1)
+  assert('a hidden label becomes the tooltip and the name of the button', $('#c1 > rc-text-button').title === 'Home of the family' &&
+    $('#c1 button').getAttribute('aria-label') === 'Home of the family')
+  $('#box').style.width = '160px'
+  await frames()
+  assert('very short: every label hidden but the last one, cut', collapsed() === 'c1,c2' && !$('#c3').hasAttribute('collapsed') &&
+    getComputedStyle($('#c3 .rc-crumb-label')).textOverflow === 'ellipsis')
+  assert('the prefix stays', getComputedStyle($('#c2 .rc-crumb-prefix')).display !== 'none' &&
+    getComputedStyle($('#c2 .rc-crumb-label')).display === 'none')
+  $('#box').style.width = '700px'
+  await frames()
+  assert('wider again: the labels come back, the tooltip goes', collapsed() === '' && !$('#c1 > rc-text-button').hasAttribute('title'))
+  $('#c1').setAttribute('keep', '')
+  $('#box').style.width = '420px'
+  await frames()
+  assert('keep: that label is never hidden', !$('#c1').hasAttribute('collapsed') && $('#c2').hasAttribute('collapsed'))
+  $('#c1').removeAttribute('keep')
+  $('#box').style.width = '700px'
+  await frames()
+  $('#c3').setAttribute('label', 'A much longer place, where the user stands now, with many words in it')
+  await frames()
+  assert('a label that changes fits the line again', collapsed() !== '')
+  $('#c2').setAttribute('title', 'Chapter')
+  assert('a title of its own wins', $('#c2 > rc-text-button').title === 'Chapter')
+  bc.setAttribute('separator', '/')
+  assert('separator attribute', sep('c2').includes('/'))
+  const crumb = document.createElement('rc-crumb')
+  crumb.setAttribute('label', 'Added')
+  bc.append(crumb)
+  await frames()
+  assert('a crumb added becomes the current page', crumb.getAttribute('aria-current') === 'page' && !$('#c3').hasAttribute('aria-current'))
+  assert('no error (no loop of the resize observer)', window.$global.errors.error === errors)
   sandbox.innerHTML = ''
   await tick()
 })

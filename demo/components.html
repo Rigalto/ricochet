@@ -22,12 +22,13 @@
       --rc-surface: light-dark(oklch(48% .12 235), oklch(42% .1 235));
       --rc-text: oklch(98% .01 235);
     }
+    .resizable { resize: horizontal; overflow: hidden; max-width: 100%; min-width: 4rem; border: 1px dashed var(--rc-border); }
     .w6 { width: 6em; } .w8 { width: 8em; } .w10 { width: 10em; } .w12 { width: 12em; } .wide { width: 100%; }
     #log, #timing { font-family: ui-monospace, monospace; font-size: .8rem; color: var(--rc-text-muted); min-height: 1.5em; }
   </style>
 </head>
 <body>
-  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-tabs, rc-dropdown, rc-dialog and rc-slider</h1>
+  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-tabs, rc-dropdown, rc-dialog, rc-slider and rc-breadcrumb</h1>
   <div class="bar">
     <span>Theme of the page:</span>
     <rc-icon-button icon="computerclassic" data-item="ricochet-theme" data-value="system">system</rc-icon-button>
@@ -76,8 +77,6 @@
         </div>
         <div class="row">
           <rc-text-button data-event="demoClick" data-param='{"button": "text"}'>Text button</rc-text-button>
-          <rc-text-button flat data-event="demoClick" data-param='{"button": "breadcrumb"}'>Home</rc-text-button>›
-          <rc-text-button flat data-event="demoClick" data-param='{"button": "breadcrumb"}'>Books</rc-text-button>
           <rc-text-button link data-event="demoClick" data-param='{"button": "link"}'>A link</rc-text-button>
           <rc-text-button palette="action" class="rc-shadow-2 rc-text-shadow" data-event="demoClick"
             data-param='{"button": "action"}'>Action <rc-icon icon="save" size="18"></rc-icon></rc-text-button>
@@ -141,6 +140,14 @@
             <rc-text-button flat data-event="demoClick" data-param='{"button": "copy"}' data-close>Copy</rc-text-button>
             <rc-text-button flat data-event="demoClick" data-param='{"button": "paste"}' data-close>Paste</rc-text-button>
           </div></rc-dropdown>
+        </div>
+        <div class="resizable" title="Drag the bottom right corner: the labels are hidden when the place is short">
+          <rc-breadcrumb>
+            <rc-crumb icon="home" label="Home" data-event="demoClick" data-param='{"button": "crumb home"}'></rc-crumb>
+            <rc-crumb icon="book" label="Novels" data-event="demoClick" data-param='{"button": "crumb novels"}'></rc-crumb>
+            <rc-crumb prefix="1.2" label="The long way north" data-event="demoClick" data-param='{"button": "crumb chapter"}'></rc-crumb>
+            <rc-crumb prefix="1.2.4" label="At the harbour, before dawn"></rc-crumb>
+          </rc-breadcrumb>
         </div>
         <rc-tabs data-item="demo-tab" data-event="demoTab" data-param='{"tabs": "demo"}'>
           <rc-tab value="map" label="Map" icon="map">The map (tabs shared by an item: every block shows the same tab).</rc-tab>

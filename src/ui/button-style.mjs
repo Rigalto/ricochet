@@ -14,8 +14,8 @@
  *
  * Every look has the hover and pressed states of the palette (`--rc-accent`, `--rc-accent-active`), the focus ring
  * `--rc-focus` with the keyboard, and the disabled tokens. The hover applies only where the pointer can hover
- * (`@media (hover: hover)`): on a touch screen, it would stay on the button after a tap. Shadows come from the classes of the `theme` module
- * (`rc-shadow-2`, `rc-text-shadow`…).
+ * (`@media (hover: hover)`): on a touch screen, it would stay on the button after a tap. Shadows come from the classes
+ * of the `theme` module (`rc-shadow-2`, `rc-text-shadow`…).
  *
  * @module button-style
  * @category ui
