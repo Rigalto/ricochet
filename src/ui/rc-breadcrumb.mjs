@@ -33,16 +33,18 @@
  *
  * When the line is longer than its place, the labels are hidden one by one, from the first crumb towards the end,
  * until it fits; the icon and the prefix stay, and the hidden label becomes the tooltip. The label of the last crumb
- * (where the user is) is hidden last: it is cut with an ellipsis instead. The labels come back when the place grows.
- * A crumb whose label is hidden has the attribute `collapsed`.
+ * (where the user is) is never hidden: it is cut with an ellipsis instead; nor the label of a crumb without icon nor
+ * prefix, of which nothing would be left. The labels come back when the place grows. A crumb whose label is hidden has
+ * the attribute `collapsed`.
  *
  * The line takes the width that its parent gives it: in a grid or a flex container, its cell must allow it to shrink
  * (`min-width: 0`).
  *
  * ## Look
  *
- * The crumbs that are buttons are flat buttons (see the `button-style` module); the separator is `›`, in
- * `--rc-text-faint`, or the text of the `separator` attribute of `rc-breadcrumb`.
+ * The crumbs that are buttons are flat buttons (see the `button-style` module); the prefix has the colour of the
+ * label, with digits of equal width. The separator is `›`, in `--rc-text-faint`, or the text of the `separator`
+ * attribute of `rc-breadcrumb`.
  *
  * ## Keyboard and screen readers
  *
@@ -83,7 +85,7 @@ rc-crumb > rc-text-button > button, rc-crumb > .rc-crumb-text {
   box-sizing: border-box;
 }
 rc-crumb > .rc-crumb-text { padding: .2em .3em; border: 1px solid transparent; line-height: 1.2; }
-rc-crumb .rc-crumb-prefix { color: var(--rc-text-muted); }
+rc-crumb .rc-crumb-prefix { font-variant-numeric: tabular-nums; }
 rc-crumb .rc-crumb-label { overflow: hidden; text-overflow: ellipsis; }
 rc-crumb[collapsed] .rc-crumb-label, rc-crumb .rc-crumb-label:empty { display: none; }
 rc-breadcrumb:not([rc-measuring]) > rc-crumb:last-child { flex: 0 1 auto; }
@@ -224,8 +226,10 @@ export class RcBreadcrumb extends WComponent {
     for (const crumb of crumbs) { crumb.removeAttribute('collapsed') }
     if (element.clientWidth === 0) { return } // not displayed: nothing to measure
     const last = children.at(-1)
-    const candidates = crumbs.filter(crumb => crumb !== last && !crumb.hasAttribute('keep') &&
-      (crumb.getAttribute('label') ?? '') !== '')
+    const has = (crumb, attribute) => (crumb.getAttribute(attribute) ?? '') !== ''
+    // a crumb keeps its label when nothing would be left of it: no icon and no prefix
+    const candidates = crumbs.filter(crumb => crumb !== last && !crumb.hasAttribute('keep') && has(crumb, 'label') &&
+      (has(crumb, 'icon') || has(crumb, 'prefix')))
     // measured without the shrinking of the last crumb, which would hide the overflow
     element.setAttribute('rc-measuring', '')
     const overflows = () => element.scrollWidth > element.clientWidth

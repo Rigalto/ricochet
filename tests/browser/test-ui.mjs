@@ -194,6 +194,8 @@ await describe('rc-breadcrumb', async () => {
   await frames()
   assert('very short: every label hidden but the last one, cut', collapsed() === 'c1,c2' && !$('#c3').hasAttribute('collapsed') &&
     getComputedStyle($('#c3 .rc-crumb-label')).textOverflow === 'ellipsis')
+  assert('the prefix has the colour of the label', getComputedStyle($('#c2 .rc-crumb-prefix')).color ===
+    getComputedStyle($('#c2 .rc-crumb-label')).color)
   assert('the prefix stays', getComputedStyle($('#c2 .rc-crumb-prefix')).display !== 'none' &&
     getComputedStyle($('#c2 .rc-crumb-label')).display === 'none')
   $('#box').style.width = '700px'
@@ -204,6 +206,14 @@ await describe('rc-breadcrumb', async () => {
   await frames()
   assert('keep: that label is never hidden', !$('#c1').hasAttribute('collapsed') && $('#c2').hasAttribute('collapsed'))
   $('#c1').removeAttribute('keep')
+  $('#box').style.width = '700px'
+  await frames()
+  // a crumb with a label only: nothing would be left of it, its label stays
+  $('#c1').removeAttribute('icon')
+  $('#box').style.width = '420px'
+  await frames()
+  assert('without icon nor prefix: the label is never hidden', !$('#c1').hasAttribute('collapsed') && $('#c2').hasAttribute('collapsed'))
+  $('#c1').setAttribute('icon', 'home')
   $('#box').style.width = '700px'
   await frames()
   $('#c3').setAttribute('label', 'A much longer place, where the user stands now, with many words in it')

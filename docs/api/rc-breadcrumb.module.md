@@ -33,16 +33,18 @@ level. It gets its separator; its text is never hidden.
 
 When the line is longer than its place, the labels are hidden one by one, from the first crumb towards the end,
 until it fits; the icon and the prefix stay, and the hidden label becomes the tooltip. The label of the last crumb
-(where the user is) is hidden last: it is cut with an ellipsis instead. The labels come back when the place grows.
-A crumb whose label is hidden has the attribute `collapsed`.
+(where the user is) is never hidden: it is cut with an ellipsis instead; nor the label of a crumb without icon nor
+prefix, of which nothing would be left. The labels come back when the place grows. A crumb whose label is hidden has
+the attribute `collapsed`.
 
 The line takes the width that its parent gives it: in a grid or a flex container, its cell must allow it to shrink
 (`min-width: 0`).
 
 ## Look
 
-The crumbs that are buttons are flat buttons (see the `button-style` module); the separator is `›`, in
-`--rc-text-faint`, or the text of the `separator` attribute of `rc-breadcrumb`.
+The crumbs that are buttons are flat buttons (see the `button-style` module); the prefix has the colour of the
+label, with digits of equal width. The separator is `›`, in `--rc-text-faint`, or the text of the `separator`
+attribute of `rc-breadcrumb`.
 
 ## Keyboard and screen readers
 
