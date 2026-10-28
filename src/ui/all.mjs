@@ -29,6 +29,8 @@
  * | `RcDialog`, `showAlert`, `showConfirm` | [rc-dialog](rc-dialog.module.md) |
  * | `RcFloatingBar`, `RcFloatingGroup`, `RcFloatingButton` | [rc-floating](rc-floating.module.md) |
  *
+ * The module also brings the look of the tables, the class `rc-table` (see [table-style](table-style.module.md)).
+ *
  * @module all
  * @category entry
  */
@@ -49,3 +51,4 @@ export {RcDropdown} from './rc-dropdown.mjs'
 export {RcBreadcrumb, RcCrumb} from './rc-breadcrumb.mjs'
 export {RcDialog, showAlert, showConfirm} from './rc-dialog.mjs'
 export {RcFloatingBar, RcFloatingGroup, RcFloatingButton} from './rc-floating.mjs'
+import './table-style.mjs'

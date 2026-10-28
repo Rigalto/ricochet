@@ -27,7 +27,7 @@ await describe('Theme — palettes and shades', async () => {
   assert('a palette gives its own surface', background($('view')) !== background(document.documentElement))
   assert('every element inside gets the tokens of the block', color($('inner')) === color($('view')))
   assert('a shade darkens the surface, with the hue of the palette around it',
-    background($('deep')) !== background($('view')) && background($('deep')).endsWith(' 225)'))
+    background($('deep')) !== background($('view')) && background($('deep')).split(' ').at(-1) === background($('view')).split(' ').at(-1))
   assert('a palette inside another one wins for its subtree', background($('module')).endsWith(' 75)'))
   css('[palette="test-game"] { --rc-hue: 140; --rc-chroma: .07; }')
   $('page').setAttribute('palette', 'test-game')

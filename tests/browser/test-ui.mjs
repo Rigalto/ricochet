@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Rigalto
 
 // tests/browser/test-ui.mjs — open tests/browser/index.html in a browser
-// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-tabs, rc-slider and rc-breadcrumb.
+// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-tabs, rc-slider, rc-breadcrumb and the look of the tables.
 
 import {describe, assert, captureConsole, releaseConsole} from '../kernel.mjs'
 import {WComponent} from '../../src/core/w-component.mjs'
@@ -20,6 +20,7 @@ import {defineOptionSources, parseOptions} from '../../src/ui/rc-select.mjs'
 import '../../src/ui/rc-tabs.mjs'
 import '../../src/ui/rc-slider.mjs'
 import '../../src/ui/rc-breadcrumb.mjs'
+import '../../src/ui/table-style.mjs'
 
 const sandbox = document.getElementById('sandbox')
 const tick = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -229,6 +230,44 @@ await describe('rc-breadcrumb', async () => {
   await frames()
   assert('a crumb added becomes the current page', crumb.getAttribute('aria-current') === 'page' && !$('#c3').hasAttribute('aria-current'))
   assert('no error (no loop of the resize observer)', window.$global.errors.error === errors)
+  sandbox.innerHTML = ''
+  await tick()
+})
+
+await describe('rc-table', async () => {
+  sandbox.innerHTML = `
+    <div palette="view" style="--rc-table-radius: 8px">
+      <table class="rc-table rc-table-grid rc-table-striped rc-table-select rc-table-sticky" id="t">
+        <thead><tr><th id="h1">A</th><th id="h2" class="rc-right">B</th></tr></thead>
+        <tbody>
+          <tr id="r1"><td id="c1">x</td><td class="rc-num">1</td></tr>
+          <tr id="r2"><td id="c2">y</td><td class="rc-num">2</td></tr>
+          <tr id="r3" class="selected"><td id="c3" class="rc-muted rc-wrap">z</td><td id="c3b" class="rc-num">3</td></tr>
+          <tr id="r4" aria-selected="true"><td id="c4">w</td><td id="c4b" class="rc-nowrap">4</td></tr>
+        </tbody>
+      </table>
+      <table class="rc-table" id="plain"><tbody><tr><td id="p1">a</td><td id="p2">b</td></tr><tr><td id="p3">c</td><td>d</td></tr></tbody></table>
+    </div>`
+  const style = id => getComputedStyle($(`#${id}`))
+  assert('the headers stand on a band of their own', style('h1').backgroundColor !== style('c1').backgroundColor &&
+    style('h1').fontWeight === '600')
+  assert('compact: smaller text than the block', parseFloat(getComputedStyle($('#t')).fontSize) < parseFloat(getComputedStyle(sandbox).fontSize))
+  // a line of 1px is computed thinner when the page is zoomed, or on a screen whose scale is not a whole number
+  const line = width => parseFloat(width) > 0
+  assert('a line between rows, none above the first one', line(style('c2').borderTopWidth) && !line(style('h1').borderTopWidth) &&
+    line(style('c1').borderTopWidth))
+  assert('rc-table-grid: a line between columns', line(getComputedStyle($('#c1').nextElementSibling).borderLeftWidth) &&
+    !line(style('p2').borderLeftWidth))
+  assert('rc-table-striped: even rows tinted', style('c2').backgroundColor !== style('c1').backgroundColor &&
+    style('p3').backgroundColor === style('p1').backgroundColor)
+  assert('rc-table-select: the chosen row (class or aria) in the selection colour', style('c3').backgroundColor === style('c4').backgroundColor &&
+    style('c3').backgroundColor !== style('c1').backgroundColor && getComputedStyle($('#r1')).cursor === 'pointer')
+  assert('rc-table-sticky: the headers stay on top', style('h1').position === 'sticky')
+  assert('cells: rc-right, rc-num, rc-muted, rc-wrap, rc-nowrap', style('h2').textAlign === 'right' && style('c3b').textAlign === 'right' &&
+    style('c3b').fontVariantNumeric === 'tabular-nums' && style('c3').color !== style('c1').color && style('c3').overflowWrap === 'anywhere' &&
+    style('c4b').whiteSpace === 'nowrap')
+  assert('--rc-table-radius: the corners of the last row', style('c4').borderBottomLeftRadius === '8px' && style('c4b').borderBottomRightRadius === '8px' &&
+    style('c1').borderBottomLeftRadius === '0px')
   sandbox.innerHTML = ''
   await tick()
 })

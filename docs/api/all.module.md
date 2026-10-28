@@ -28,3 +28,5 @@ Importing a component alone (`ricochet/ui/rc-select.mjs`) stays possible: it imp
 | `RcBreadcrumb`, `RcCrumb` | [rc-breadcrumb](rc-breadcrumb.module.md) |
 | `RcDialog`, `showAlert`, `showConfirm` | [rc-dialog](rc-dialog.module.md) |
 | `RcFloatingBar`, `RcFloatingGroup`, `RcFloatingButton` | [rc-floating](rc-floating.module.md) |
+
+The module also brings the look of the tables, the class `rc-table` (see [table-style](table-style.module.md)).

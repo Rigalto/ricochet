@@ -237,7 +237,8 @@ The events that Ricochet emits and listens to, and the `rc` prefix reserved for 
   [`field-style`](docs/api/field-style.module.md)), [`rc-tabs` and `rc-tab`](docs/api/rc-tabs.module.md),
   [`rc-dropdown`](docs/api/rc-dropdown.module.md), [`rc-dialog`](docs/api/rc-dialog.module.md) (with `showAlert()` and
   `showConfirm()`), [`rc-slider`](docs/api/rc-slider.module.md), [`rc-breadcrumb` and
-  `rc-crumb`](docs/api/rc-breadcrumb.module.md) ([demo/components.html](demo/components.html),
+  `rc-crumb`](docs/api/rc-breadcrumb.module.md), the look of the tables ([`rc-table`](docs/api/table-style.module.md))
+  ([demo/components.html](demo/components.html),
   which also shows the mounting time); floating buttons, [`rc-floating-bar`, `rc-floating-group`,
   `rc-floating-button`](docs/api/rc-floating.module.md) ([demo/floating.html](demo/floating.html)).
 - **Palettes and themes** (`ui/theme.mjs`): components use colour tokens (`--rc-surface`, `--rc-text`,

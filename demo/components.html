@@ -28,7 +28,7 @@
   </style>
 </head>
 <body>
-  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-tabs, rc-dropdown, rc-dialog, rc-slider and rc-breadcrumb</h1>
+  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-tabs, rc-dropdown, rc-dialog, rc-slider, rc-breadcrumb and rc-table</h1>
   <div class="bar">
     <span>Theme of the page:</span>
     <rc-icon-button icon="computerclassic" data-item="ricochet-theme" data-value="system">system</rc-icon-button>
@@ -155,6 +155,15 @@
           <rc-tab value="log" label="Log" disabled>The log.</rc-tab>
           <rc-tab value="help" label="Help">The help.</rc-tab>
         </rc-tabs>
+        <table class="rc-table rc-table-grid rc-table-striped rc-table-select" data-demo="table">
+          <thead><tr><th>Time</th><th>Nature</th><th class="rc-right">Size</th><th>Detail</th></tr></thead>
+          <tbody>
+            <tr><td class="rc-nowrap">09:37:26.534</td><td>Event</td><td class="rc-num">12</td><td>{"theme":"day","scheme":"day"}</td></tr>
+            <tr class="selected"><td class="rc-nowrap">09:37:26.540</td><td>Item</td><td class="rc-num">1 024</td><td><a href="#">ricochet-theme</a> undefined → day</td></tr>
+            <tr><td class="rc-nowrap">09:37:27.001</td><td>Ajax</td><td class="rc-num">7</td><td class="rc-muted">config/load (200 - 16 ms)</td></tr>
+            <tr><td class="rc-nowrap">09:37:27.120</td><td>Event</td><td class="rc-num">3</td><td class="rc-wrap">{"path":"prg/tml/table","terms":["prg","tml","table"],"universe":"prg","brick":"tml"}</td></tr>
+          </tbody>
+        </table>
         <rc-textarea data-item="demo-note" max-rows="6" class="wide"
           placeholder="A note (item, shared): the field grows with its text, up to 6 lines"></rc-textarea>
       </div>`
