@@ -165,7 +165,7 @@ const TOKENS = `
   color: var(--rc-text);
 }
 [palette="header"] { --rc-hue: 230; --rc-chroma: .03; }
-[palette="view"] { --rc-hue: 210; --rc-chroma: .13; }
+[palette="view"] { --rc-hue: 210; --rc-chroma: .10; }
 [palette="module"] { --rc-hue: 75; --rc-chroma: .035; }
 [shade="light"] { --rc-depth: 0; }
 [shade="medium"] { --rc-depth: 1; }
