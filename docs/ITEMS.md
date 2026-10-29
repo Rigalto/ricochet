@@ -14,9 +14,11 @@ items with this prefix.
 
 ## Keys of the local storage
 
-Ricochet also writes to the local storage of the browser (`localStorage`), with keys that are not configuration items.
+Ricochet also writes to the storage of the browser (`localStorage`, `sessionStorage`), with keys that are not
+configuration items.
 An application does not create keys with these prefixes.
 
 | Key | Module | Values | Use |
 | --- | --- | --- | --- |
+| `ricochet-session-` | `session` (`core/session.mjs`) | a value, as JSON | Prefix of the values kept by `session.set(name, value)`, in `sessionStorage`: `ricochet-session-<name>`. |
 | `ricochet-secret-` | `secrets` (`core/secrets.mjs`) | the value of a secret | Prefix of the secrets kept by `secrets.set(name, value)`: `ricochet-secret-<name>`. Never loaded as configuration items. |

@@ -71,3 +71,14 @@ await describe('secrets', async () => {
   bus.off('secretChanged', listener)
   assert('removed', localStorage.getItem('ricochet-secret-test-key') === null)
 })
+
+await describe('session', async () => {
+  const {session} = await import('../../src/core/session.mjs')
+  session.remove('test-history')
+  session.set('test-history', [{path: '#a'}, {path: '#b'}])
+  assert('kept in sessionStorage, as JSON', !session.inMemory &&
+    sessionStorage.getItem('ricochet-session-test-history') === '[{"path":"#a"},{"path":"#b"}]' &&
+    session.get('test-history')[1].path === '#b')
+  session.remove('test-history')
+  assert('removed', sessionStorage.getItem('ricochet-session-test-history') === null && session.get('test-history', 0) === 0)
+})

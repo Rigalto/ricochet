@@ -23,6 +23,7 @@
  * | `MemoryAdapter` | [memory](memory.module.md) |
  * | `IndexedDBAdapter` | [indexeddb](indexeddb.module.md) |
  * | `secrets` | [secrets](secrets.module.md) |
+ * | `session` | [session](session.module.md) |
  * | `keyboard` | [keyboard](keyboard.module.md) |
  * | `runActions`, `runDoubleClickActions`, `isDisabled` | [actions](actions.module.md) |
  * | `css` | [css](css.module.md) |
@@ -50,6 +51,7 @@ export {itemStore, setItemStore} from './core/items.mjs'
 export {MemoryAdapter} from './adapters/memory.mjs'
 export {IndexedDBAdapter} from './adapters/indexeddb.mjs'
 export {secrets} from './core/secrets.mjs'
+export {session} from './core/session.mjs'
 export {keyboard} from './core/keyboard.mjs'
 export {runActions, runDoubleClickActions, isDisabled} from './core/actions.mjs'
 export {css} from './core/css.mjs'

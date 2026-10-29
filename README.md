@@ -90,6 +90,7 @@ Ricochet has two base classes and three communication channels.
 | **Event bus** | Volatile signals: `emit(name, payload)` / `listen(name)`. |
 | **Configuration items** | Persistent shared state: `setItem(item, value)` / `observeItems([items])`. Observers are called once per task; changes are saved after 2 s, or at once when the page closes, through a storage adapter. |
 | **Storage adapters** | Where the configuration items are loaded from and saved to: in memory or in the local database of the browser (provided), an HTTP server or Google Drive (a few lines in the application). |
+| **Session** | State that lives as long as the tab and survives a reload (the pages seen lately): `session.get(name, fallback)` / `session.set(name, value)`, any JSON value, in `sessionStorage`. |
 | **Secrets** | API keys and passwords given by the user, kept in the browser only: `secrets.get(name)` / `secrets.set(name, value)`, never sent to an adapter nor written to the logs. |
 
 Everything a component subscribes to — events, items, attributes, window events, intervals, animation frames — is
