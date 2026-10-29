@@ -26,6 +26,7 @@ Importing a component alone (`ricochet/ui/rc-select.mjs`) stays possible: it imp
 | `RcTabs`, `RcTab` | [rc-tabs](rc-tabs.module.md) |
 | `RcDropdown` | [rc-dropdown](rc-dropdown.module.md) |
 | `RcBreadcrumb`, `RcCrumb` | [rc-breadcrumb](rc-breadcrumb.module.md) |
+| `RcMonth` | [rc-month](rc-month.module.md) |
 | `RcDialog`, `showAlert`, `showConfirm` | [rc-dialog](rc-dialog.module.md) |
 | `RcFloatingBar`, `RcFloatingGroup`, `RcFloatingButton` | [rc-floating](rc-floating.module.md) |
 

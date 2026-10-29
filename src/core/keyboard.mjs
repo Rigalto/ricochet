@@ -24,8 +24,8 @@
  * Keys typed in an `<input>`, a `<textarea>` or a `<select>` are left to the browser, except `Escape` while a window
  * is open (a dropdown with a field closes on `Escape`, as the window of the browser would); so are `Tab`, `Space` and
  * `Enter` when a control has the focus (a button, a link, an element with `tabindex`): they move the focus or press the
- * control. The arrows, `Home` and `End` are left to the component when a radio button or a tab has the focus
- * (`role="radio"`, `role="tab"`): they move in its group.
+ * control. The arrows, `Home` and `End` are left to the component when a radio button, a tab or a cell of a grid has
+ * the focus (`role="radio"`, `role="tab"`, `role="gridcell"`): they move in its group.
  *
  * ## Declaring keys
  *
@@ -67,7 +67,7 @@ const CONTROLS = 'button, a[href], select, summary, [contenteditable=""], [conte
 const FIELDS = new Set(['INPUT', 'TEXTAREA', 'SELECT'])
 // keys left to the component on a focused item of a group (a radio button, a tab): they move in the group
 const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'])
-const GROUP_ITEMS = '[role="radio"], [role="tab"]'
+const GROUP_ITEMS = '[role="radio"], [role="tab"], [role="gridcell"]'
 
 // the focused element is a control (a button, a link…), not the page or a canvas
 const onControl = target => target instanceof Element && target !== document.body && target.matches(CONTROLS)

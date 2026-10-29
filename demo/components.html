@@ -22,13 +22,15 @@
       --rc-surface: light-dark(oklch(48% .12 235), oklch(42% .1 235));
       --rc-text: oklch(98% .01 235);
     }
+    .demo-month { width: 16rem; }
+    .demo-month-nav { display: flex; align-items: center; justify-content: space-between; }
     .resizable { resize: horizontal; overflow: hidden; max-width: 100%; min-width: 4rem; border: 1px dashed var(--rc-border); }
     .w6 { width: 6em; } .w8 { width: 8em; } .w10 { width: 10em; } .w12 { width: 12em; } .wide { width: 100%; }
     #log, #timing { font-family: ui-monospace, monospace; font-size: .8rem; color: var(--rc-text-muted); min-height: 1.5em; }
   </style>
 </head>
 <body>
-  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-tabs, rc-dropdown, rc-dialog, rc-slider, rc-breadcrumb and rc-table</h1>
+  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-tabs, rc-dropdown, rc-dialog, rc-slider, rc-breadcrumb, rc-month and rc-table</h1>
   <div class="bar">
     <span>Theme of the page:</span>
     <rc-icon-button icon="computerclassic" data-item="ricochet-theme" data-value="system">system</rc-icon-button>
@@ -164,6 +166,14 @@
             <tr><td class="rc-nowrap">09:37:27.120</td><td>Event</td><td class="rc-num">3</td><td class="rc-wrap">{"path":"prg/tml/table","terms":["prg","tml","table"],"universe":"prg","brick":"tml"}</td></tr>
           </tbody>
         </table>
+        <div class="demo-month">
+          <div class="demo-month-nav">
+            <rc-icon-button flat icon="chevronleft" size="18" title="Previous month" data-event="demoMonth" data-param='{"step": -1}'></rc-icon-button>
+            <span class="demo-month-name">2027-02</span>
+            <rc-icon-button flat icon="chevronright" size="18" title="Next month" data-event="demoMonth" data-param='{"step": 1}'></rc-icon-button>
+          </div>
+          <rc-month month="2027-02" value="2027-02-10" weeks="auto" event="demoDate"></rc-month>
+        </div>
         <rc-textarea data-item="demo-note" max-rows="6" class="wide"
           placeholder="A note (item, shared): the field grows with its text, up to 6 lines"></rc-textarea>
       </div>`
@@ -218,11 +228,23 @@
       constructor () {
         super()
         this.count = 0
-        this.listen(['demoClick', 'demoCheck', 'demoRadio', 'demoInput', 'demoSelect', 'demoTab', 'demoRemount',
+        this.listen(['demoClick', 'demoDate', 'demoMonth', 'demoCheck', 'demoRadio', 'demoInput', 'demoSelect', 'demoTab', 'demoRemount',
           'demoDialog', 'demoSlider', 'demoConfirmAsk', 'demoAlertAsk', 'demoConfirm', 'overlayChanged'])
       }
 
       demoClickDispatched ({button}) { this.#log(`demoClick: ${button}`) }
+      // the month grids: a click on a day chooses it, the arrows show another month (the page sets the attributes)
+      demoDateDispatched ({date}) {
+        this.#log(`demoDate: ${date}`)
+        for (const month of document.querySelectorAll('rc-month')) { month.setAttribute('value', date) }
+      }
+
+      demoMonthDispatched ({step}) {
+        const [year, month] = document.querySelector('rc-month').getAttribute('month').split('-').map(Number)
+        const shown = new Date(Date.UTC(year, month - 1 + step, 1)).toISOString().slice(0, 7)
+        for (const grid of document.querySelectorAll('rc-month')) { grid.setAttribute('month', shown) }
+        for (const name of document.querySelectorAll('.demo-month-name')) { name.textContent = shown }
+      }
       demoCheckDispatched ({box, value}) { this.#log(`demoCheck: ${box} = ${value}`) }
       demoRadioDispatched ({group, value}) { this.#log(`demoRadio: ${group} = ${value}`) }
       demoInputDispatched ({field, value}) { this.#log(`demoInput: ${field} = ${value}`) }
