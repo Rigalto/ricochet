@@ -241,9 +241,10 @@ class AirQuality extends WComponent {
 }
 ```
 
-The field calls `secrets.set('aqicn', value)`; an empty value removes the key. The local storage is shared by every
-page of the same origin (all the applications of a GitHub Pages account): fine for your own applications, but it is
-not a safe.
+The field calls `secrets.set('aqicn', value)`; an empty value removes the key. The key is kept for this browser on
+this computer: in another browser or on another computer, the user gives it again, so the field tells where to get
+it. The local storage is shared by every page of the same origin (all the applications of a GitHub Pages account):
+fine for your own applications, but it is not a safe.
 
 ## 8. Document your own code
 

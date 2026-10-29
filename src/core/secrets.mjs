@@ -30,6 +30,11 @@
  * `set()` and `remove()` emit `secretChanged {name}`, without the value: a view that waits for its key listens to it
  * and sends its request again. The event is also emitted when the secret is changed in another tab of the same site.
  *
+ * ## One browser, one computer
+ *
+ * A secret is kept for this browser on this computer: in another browser, on another computer (or after the data of the
+ * site is cleared), the user gives it again. The interface that asks for it says so, and tells where to find it.
+ *
  * ## Safety
  *
  * The local storage of the browser is not a safe. It is shared by every page of the same origin (the same scheme,
