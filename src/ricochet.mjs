@@ -21,6 +21,7 @@
  * | `universeBrickResolver` | [universe-brick](universe-brick.module.md) |
  * | `config`, `itemStore`, `setItemStore` | [config](config.module.md), [items](items.module.md) |
  * | `MemoryAdapter` | [memory](memory.module.md) |
+ * | `IndexedDBAdapter` | [indexeddb](indexeddb.module.md) |
  * | `keyboard` | [keyboard](keyboard.module.md) |
  * | `runActions`, `runDoubleClickActions`, `isDisabled` | [actions](actions.module.md) |
  * | `css` | [css](css.module.md) |
@@ -46,6 +47,7 @@ export {universeBrickResolver} from './routing/universe-brick.mjs'
 export {config} from './core/config.mjs'
 export {itemStore, setItemStore} from './core/items.mjs'
 export {MemoryAdapter} from './adapters/memory.mjs'
+export {IndexedDBAdapter} from './adapters/indexeddb.mjs'
 export {keyboard} from './core/keyboard.mjs'
 export {runActions, runDoubleClickActions, isDisabled} from './core/actions.mjs'
 export {css} from './core/css.mjs'

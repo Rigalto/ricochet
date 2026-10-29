@@ -89,7 +89,7 @@ Ricochet has two base classes and three communication channels.
 | `WController` | No DOM. A singleton created when its module is imported (keyboard, data proxies, business logic). Same API as `WComponent` for signals. |
 | **Event bus** | Volatile signals: `emit(name, payload)` / `listen(name)`. |
 | **Configuration items** | Persistent shared state: `setItem(item, value)` / `observeItems([items])`. Observers are called once per task; changes are saved after 2 s, or at once when the page closes, through a storage adapter. |
-| **Storage adapters** | Where the configuration items are loaded from and saved to: in memory (provided), an HTTP server or Google Drive (a few lines in the application). |
+| **Storage adapters** | Where the configuration items are loaded from and saved to: in memory or in the local database of the browser (provided), an HTTP server or Google Drive (a few lines in the application). |
 
 Everything a component subscribes to — events, items, attributes, window events, intervals, animation frames — is
 released when it is detached. No manual cleanup in normal use.
@@ -155,7 +155,9 @@ Custom elements live in the light DOM: global styles and utility classes apply t
 
 > **Note:** configuration items are loaded and saved by a storage adapter that the application gives to the store,
 > before loading it: `config.setAdapter(adapter)`, then `await config.load()` (`ricochet/core/config.mjs`). Ricochet
-> provides an adapter in memory (`ricochet/adapters/memory.mjs`); an HTTP server or Google Drive need a few lines.
+> provides an adapter in memory (`ricochet/adapters/memory.mjs`) and one in the local database of the browser, IndexedDB,
+> for applications without a server (`ricochet/adapters/indexeddb.mjs`); an HTTP server or Google Drive need a few
+> lines.
 
 The button does not know the counter exists. Add a second counter anywhere in the page and it works with no change.
 

@@ -7,7 +7,9 @@ import {describe, assert, captureConsole, releaseConsole} from './kernel.mjs'
 import {ConfigStore, config} from '../src/core/config.mjs'
 import {itemStore} from '../src/core/items.mjs'
 import {MemoryAdapter} from '../src/adapters/memory.mjs'
+import {IndexedDBAdapter} from '../src/adapters/indexeddb.mjs'
 import {bus} from '../src/core/bus.mjs'
+import '../src/core/loop.mjs' // the frame loop runs the scheduled tasks (the delayed saves)
 import {$global} from '../src/core/global.mjs'
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
@@ -211,3 +213,30 @@ await describe('Config — logs', async () => {
   assert('the change is recorded', entry.item === 'a' && entry.previous === '1' && entry.current === '2')
   assert('and in the timeline', $global.logs.timeline[0].detail === '1 => 2')
 })
+
+await describe('IndexedDBAdapter — without IndexedDB (Node)', async () => {
+  const adapter = new IndexedDBAdapter('test-app', {theme: 'day', size: 'm'})
+  captureConsole()
+  const loaded = await adapter.load()
+  const lines = releaseConsole()
+  assert('warns that the items are kept in memory', lines.some(line => line.includes('kept in memory')) && adapter.inMemory)
+  assert('the default values at first', loaded.theme === 'day' && loaded.size === 'm')
+  await adapter.save([{item: 'theme', value: 'night'}, {item: 'zoom', value: '2'}])
+  await adapter.remove(['size'])
+  captureConsole()
+  const again = await adapter.load()
+  const quiet = releaseConsole()
+  assert('saved and removed items, over the defaults', again.theme === 'night' && again.zoom === '2' && again.size === 'm')
+  assert('the warning comes once', quiet.length === 0)
+  captureConsole()
+  const noName = new IndexedDBAdapter()
+  const errors = releaseConsole()
+  assert('a database name is required', noName.name === undefined && errors.some(line => line.includes('database name')))
+  const {store} = await newStore({})
+  store.setAdapter(new IndexedDBAdapter('test-store', {a: '1'}))
+  captureConsole()
+  await store.load()
+  releaseConsole()
+  assert('works as the adapter of a store', store.get('a') === '1')
+})
+

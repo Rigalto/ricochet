@@ -45,7 +45,8 @@
         <code>deep</code> for the titles of the modules, <code>light</code> for their content. A module may then give
         its content a palette of its own.</p>
       <p>The palette editor is a module of an application: its content is the real one, its frame is simpler here. Its
-        settings are configuration items, kept in memory in this demo: they are lost when the page is loaded again.</p>
+        settings are configuration items, kept in the local database of the browser (<code>IndexedDBAdapter</code>): they
+        are found again when the page is loaded again, without any server.</p>
       <p>Move the hue and the intensity, switch day and night, show the states: the preview follows. Then copy the CSS
         rule into the CSS of your application, and give the palette to a block: <code>&lt;section palette="game"&gt;</code>.
         See the <a href="https://github.com/Rigalto/ricochet/blob/main/docs/THEME.md">guide of the themes</a>.</p>
@@ -59,7 +60,7 @@
   </div>
 
   <script type="module">
-    import {WComponent, WController, config, MemoryAdapter} from 'ricochet/ricochet.mjs'
+    import {WComponent, WController, config, IndexedDBAdapter} from 'ricochet/ricochet.mjs'
     import 'ricochet/ui/all.mjs'
     import './mod-palette-editor.mjs'
 
@@ -73,7 +74,8 @@
       itemsChanged (items) { document.querySelector('.modules').hidden = items['demo-modules'] === 'no' }
     }
 
-    config.setAdapter(new MemoryAdapter({'ricochet-theme': 'system', 'demo-modules': 'yes'}))
+    // the settings (theme, palette being designed) are kept in the local database of the browser: no server needed
+    config.setAdapter(new IndexedDBAdapter('ricochet-demo-modules', {'ricochet-theme': 'system', 'demo-modules': 'yes'}))
     await config.load()
     new DemoPage()
     WComponent.render()

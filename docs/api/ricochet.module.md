@@ -21,6 +21,7 @@ application imports once, at startup, when it uses them. Each module stays impor
 | `universeBrickResolver` | [universe-brick](universe-brick.module.md) |
 | `config`, `itemStore`, `setItemStore` | [config](config.module.md), [items](items.module.md) |
 | `MemoryAdapter` | [memory](memory.module.md) |
+| `IndexedDBAdapter` | [indexeddb](indexeddb.module.md) |
 | `keyboard` | [keyboard](keyboard.module.md) |
 | `runActions`, `runDoubleClickActions`, `isDisabled` | [actions](actions.module.md) |
 | `css` | [css](css.module.md) |

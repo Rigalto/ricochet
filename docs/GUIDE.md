@@ -120,7 +120,7 @@ of the theme, two pages reached by their address (`#home`, `#about`), and a sett
     import './app-page.mjs'
 
     await start({
-      storage: new MemoryAdapter({'ricochet-theme': 'system'}), // an HTTP or a Drive adapter in a real application
+      storage: new MemoryAdapter({'ricochet-theme': 'system'}), // IndexedDBAdapter, HTTP or Drive in a real application
       router: ({path}) => ['home', 'about'].includes(path) ? {path, page: path} : {redirect: 'home'},
     })
   </script>
