@@ -158,7 +158,40 @@ The components of the interface (`<rc-text-button>`, `<rc-select>`, `<rc-checkbo
 `ricochet/ui/all.mjs`, imported once by the page. The demos, `demo/components.html`, `demo/floating.html` and
 `demo/theme.html`, show each component at work.
 
-## 4. Run the application on your computer
+## 4. Change only what changes
+
+A component knows what it has just changed: an item was set, a line was added, a label was renamed. It uses this
+knowledge twice.
+
+- **In its own nodes.** It touches the nodes that show the change, and only them: one new line inserted, one label
+  rewritten, one attribute toggled. The rest of the interface stays as it is, with its focus, its scroll position and
+  its components, and the frame keeps its time for the view that needs it.
+- **In the event it emits.** The payload tells the change as precisely as the emitter knows it: the line added, the
+  record renamed with its new label. Each listener then updates its own nodes at once, without searching a table nor
+  asking a server what happened.
+
+```javascript
+// the history of the pages: it says which page arrives, and which label changes
+this.emit('pageAdded', {page})                      // not 'historyChanged' with nothing in it
+this.emit('pageLabel', {path, label})
+
+// the list that shows it: one line moved or created, one label rewritten
+pageAddedDispatched ({page}) {
+  const line = this.element.querySelector(`[data-path="${page.path}"]`) ?? this.#line(page)
+  this.element.prepend(line)                        // a moved element keeps its component
+  this.element.children[10]?.remove()               // ten lines at most
+}
+
+pageLabelDispatched ({path, label}) {
+  this.element.querySelector(`[data-path="${path}"]`)?.setAttribute('label', label)
+}
+```
+
+The whole content is built once, when the component is mounted (`attach()`). After that, each event brings one
+precise change, and the component makes exactly that change. CSS often does the rest: here, the current page is the
+first line, `:first-child`, with no code at all.
+
+## 5. Run the application on your computer
 
 Browsers refuse to load modules from `file://` addresses. Open the application through a local web server instead,
 for instance one of these, started from the application folder:
@@ -177,7 +210,7 @@ everything then comes from `localhost`. Node.js can do this in about a hundred l
 To see what the application does (the events, the changes of the items, the errors, the leaks), see the guide of
 debugging, [DEBUG.md](DEBUG.md).
 
-## 5. A phone and a computer
+## 6. A phone and a computer
 
 Ricochet does not make a responsive layout: an application has two versions of its interface, one for a computer and
 one for a phone, and adapts each one with CSS and with code. The display mode is chosen once, when the application
@@ -201,7 +234,7 @@ To work on the phone version from a computer, set the configuration item `ricoch
 page again (`auto` comes back to the choice by the screen), or use the device mode of the developer tools of the
 browser and load the page again.
 
-## 6. Display HTML of external origin
+## 7. Display HTML of external origin
 
 Ricochet never interprets HTML coming from data: Markdown is converted by `markdownToHtml()`, which escapes every
 character before adding its own tags. When your application must display HTML or SVG coming from elsewhere (a stored
@@ -216,7 +249,7 @@ setSanitizer(html => DOMPurify.sanitize(html))
 
 Without a registered sanitizer, `sanitizeHtml()` shows the HTML as text and reports it in the console.
 
-## 7. Keep an API key out of the code
+## 8. Keep an API key out of the code
 
 A key of a web service (weather, air quality, maps) must not be written in the code: the repository is public, and the
 pages are served as they are. Let the user give it, once, in a field of the interface, and keep it with `secrets`: in
@@ -246,7 +279,7 @@ this computer: in another browser or on another computer, the user gives it agai
 it. The local storage is shared by every page of the same origin (all the applications of a GitHub Pages account):
 fine for your own applications, but it is not a safe.
 
-## 8. Document your own code
+## 9. Document your own code
 
 The documentation of Ricochet is generated from the `/** … */` blocks of its source files by `tools/doc.mjs`. The
 same blocks feed three readers: the tooltips of VSCode, the Markdown pages of `docs/api/` that GitHub displays, and
@@ -309,7 +342,7 @@ git add docs/api
 and enable it once per clone with `git config core.hooksPath .githooks`. On macOS and Linux, the hook must be
 executable: `chmod +x .githooks/pre-commit`.
 
-## 9. Publish the application
+## 10. Publish the application
 
 Once Ricochet is in your application (step 1), the application is a set of static files, the kernel included: any
 static host works, GitHub Pages included, and publishing the application publishes its kernel with it. With GitHub Pages, add an empty `.nojekyll` file at the root of your repository; without it,

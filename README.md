@@ -58,6 +58,10 @@ What sets it apart:
 
 - **Reactions, not renders.** A component keeps direct references to its nodes and updates them surgically
   (`this.elLabel.textContent = …`). There is no virtual DOM, no template diffing, no render cycle.
+- **Precise events, minimal changes.** The component that makes a change knows exactly what it changed: it updates
+  just those nodes, and the event it emits says just that (`pageAdded {page}`, `labelChanged {id, label}`), so that each
+  listener, in turn, updates its own nodes at once, with no search and no request
+  ([guide](docs/GUIDE.md#4-change-only-what-changes)).
 - **Anonymous broadcast instead of a component tree.** Components never call each other and never know their parent or
   children. They publish on shared channels and subscribe to what they care about. Data does not flow "down" and events
   do not bubble "up": everything travels flat.
