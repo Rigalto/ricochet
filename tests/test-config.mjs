@@ -238,5 +238,15 @@ await describe('IndexedDBAdapter — without IndexedDB (Node)', async () => {
   await store.load()
   releaseConsole()
   assert('works as the adapter of a store', store.get('a') === '1')
+  assert('a short save delay', adapter.saveDelay === 100)
+})
+
+await describe('Config — the delay of the adapter', async () => {
+  // a store whose own delay is long, with an adapter that asks for a short one
+  const {store, adapter} = await newStore({a: '1'}, {saveDelay: 5000, retryDelay: 40})
+  adapter.saveDelay = 20
+  store.setItem('a', '2')
+  await sleep(150)
+  assert('saved after the delay of the adapter', adapter.calls.some(call => call[0] === 'save'))
 })
 

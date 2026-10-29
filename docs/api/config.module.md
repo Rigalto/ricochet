@@ -30,6 +30,10 @@ An adapter is an object with three asynchronous methods:
 | `save(entries, options)` | saves `[{item, value}, …]`; `options.keepalive` is true when the page is being closed |
 | `remove(items)` | deletes the items of an array of names |
 
+An adapter may also give a `saveDelay` property, in milliseconds, that replaces the delay of the store: a local
+adapter, whose writes are cheap, saves sooner, so that a change is not lost when the page is closed at once (the
+writes started while the page is being closed are not always completed by the browser).
+
 ```javascript
 import {config} from 'ricochet/core/config.mjs'
 

@@ -13,6 +13,12 @@ Storage adapter for `config`, in the local database of the browser.
 | `name` | string | Name of the database: one per application. |
 | `defaults` | object | Values of the items that are not stored yet, as `{item: value, …}`. |
 
+### get saveDelay
+
+Delay before the changes are saved, in milliseconds: short, the writes in the local database being cheap. Read by
+the store, in place of its own delay (2 seconds, made for a server): a change is saved before a reload, even an
+early one; a write started while the page is being closed is not always completed by the browser.
+
 ### get name
 
 The name of the database.

@@ -1,0 +1,63 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Copyright (c) 2026 Rigalto -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ricochet — air quality</title>
+  <script type="importmap">
+  { "imports": { "ricochet/": "../src/" } }
+  </script>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 0; min-height: 100vh; }
+    .header { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding: .6rem 1rem; }
+    .header h1 { font-size: 1.1rem; margin: 0 auto 0 0; color: var(--rc-text-strong); display: flex; gap: .5rem;
+      align-items: center; }
+    .header .group { display: flex; gap: .25rem; align-items: center; }
+    main { max-width: 46rem; margin: 1rem auto; padding: 0 1rem; display: grid; gap: 1rem; }
+    .frame { border-radius: .5rem; overflow: hidden; }
+    .frame > h2 { margin: 0; padding: .5rem 1rem; font-size: 1rem; color: var(--rc-text-strong); display: flex;
+      gap: .5rem; align-items: center; }
+    .frame > h2 > span { margin-right: auto; }
+    .frame > air-quality { padding: 1rem; }
+    .about { font-size: .9em; color: var(--rc-text-muted); }
+    .about code { font-size: .95em; }
+    @media (max-width: 600px) { .header h1 span { display: none; } }
+  </style>
+</head>
+<body>
+  <header class="header" palette="header">
+    <h1><rc-icon icon="cloudsun" size="26"></rc-icon><span>Ricochet — air quality</span></h1>
+    <div class="group">
+      <rc-icon-button flat icon="locationarrow" title="Place given by the IP address" data-event="airQualityHere"></rc-icon-button>
+      <rc-icon-button flat icon="globe" title="List of the measuring stations (aqicn.org)" data-url="https://aqicn.org/city/all/"></rc-icon-button>
+      <rc-dropdown flat icon="key" title="Key of the air quality service"><air-quality-key></air-quality-key></rc-dropdown>
+      <rc-icon-button flat icon="sync" title="Refresh the measures" data-event="airQualityRefresh"></rc-icon-button>
+    </div>
+    <div class="group">
+      <rc-icon-button flat icon="computerclassic" data-item="ricochet-theme" data-value="system" title="Theme of the computer"></rc-icon-button>
+      <rc-icon-button flat icon="sunglasses" data-item="ricochet-theme" data-value="day" title="Day"></rc-icon-button>
+      <rc-icon-button flat icon="moonfirstquarter" data-item="ricochet-theme" data-value="night" title="Night"></rc-icon-button>
+    </div>
+  </header>
+  <main>
+    <section class="frame rc-shadow-2" palette="view">
+      <h2 shade="deep"><span>Air quality</span></h2>
+      <air-quality></air-quality>
+    </section>
+    <p class="about">A small application without any server: the place and the theme are configuration items kept in the
+      local database of the browser (<code>IndexedDBAdapter</code>), the key of the service is a secret given by the
+      user and kept in this browser (<code>secrets</code>), never in the code. See <code>demo/air-quality.mjs</code>.</p>
+  </main>
+
+  <script type="module">
+    import {start, IndexedDBAdapter} from 'ricochet/ricochet.mjs'
+    import 'ricochet/ui/all.mjs'
+    import './air-quality.mjs'
+
+    // the settings are kept in the local database of the browser: no server needed
+    await start({storage: new IndexedDBAdapter('ricochet-demo-air-quality', {'ricochet-theme': 'system'})})
+  </script>
+</body>
+</html>

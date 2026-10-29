@@ -32,6 +32,7 @@
 
 const STORE = 'items'
 const VERSION = 1
+const SAVE_DELAY = 100
 
 /**
  * Storage adapter for `config`, in the local database of the browser.
@@ -40,6 +41,7 @@ export class IndexedDBAdapter {
   #name
   #defaults
   #db = null // promise of the open database, or null while not opened
+  #opened = null // the open database itself, once the promise is resolved: the writes start without waiting
   #memory = null // the items kept in memory when IndexedDB is not available
 
   /**
@@ -51,6 +53,13 @@ export class IndexedDBAdapter {
     this.#name = name
     this.#defaults = {...defaults}
   }
+
+  /**
+   * Delay before the changes are saved, in milliseconds: short, the writes in the local database being cheap. Read by
+   * the store, in place of its own delay (2 seconds, made for a server): a change is saved before a reload, even an
+   * early one; a write started while the page is being closed is not always completed by the browser.
+   */
+  get saveDelay () { return SAVE_DELAY }
 
   /** The name of the database. */
   get name () { return this.#name }
@@ -86,7 +95,8 @@ export class IndexedDBAdapter {
    * @param {Array<{item: string, value: string}>} entries - The items to store.
    */
   async save (entries) {
-    const db = await this.#open()
+    // the database already open: the transaction starts at once, in the same task (see #write)
+    const db = this.#opened ?? await this.#open()
     if (db === null) {
       for (const {item, value} of entries) { this.#memory[item] = value }
       return
@@ -99,7 +109,7 @@ export class IndexedDBAdapter {
    * @param {string[]} items - The names of the items to delete.
    */
   async remove (items) {
-    const db = await this.#open()
+    const db = this.#opened ?? await this.#open()
     if (db === null) {
       for (const item of items) { delete this.#memory[item] }
       return
@@ -111,6 +121,7 @@ export class IndexedDBAdapter {
   async close () {
     const db = await this.#db
     this.#db = null
+    this.#opened = null
     db?.close()
   }
 
@@ -143,7 +154,9 @@ export class IndexedDBAdapter {
         db.onversionchange = () => {
           db.close()
           this.#db = null
+          this.#opened = null
         }
+        this.#opened = db
         resolve(db)
       }
       request.onerror = () => fallback(request.error?.message ?? 'refused')
@@ -151,11 +164,13 @@ export class IndexedDBAdapter {
     return this.#db
   }
 
-  // a write transaction, resolved when it is committed
+  // a write transaction, resolved when it is committed; it is created and committed at once, in the task of the call:
+  // when the page is being closed (pagehide), a transaction started later, after an await, is lost
   #write (db, fill) {
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(STORE, 'readwrite')
       fill(transaction.objectStore(STORE))
+      transaction.commit?.() // no more requests: committed without waiting for the end of the task
       transaction.oncomplete = () => resolve()
       transaction.onerror = () => reject(transaction.error)
       transaction.onabort = () => reject(transaction.error ?? new Error('IndexedDBAdapter: transaction aborted'))
