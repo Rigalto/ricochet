@@ -19,6 +19,41 @@ JavaScript in the component.
 <rc-icon-button icon="save" data-event="noteSave" data-param='{"id": 12}'>Save</rc-icon-button>
 ```
 
+## The attributes in detail
+
+| Attribute | Value | What happens |
+| --- | --- | --- |
+| `data-item` | the name of a configuration item (`$` stands for the scope) | the item receives the text of `data-value` (`setItem(item, value)`); an item always holds a string |
+| `data-value` | a text | the value of the item; with `data-event`, also added to the payload as `value` |
+| `data-event` | an event name, or several separated by commas | each event is emitted with the payload |
+| `data-param` | a JSON object; default `{}` | the payload of the events; when it is not valid JSON, nothing is emitted and the error is shown in the console |
+| `data-path` | an address, `#…` | the address of the page changes (`location.hash`): the router resolves it |
+| `data-url` | an address | opened in a new tab |
+| `data-paste` | a text | copied to the clipboard |
+| `data-dialog` | the `id` of an `rc-dialog` | the dialog opens |
+| `data-dblclick` | an event name, or several separated by commas | on a double click, emitted with the same payload as `data-event` |
+
+So the payload of an event is the object of `data-param`, plus `value` when the element has a `data-value`:
+
+```html
+<button data-event="noteSave" data-param='{"id": 12}' data-value="draft">…</button>
+<!-- emits noteSave {id: 12, value: 'draft'} -->
+```
+
+The actions run in the order of the table: item, events, path, url, paste, dialog. The payload of each event is a
+new copy: a listener may change it.
+
+Some components write `data-value` themselves, before the actions run: `rc-checkbox` (`yes` or `no`),
+`rc-radio-group`, `rc-tabs`, `rc-input`, `rc-textarea`, `rc-select`, `rc-slider` (the value of the field),
+`rc-dialog` (the value of the button chosen). On them, `data-value` is not given; `data-item` and `data-event` receive
+the value of the component.
+
+Two attributes are read by the windows, not by this module: `data-close` on an element inside an `rc-dropdown` (the
+dropdown closes after the actions of the click) or an `rc-dialog` (the dialog closes with this value).
+
+The keys declared to the keyboard (see the `keyboard` module) have the same actions, written as an object:
+`{event, param}` — the payload is `param` plus `key`, `shift`, `ctrl` and `alt` —, `{item, value}`, `{click}`.
+
 ## Click and double click
 
 A double click is two clicks, then a `dblclick`. On an element with `data-dblclick`, the first click runs the
