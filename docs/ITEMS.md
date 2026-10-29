@@ -11,3 +11,12 @@ items with this prefix.
 | --- | --- | --- | --- |
 | `ricochet-theme` | `theme` (`ui/theme.mjs`) | `system` (default), `day`, `night` | Day or night colours. `system` follows the setting of the computer. Changed with `setTheme()`; the `themeChanged` event tells the scheme shown. |
 | `ricochet-display` | `display` (`core/display.mjs`) | `auto` (default), `pc`, `phone` | Display mode of the application, read once by `start()`: `auto` chooses by the size of the screen. A change applies when the page is loaded again. |
+
+## Keys of the local storage
+
+Ricochet also writes to the local storage of the browser (`localStorage`), with keys that are not configuration items.
+An application does not create keys with these prefixes.
+
+| Key | Module | Values | Use |
+| --- | --- | --- | --- |
+| `ricochet-secret-` | `secrets` (`core/secrets.mjs`) | the value of a secret | Prefix of the secrets kept by `secrets.set(name, value)`: `ricochet-secret-<name>`. Never loaded as configuration items. |

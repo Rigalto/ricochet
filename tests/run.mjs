@@ -16,6 +16,7 @@ const REGISTRY = [
   {name: 'Tasks', file: './test-tasks.mjs'},
   {name: 'Router', file: './test-router.mjs'},
   {name: 'Config', file: './test-config.mjs'},
+  {name: 'Secrets', file: './test-secrets.mjs'},
   {name: 'Css', file: './test-css.mjs'},
   {name: 'Events', file: './test-events.mjs'},
   {name: 'Iconset', file: './test-iconset.mjs'},

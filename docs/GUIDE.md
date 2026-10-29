@@ -216,7 +216,36 @@ setSanitizer(html => DOMPurify.sanitize(html))
 
 Without a registered sanitizer, `sanitizeHtml()` shows the HTML as text and reports it in the console.
 
-## 7. Document your own code
+## 7. Keep an API key out of the code
+
+A key of a web service (weather, air quality, maps) must not be written in the code: the repository is public, and the
+pages are served as they are. Let the user give it, once, in a field of the interface, and keep it with `secrets`: in
+the local storage of this browser, never sent to the storage adapter nor written to the logs.
+
+```js
+import {WComponent, secrets} from 'ricochet/ricochet.mjs'
+
+class AirQuality extends WComponent {
+  attach () {
+    this.listen('secretChanged') // the key given or removed, here or in another tab
+    this.refresh()
+  }
+
+  secretChangedDispatched ({name}) { if (name === 'aqicn') { this.refresh() } }
+
+  refresh () {
+    const token = secrets.get('aqicn') // synchronous; null while the user has not given it
+    if (token === null) { /* show how to get a key, and the field to give it */ return }
+    // fetch(`https://api.waqi.info/feed/paris/?token=${token}`)…
+  }
+}
+```
+
+The field calls `secrets.set('aqicn', value)`; an empty value removes the key. The local storage is shared by every
+page of the same origin (all the applications of a GitHub Pages account): fine for your own applications, but it is
+not a safe.
+
+## 8. Document your own code
 
 The documentation of Ricochet is generated from the `/** … */` blocks of its source files by `tools/doc.mjs`. The
 same blocks feed three readers: the tooltips of VSCode, the Markdown pages of `docs/api/` that GitHub displays, and
@@ -279,7 +308,7 @@ git add docs/api
 and enable it once per clone with `git config core.hooksPath .githooks`. On macOS and Linux, the hook must be
 executable: `chmod +x .githooks/pre-commit`.
 
-## 8. Publish the application
+## 9. Publish the application
 
 Once Ricochet is in your application (step 1), the application is a set of static files, the kernel included: any
 static host works, GitHub Pages included, and publishing the application publishes its kernel with it. With GitHub Pages, add an empty `.nojekyll` file at the root of your repository; without it,

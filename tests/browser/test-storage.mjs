@@ -45,3 +45,29 @@ await describe('IndexedDBAdapter', async () => {
   await drop(NAME)
   await drop(OTHER)
 })
+
+await describe('secrets', async () => {
+  const {secrets} = await import('../../src/core/secrets.mjs')
+  const {bus} = await import('../../src/core/bus.mjs')
+  const seen = []
+  const listener = payload => seen.push(payload.name)
+  bus.on('secretChanged', listener)
+  secrets.remove('test-key')
+  secrets.set('test-key', ' k-123 ')
+  assert('kept in localStorage', !secrets.inMemory && localStorage.getItem('ricochet-secret-test-key') === 'k-123' &&
+    secrets.get('test-key') === 'k-123')
+  // another document of the same origin (another tab) changes it
+  const frame = document.createElement('iframe')
+  document.body.append(frame)
+  seen.length = 0
+  frame.contentWindow.localStorage.setItem('ricochet-secret-test-key', 'from-elsewhere')
+  frame.contentWindow.localStorage.setItem('not-a-secret', 'x')
+  await new Promise(resolve => setTimeout(resolve, 50))
+  assert('a change in another tab: secretChanged', JSON.stringify(seen) === '["test-key"]' &&
+    secrets.get('test-key') === 'from-elsewhere')
+  frame.remove()
+  localStorage.removeItem('not-a-secret')
+  secrets.remove('test-key')
+  bus.off('secretChanged', listener)
+  assert('removed', localStorage.getItem('ricochet-secret-test-key') === null)
+})
