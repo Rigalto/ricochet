@@ -16,15 +16,16 @@ const LOCATION_ITEM = 'air-quality-location' // the place: 'here', 'city:<name>'
 const TOKEN_URL = 'https://aqicn.org/data-platform/token/'
 const API_URL = 'https://api.waqi.info/feed'
 
-// the scale of the air quality index (US EPA): the colours are those of the scale, not to be changed; 'text' is the
-// colour of a text written on that colour
+// the scale of the air quality index (US EPA): the colours are those of the standard (RGB values of the EPA
+// Technical Assistance Document for the Reporting of Daily Air Quality, 2018), not to be changed; 'text' is the colour
+// of a text written on that colour
 const AQI_SCALE = [
-  {max: 50, color: 'green', text: 'white', icon: 'smile', status: 'Good'},
-  {max: 100, color: 'yellow', text: 'black', icon: 'meh', status: 'Moderate'},
-  {max: 150, color: 'orange', text: 'black', icon: 'frown', status: 'Unhealthy for sensitive groups'},
-  {max: 200, color: 'red', text: 'white', icon: 'nervous', status: 'Unhealthy'},
-  {max: 300, color: 'purple', text: 'white', icon: 'surgicalmask', status: 'Very unhealthy'},
-  {max: 500, color: 'maroon', text: 'white', icon: 'pirat', status: 'Hazardous'}
+  {max: 50, color: '#00e400', text: 'black', icon: 'smile', status: 'Good'},
+  {max: 100, color: '#ffff00', text: 'black', icon: 'meh', status: 'Moderate'},
+  {max: 150, color: '#ff7e00', text: 'black', icon: 'frown', status: 'Unhealthy for sensitive groups'},
+  {max: 200, color: '#ff0000', text: 'white', icon: 'nervous', status: 'Unhealthy'},
+  {max: 300, color: '#8f3f97', text: 'white', icon: 'surgicalmask', status: 'Very unhealthy'},
+  {max: 500, color: '#7e0023', text: 'white', icon: 'pirat', status: 'Hazardous'}
 ]
 const AQI_MAX = 500
 
