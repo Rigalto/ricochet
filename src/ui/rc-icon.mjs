@@ -17,7 +17,7 @@
  * @module rc-icon
  * @category ui
  * @attr {string} icon - Name of the icon in the icon set.
- * @attr {number} [size=24] - Width and height, in pixels.
+ * @attr {string} [size=24] - Width and height: a number of pixels, or a CSS length (`1.2em`: the size of the text).
  * @attr {string} [label] - Text for screen readers; without it, the icon is decorative.
  */
 
@@ -67,9 +67,9 @@ export class RcIcon extends WComponent {
   iconChanged (icon) { this.elPath.setAttribute('d', iconPath(icon)) }
 
   sizeChanged (size) {
-    const pixels = `${parseInt(size ?? '24', 10) || 24}px`
-    this.elSvg.style.width = pixels
-    this.elSvg.style.height = pixels
+    const length = /^\d*\.?\d+(?:px|em|rem)$/.test(size ?? '') ? size : `${parseInt(size ?? '24', 10) || 24}px`
+    this.elSvg.style.width = length
+    this.elSvg.style.height = length
   }
 
   labelChanged (label) {

@@ -22,15 +22,18 @@
 
 import {escapeHtml} from './dom.mjs'
 
-// Inline elements, in priority order. Groups:
-// 1 escaped character | 2-3 code | 4 bold | 5 italic | 6 strikethrough | 7-9 image or link
+// Inline elements, in priority order (named groups: the first one defined tells which element matched)
 const INLINE = new RegExp([
-  /\\([\\`*~[\]()|#>!_{}+.-])/.source,
-  /(`+)([^`]|[^`][\s\S]*?[^`])\2(?!`)/.source,
-  /\*\*(?=\S)([\s\S]*?\S)\*\*/.source,
-  /\*(?=[^\s*])([\s\S]*?[^\s*])\*/.source,
-  /~~(?=\S)([\s\S]*?\S)~~/.source,
-  /(!?)\[((?:\\.|[^\\\]])*)\]\(([^()\s]*)\)/.source,
+  /\\(?<escaped>[\\`*~[\]()|#>!_{}+.$=:-])/.source,
+  /\$\$(?<math>[\s\S]+?)\$\$/.source,
+  /(?<ticks>`+)(?<code>[^`]|[^`][\s\S]*?[^`])\k<ticks>(?!`)/.source,
+  /\*\*(?=\S)(?<bold>[\s\S]*?\S)\*\*/.source,
+  /\*(?=[^\s*])(?<italic>[\s\S]*?[^\s*])\*/.source,
+  /(?<![\w=])==(?=\S)(?<mark>[\s\S]*?\S)==(?![\w=])/.source,
+  /(?<![\w+])\+\+(?=\S)(?<under>[\s\S]*?\S)\+\+(?![\w+])/.source,
+  /~~(?=\S)(?<strike>[\s\S]*?\S)~~/.source,
+  /(?<![\w:]):(?<icon>[a-z]+):(?![\w:])/.source,
+  /(?<bang>!?)\[(?<label>(?:\\.|[^\\\]])*)\]\((?<url>[^()\s]*)\)/.source,
 ].join('|'), 'g')
 
 const SCHEME = /^([a-z][a-z0-9+.-]*):/i
@@ -38,6 +41,20 @@ const SAFE_SCHEMES = new Set(['http', 'https', 'mailto'])
 const isSafeUrl = url => !SCHEME.test(url) || SAFE_SCHEMES.has(url.match(SCHEME)[1].toLowerCase())
 const isExternal = url => /^https?:/i.test(url)
 const unescapeMarkdown = text => text.replace(/\\(.)/g, '$1')
+const COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
+const IMAGE_WIDTH = /(?<!\\)\|\s*(\d+)(px|%)?\s*$/ // 'alt|100', 'alt|100px', 'alt|50%'
+
+// a color code, `#C04F21`: the code followed by a swatch of the color
+const swatch = color => `<code>${color}</code><span class="rc-md-color" style="display: inline-block; width: .8em; ` +
+  `height: .8em; margin-left: .25em; border: 1px solid currentColor; border-radius: 50%; vertical-align: middle; ` +
+  `background-color: ${color}"></span>`
+
+const image = (label, url) => {
+  const width = IMAGE_WIDTH.exec(label)
+  const alt = escapeHtml(unescapeMarkdown(width === null ? label : label.slice(0, width.index)))
+  const size = width === null ? '' : ` width="${width[1]}${width[2] === '%' ? '%' : ''}"`
+  return `<img src="${escapeHtml(url)}" alt="${alt}"${size}>`
+}
 
 const inline = (text, options) => {
   let html = ''
@@ -45,22 +62,32 @@ const inline = (text, options) => {
   for (const m of text.matchAll(INLINE)) {
     html += escapeHtml(text.slice(last, m.index))
     last = m.index + m[0].length
-    if (m[1] !== undefined) {
-      html += escapeHtml(m[1])
-    } else if (m[2] !== undefined) {
-      html += `<code>${escapeHtml(m[3].replace(/^ (.*) $/s, '$1'))}</code>`
-    } else if (m[4] !== undefined) {
-      html += `<strong>${inline(m[4], options)}</strong>`
-    } else if (m[5] !== undefined) {
-      html += `<em>${inline(m[5], options)}</em>`
-    } else if (m[6] !== undefined) {
-      html += `<del>${inline(m[6], options)}</del>`
+    const g = m.groups
+    if (g.escaped !== undefined) {
+      html += escapeHtml(g.escaped)
+    } else if (g.math !== undefined) {
+      html += escapeHtml(m[0]) // kept as written, for a TeX renderer such as MathJax
+    } else if (g.code !== undefined) {
+      const code = g.code.replace(/^ (.*) $/s, '$1')
+      html += COLOR.test(code) ? swatch(code) : `<code>${escapeHtml(code)}</code>`
+    } else if (g.bold !== undefined) {
+      html += `<strong>${inline(g.bold, options)}</strong>`
+    } else if (g.italic !== undefined) {
+      html += `<em>${inline(g.italic, options)}</em>`
+    } else if (g.mark !== undefined) {
+      html += `<mark>${inline(g.mark, options)}</mark>`
+    } else if (g.under !== undefined) {
+      html += `<u>${inline(g.under, options)}</u>`
+    } else if (g.strike !== undefined) {
+      html += `<del>${inline(g.strike, options)}</del>`
+    } else if (g.icon !== undefined) {
+      html += `<rc-icon icon="${g.icon}" size="1.2em"></rc-icon>`
     } else {
-      const [, , , , , , , bang, label, url] = m
+      const {bang, label, url} = g
       if (!isSafeUrl(url)) {
         html += escapeHtml(m[0])
       } else if (bang === '!') {
-        html += `<img src="${escapeHtml(url)}" alt="${escapeHtml(unescapeMarkdown(label))}">`
+        html += image(label, url)
       } else {
         const content = inline(label, options)
         const custom = options.link?.(url, content, unescapeMarkdown(label))
@@ -72,6 +99,20 @@ const inline = (text, options) => {
   return html + escapeHtml(text.slice(last))
 }
 
+// the parts of a paragraph between hard line breaks (a line ending with '\'), formulas left whole
+const HARD_BREAK = /\$\$[\s\S]*?\$\$|\\\n/g
+const splitHardBreaks = text => {
+  const parts = []
+  let start = 0
+  for (const m of text.matchAll(HARD_BREAK)) {
+    if (m[0].startsWith('$$')) { continue }
+    parts.push(text.slice(start, m.index))
+    start = m.index + m[0].length
+  }
+  parts.push(text.slice(start))
+  return parts
+}
+
 const FENCE = /^\s*```\s*([\w+-]*)/
 const BLANK = /^\s*$/
 const LIST_ITEM = /^(\s*)([-*]|\d+[.)])\s+(.*)$/
@@ -81,6 +122,7 @@ const RULE = /^\s*(?:-{3,}|\*{3,})\s*$/
 const QUOTE = /^\s*>\s?(.*)$/
 const TABLE_ROW = /^\s*\|/
 const TABLE_SEPARATOR = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/
+const MATH_OPEN = /^\s*\$\$/ // a formula that starts a line
 const CELL_SEPARATOR = /(?<!\\)\|/
 
 // cells of a table row; an escaped '\|' is a literal '|', even inside code
@@ -112,6 +154,7 @@ export const markdownToHtml = (source, options = {}) => {
   let quote = null // lines of the current quote, converted recursively
   let code = null // {lang, lines} of the current code block
   let table = null // {align} of the current table
+  let math = null // lines of a formula written over several lines, kept as written
   const lists = [] // open lists, innermost last: {tag, indent, item}
   let listGap = false // a blank line was seen inside a list: the list goes on only if another item follows
 
@@ -121,7 +164,7 @@ export const markdownToHtml = (source, options = {}) => {
     if (paragraph === null) { return }
     // the whole paragraph is converted at once, so that bold or a link may span several source lines;
     // a line ending with '\' is a hard line break
-    const content = paragraph.join('\n').split('\\\n').map(part => inline(part, options)).join('<br>\n')
+    const content = splitHardBreaks(paragraph.join('\n')).map(part => inline(part, options)).join('<br>\n')
     html.push(`<p>${content}</p>`)
     paragraph = null
   }
@@ -188,6 +231,15 @@ export const markdownToHtml = (source, options = {}) => {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
 
+    if (math !== null) {
+      math.push(line)
+      if (line.includes('$$')) {
+        html.push(`<p>${escapeHtml(math.join('\n'))}</p>`)
+        math = null
+      }
+      continue
+    }
+
     if (code !== null) {
       if (FENCE.test(line) && line.trim() === '```') {
         const lang = code.lang === '' ? '' : ` class="language-${escapeHtml(code.lang)}"`
@@ -203,6 +255,13 @@ export const markdownToHtml = (source, options = {}) => {
     if (fence !== null) {
       closeAll()
       code = {lang: fence[1], lines: []}
+      continue
+    }
+
+    // a formula opened at the start of a line and not closed on it: its lines are not Markdown
+    if (MATH_OPEN.test(line) && line.split('$$').length % 2 === 0) {
+      closeAll()
+      math = [line]
       continue
     }
 
@@ -281,6 +340,9 @@ export const markdownToHtml = (source, options = {}) => {
     paragraph.push(line.trim())
   }
 
+  if (math !== null) { // unterminated formula: keep its content
+    html.push(`<p>${escapeHtml(math.join('\n'))}</p>`)
+  }
   if (code !== null) { // unterminated code block: keep its content
     html.push(`<pre><code>${escapeHtml(code.lines.join('\n'))}</code></pre>`)
   }

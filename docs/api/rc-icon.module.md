@@ -19,7 +19,7 @@ An unknown icon is drawn as `add`, and reported once in the console.
 | Kind | Name | Direction | Payload | Description |
 | --- | --- | --- | --- | --- |
 | attribute | `icon` | in | `string` | Name of the icon in the icon set. |
-| attribute | `size` | in | `number` = `24` | Width and height, in pixels. |
+| attribute | `size` | in | `string` = `24` | Width and height: a number of pixels, or a CSS length (`1.2em`: the size of the text). |
 | attribute | `label` | in | `string` | Text for screen readers; without it, the icon is decorative. |
 
 ## Exports

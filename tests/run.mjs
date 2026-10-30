@@ -22,6 +22,7 @@ const REGISTRY = [
   {name: 'Events', file: './test-events.mjs'},
   {name: 'Iconset', file: './test-iconset.mjs'},
   {name: 'Utils', file: './test-utils.mjs'},
+  {name: 'Markdown', file: './test-markdown.mjs'},
   {name: 'Debug', file: './test-debug.mjs'},
 ]
 
