@@ -224,3 +224,50 @@ export const setTheme = value => {
   console.assert(THEMES.has(value), `setTheme: 'system', 'day' or 'night' expected, not '${value}'`)
   itemStore().setItem(THEME_ITEM, value)
 }
+
+// a selector that names palettes only: '[palette="game"]', '[palette=game], [palette="board"]'
+const PALETTE_SELECTOR = /^\s*\[palette=(["']?)([\w-]+)\1\]\s*$/
+
+/**
+ * The palettes defined in the page: the default palette of the page, then every palette that a CSS rule defines with
+ * a selector `[palette="name"]` (the three of Ricochet, those of the application), in the order of the style sheets.
+ * The list is read again at each call: it grows with the modules loaded since the start (their CSS).
+ *
+ * A rule counts when its selector names palettes only and it sets `--rc-hue` or `--rc-chroma`; a value it does not set
+ * is the one of the page. Rules inside `@layer`, `@media` or `@supports` are read; a style sheet of another origin
+ * cannot be read and is skipped.
+ *
+ * ```js
+ * definedPalettes() // [{name: '', hue: 250, chroma: 0.015}, {name: 'header', hue: 230, chroma: 0.03}, …]
+ * ```
+ * @returns {Array<{name: string, hue: number, chroma: number}>} The palettes; the page is `name: ''`.
+ */
+export const definedPalettes = () => {
+  const root = getComputedStyle(document.documentElement)
+  const page = {name: '', hue: Number(root.getPropertyValue('--rc-hue')), chroma: Number(root.getPropertyValue('--rc-chroma'))}
+  const found = new Map() // name → {hue, chroma}, the last rule wins as in CSS
+  const visit = rules => {
+    for (const rule of rules) {
+      if (rule.selectorText !== undefined) {
+        const names = rule.selectorText.split(',').map(part => PALETTE_SELECTOR.exec(part)?.[2])
+        const hue = rule.style.getPropertyValue('--rc-hue').trim()
+        const chroma = rule.style.getPropertyValue('--rc-chroma').trim()
+        if (!names.includes(undefined) && (hue !== '' || chroma !== '')) {
+          for (const name of names) {
+            const palette = found.get(name) ?? {}
+            if (hue !== '') { palette.hue = Number(hue) }
+            if (chroma !== '') { palette.chroma = Number(chroma) }
+            found.set(name, palette)
+          }
+        }
+      }
+      if (rule.cssRules !== undefined) { visit(rule.cssRules) }
+    }
+  }
+  for (const sheet of document.styleSheets) {
+    let rules
+    try { rules = sheet.cssRules } catch { continue } // another origin
+    visit(rules)
+  }
+  return [page, ...[...found].map(([name, {hue, chroma}]) => ({name, hue: hue ?? page.hue, chroma: chroma ?? page.chroma}))]
+}

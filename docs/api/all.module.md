@@ -15,7 +15,7 @@ Importing a component alone (`ricochet/ui/rc-select.mjs`) stays possible: it imp
 
 | Export | Module |
 | --- | --- |
-| `theme`, `setTheme`, `THEME_ITEM` | [theme](theme.module.md) |
+| `theme`, `setTheme`, `THEME_ITEM`, `definedPalettes` | [theme](theme.module.md) |
 | `RcIcon`, `iconPath` | [rc-icon](rc-icon.module.md) |
 | `iconset`, `iconcategory`, `iconsetList`, `iconsetCount`, `iconPrivate` | [iconset](iconset.module.md) |
 | `RcIconButton`, `RcTextButton` | [rc-icon-button](rc-icon-button.module.md), [rc-text-button](rc-text-button.module.md) |

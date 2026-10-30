@@ -76,6 +76,11 @@ kind of record), next to those of Ricochet.
 
 The palettes of Ricochet (`header`, `view`, `module`) can be changed the same way, by the application: its rule wins.
 
+`definedPalettes()` (from `ricochet/ui/theme.mjs` or `ricochet/ui/all.mjs`) lists the palettes defined by their
+parameters: the page, then every rule `[palette="name"]` that sets `--rc-hue` or `--rc-chroma`, with its two numbers —
+for a tool that starts from an existing palette. The list is read from the style sheets at each call, so it includes
+the palettes of the modules loaded since the start.
+
 ## 3. Day and night
 
 Every token has a day value and a night value (`light-dark()`); the browser shows one or the other according to the

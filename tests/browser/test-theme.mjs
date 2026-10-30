@@ -7,7 +7,7 @@
 import {describe, assert} from '../kernel.mjs'
 import {config} from '../../src/core/config.mjs'
 import {MemoryAdapter} from '../../src/adapters/memory.mjs'
-import {setTheme, theme, THEME_ITEM} from '../../src/ui/theme.mjs'
+import {setTheme, theme, THEME_ITEM, definedPalettes} from '../../src/ui/theme.mjs'
 import {bus} from '../../src/core/bus.mjs'
 import {css} from '../../src/core/css.mjs'
 
@@ -76,4 +76,25 @@ await describe('Theme — day and night', async () => {
   assert('system: color-scheme follows the computer', document.documentElement.style.colorScheme === 'light dark')
   bus.off('themeChanged', onTheme)
   sandbox.innerHTML = ''
+})
+
+await describe('Theme — defined palettes', async () => {
+  const find = name => definedPalettes().find(p => p.name === name)
+  const first = definedPalettes()
+  assert('the page first', first[0].name === '' && first[0].hue === 250 && first[0].chroma === 0.015)
+  assert('the palettes of Ricochet, in their layer', find('header')?.hue === 230 && find('view')?.chroma === 0.1 && find('module')?.hue === 75)
+  const style = document.createElement('style')
+  style.textContent = `[palette="tu-game"] { --rc-hue: 140; --rc-chroma: .07; }
+    @media screen { [palette='tu-media'] { --rc-hue: 20; } }
+    [palette="tu-a"], [palette=tu-b] { --rc-chroma: .05; }
+    .x [palette="tu-no"] { --rc-hue: 1; }
+    [palette="tu-color"] { color: red; }`
+  document.head.append(style)
+  assert('a palette of the application', find('tu-game')?.hue === 140 && find('tu-game')?.chroma === 0.07)
+  assert('inside @media, the chroma of the page', find('tu-media')?.hue === 20 && find('tu-media')?.chroma === 0.015)
+  assert('a list of palettes', find('tu-a')?.chroma === 0.05 && find('tu-b')?.hue === 250)
+  assert('a selector with more than palettes: ignored', find('tu-no') === undefined)
+  assert('a rule without hue nor chroma: ignored', find('tu-color') === undefined)
+  style.remove()
+  assert('read again at each call', find('tu-game') === undefined)
 })

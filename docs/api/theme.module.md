@@ -103,6 +103,7 @@ application wins over it.
 | `THEME_ITEM` | const | Name of the configuration item that holds the theme: `system`, `day` or `night`. |
 | `theme` | const | The theme of the page. |
 | `setTheme` | function | Changes the theme, saved in the configuration item `ricochet-theme`. |
+| `definedPalettes` | function | The palettes defined in the page: the default palette of the page, then every palette that a CSS rule defines with a selector `[palette="name"]` (the three of Ricochet, those of the application), in the order of the style sheets. The list is read again at each call: it grows with the modules loaded since the start (their CSS). |
 
 ## Details
 
@@ -113,3 +114,19 @@ Changes the theme, saved in the configuration item `ricochet-theme`.
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `value` | string | `system`, `day` or `night`. |
+
+### definedPalettes()
+
+The palettes defined in the page: the default palette of the page, then every palette that a CSS rule defines with
+a selector `[palette="name"]` (the three of Ricochet, those of the application), in the order of the style sheets.
+The list is read again at each call: it grows with the modules loaded since the start (their CSS).
+
+A rule counts when its selector names palettes only and it sets `--rc-hue` or `--rc-chroma`; a value it does not set
+is the one of the page. Rules inside `@layer`, `@media` or `@supports` are read; a style sheet of another origin
+cannot be read and is skipped.
+
+```js
+definedPalettes() // [{name: '', hue: 250, chroma: 0.015}, {name: 'header', hue: 230, chroma: 0.03}, …]
+```
+
+**Returns** `Array<{name: string, hue: number, chroma: number}>` The palettes; the page is `name: ''`.

@@ -15,7 +15,7 @@
  *
  * | Export | Module |
  * | --- | --- |
- * | `theme`, `setTheme`, `THEME_ITEM` | [theme](theme.module.md) |
+ * | `theme`, `setTheme`, `THEME_ITEM`, `definedPalettes` | [theme](theme.module.md) |
  * | `RcIcon`, `iconPath` | [rc-icon](rc-icon.module.md) |
  * | `iconset`, `iconcategory`, `iconsetList`, `iconsetCount`, `iconPrivate` | [iconset](iconset.module.md) |
  * | `RcIconButton`, `RcTextButton` | [rc-icon-button](rc-icon-button.module.md), [rc-text-button](rc-text-button.module.md) |
@@ -36,7 +36,7 @@
  * @category entry
  */
 
-export {theme, setTheme, THEME_ITEM} from './theme.mjs'
+export {theme, setTheme, THEME_ITEM, definedPalettes} from './theme.mjs'
 export {RcIcon, iconPath} from './rc-icon.mjs'
 export {iconset, iconcategory, iconsetList, iconsetCount, iconPrivate} from '../icons/iconset.mjs'
 export {RcIconButton} from './rc-icon-button.mjs'
