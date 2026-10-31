@@ -13,9 +13,10 @@
  * | `countWords(text, locale)` | the number of words, with the rules of Unicode for the language (`Intl.Segmenter`) |
  * | `indexesOf(text, search)` | every position of `search` in the text |
  * | `urlHost(url)` | the host of a URL, without its protocol and path: `'www.example.com'` |
+ * | `formatNumber(value, options)` | a number written for a language: `1234567.5` → `'1 234 567,5'` in French |
  *
- * To escape or unescape HTML, see `escapeHtml()` and `unescapeHtml()` in the `dom` module. To format a number or a
- * date for a language, use `Intl.NumberFormat` and `formatDate()` in the `date` module.
+ * To escape or unescape HTML, see `escapeHtml()` and `unescapeHtml()` in the `dom` module. To format a date for a
+ * language, use `formatDate()` in the `date` module.
  *
  * ```javascript
  * import {foldCase} from 'ricochet/ricochet-utils.mjs'
@@ -117,4 +118,28 @@ export const urlHost = url => {
   } catch {
     return s.replace(/^[a-z][a-z\d+.-]*:\/\//i, '').replace(/[/?#:].*$/, '')
   }
+}
+
+const numberFormats = new Map() // one Intl.NumberFormat per language and number of decimals
+
+/**
+ * A number written for a language, by `Intl.NumberFormat`: the separator of thousands and the decimal mark of that
+ * language. In French: `'1 234 567,5'`, the thousands separated by a narrow no-break space (U+202F: a number is never
+ * split at the end of a line), a decimal comma, no separator inside the decimals.
+ * @param {number|string} value - The number (a string is converted).
+ * @param {{locale: string, decimals: number}} [options] - `locale`: the language (`'fr-FR'`), default: that of the
+ *   browser. `decimals`: the exact number of decimals (the number is rounded, zeros added); default: as needed, 3 at
+ *   most.
+ * @returns {string} The number written, `''` if `value` is not a number.
+ */
+export const formatNumber = (value, {locale, decimals} = {}) => {
+  const number = typeof value === 'number' ? value : Number(String(value).trim())
+  if (String(value).trim() === '' || !Number.isFinite(number)) { return '' }
+  const key = `${locale ?? ''}|${decimals ?? ''}`
+  let format = numberFormats.get(key)
+  if (format === undefined) {
+    format = new Intl.NumberFormat(locale, decimals === undefined ? {} : {minimumFractionDigits: decimals, maximumFractionDigits: decimals})
+    numberFormats.set(key, format)
+  }
+  return format.format(number)
 }

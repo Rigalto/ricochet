@@ -37,6 +37,7 @@ Any other character is written as it is, and so is a text between apostrophes: `
 | `today()` | the date of the computer |
 | `isValidDate(date)` | `true` for an existing date in ISO format |
 | `parseDate(text, pattern)`, `formatDate(date, pattern, locale)` | from and to other formats |
+| `convertDate(text, from, to)` | from one format to another: `'20/10/2026'` → `'20261020'` |
 | `toIsoDate(year, month, day)` | the ISO date of three numbers |
 | `fromDate(date)`, `toDate(date)` | from and to a `Date` object (at midnight, local time) |
 | `compareDates(a, b)` | -1, 0 or 1, for `sort()` |
@@ -84,6 +85,7 @@ dateDifference('1990-05-14', today()).years // 36
 | `startOfMonth` | function | The first day of the month of a date. |
 | `parseDate` | function | Reads a date written in another format. |
 | `formatDate` | function | Writes a date in another format. |
+| `convertDate` | function | Rewrites a date from one format to another (see the patterns of the module), in one call: `parseDate()` then `formatDate()`. |
 | `splitDuration` | function | Splits a duration. |
 | `formatDuration` | function | Writes a duration in a language: `'2 jours, 3 heures et 5 secondes'`. Units equal to zero are left out. |
 
@@ -276,6 +278,25 @@ Writes a date in another format.
 | `locale` | string |  | The language of the names of months and days (`'fr'`); default: that of the browser. |
 
 **Returns** `string` The date written; `''` for an invalid date.
+
+### convertDate()
+
+Rewrites a date from one format to another (see the patterns of the module), in one call: `parseDate()` then
+`formatDate()`.
+
+```js
+convertDate('20/10/2026', 'dd/MM/yyyy', 'yyyyMMdd') // '20261020'
+convertDate('2026-10-20', 'yyyy-MM-dd', 'dd/MM/yyyy') // '20/10/2026'
+convertDate('31/02/2026', 'dd/MM/yyyy') // '' : no such date
+```
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `text` | string |  | The date, written in the format `from`. |
+| `from` | string | `'yyyy-MM-dd'` | Its format. |
+| `to` | string | `'yyyy-MM-dd'` | The format wanted. |
+
+**Returns** `string` The date in the format `to`, or `''` if the text is empty or is not a date of the format `from`.
 
 ### splitDuration()
 

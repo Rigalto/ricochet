@@ -13,6 +13,7 @@ sanitizing HTML of external origin, and the clipboard.
 | Insert a value into an HTML template (`innerHTML`) | `escapeHtml()` |
 | Display a Markdown text | `markdownToHtml()` in `utils/markdown.mjs` |
 | Display HTML or SVG of external origin | `sanitizeHtml()` |
+| Load a library that sets a global (a classic script) | `loadScript()` |
 
 ## Sanitizing
 
@@ -37,6 +38,7 @@ Until a sanitizer is registered, `sanitizeHtml()` escapes its input: the HTML is
 | `sanitizeHtml` | function | Removes the dangerous parts (scripts, event handlers, `javascript:` links) of an HTML string of external origin, with the sanitizer registered by `setSanitizer()`. Without a registered sanitizer, the input is escaped. |
 | `createElementFromHTML` | function | Builds an element from an HTML string, without inserting it in the page. A `<template>` is used, so images are not loaded and elements such as `<tr>` or `<option>` are accepted. |
 | `createSvgElementFromHTML` | function | Builds an SVG element (`<path>`, `<g>`, `<circle>`…) from a string, in the SVG namespace, without inserting it in the page. |
+| `loadScript` | function | Loads a classic script (a library that sets a global, such as `socket.io` or `brain.js`), once: the promise is resolved when the script has run, rejected if it cannot be loaded. Calling it again for the same address gives the same promise, and adds no second `<script>`. |
 | `readClipboard` | function | Reads the text of the clipboard. The browser may ask the user for permission. |
 | `writeClipboard` | function | Writes a text in the clipboard. |
 | `svgToWidthHeight` | function | Reads the size of an SVG image from the `viewBox` attribute of its source. |
@@ -104,6 +106,23 @@ the page.
 | `html` | string | SVG markup of one element. Only the first element is returned. |
 
 **Returns** `Element|null` The SVG element, or `null` if the string holds none.
+
+### loadScript()
+
+Loads a classic script (a library that sets a global, such as `socket.io` or `brain.js`), once: the promise is
+resolved when the script has run, rejected if it cannot be loaded. Calling it again for the same address gives the
+same promise, and adds no second `<script>`.
+
+```js
+await loadScript('https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.min.js')
+const socket = io()
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `src` | string | The address of the script. |
+
+**Returns** `Promise<HTMLScriptElement>` The `<script>` element, once the script has run.
 
 ### readClipboard()
 

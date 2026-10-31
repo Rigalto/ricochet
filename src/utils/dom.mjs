@@ -13,6 +13,7 @@
  * | Insert a value into an HTML template (`innerHTML`) | `escapeHtml()` |
  * | Display a Markdown text | `markdownToHtml()` in `utils/markdown.mjs` |
  * | Display HTML or SVG of external origin | `sanitizeHtml()` |
+ * | Load a library that sets a global (a classic script) | `loadScript()` |
  *
  * ## Sanitizing
  *
@@ -99,6 +100,39 @@ export const createSvgElementFromHTML = html => {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
   svg.innerHTML = html
   return svg.firstElementChild
+}
+
+const scripts = new Map() // address → promise of its loading: a script is loaded once
+
+/**
+ * Loads a classic script (a library that sets a global, such as `socket.io` or `brain.js`), once: the promise is
+ * resolved when the script has run, rejected if it cannot be loaded. Calling it again for the same address gives the
+ * same promise, and adds no second `<script>`.
+ *
+ * ```js
+ * await loadScript('https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.min.js')
+ * const socket = io()
+ * ```
+ * @param {string} src - The address of the script.
+ * @returns {Promise<HTMLScriptElement>} The `<script>` element, once the script has run.
+ */
+export const loadScript = src => {
+  let loading = scripts.get(src)
+  if (loading === undefined) {
+    loading = new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = src
+      script.addEventListener('load', () => resolve(script), {once: true})
+      script.addEventListener('error', () => {
+        scripts.delete(src) // a later call tries again
+        script.remove()
+        reject(new Error(`loadScript: '${src}' could not be loaded`))
+      }, {once: true})
+      document.head.append(script)
+    })
+    scripts.set(src, loading)
+  }
+  return loading
 }
 
 const CLIPBOARD_ERROR = 'The clipboard needs a secure context (https or localhost)'

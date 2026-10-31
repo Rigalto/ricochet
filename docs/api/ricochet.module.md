@@ -31,7 +31,7 @@ application imports once, at startup, when it uses them. Each module stays impor
 | `loop`, `realClock`, `gameClock` | [loop](loop.module.md), [clock](clock.module.md) |
 | `displayMode`, `chooseDisplayMode` | [display](display.module.md) |
 | `$global`, `quietEvents`, `addDebugSwitches`, `trace`, `addLog`, `countLeak`, `leakSnapshot`, `leakChanges` | [global](global.module.md), [debug](debug.module.md) |
-| `escapeHtml`, `unescapeHtml`, `setSanitizer`, `sanitizeHtml`, `createElementFromHTML`, `createSvgElementFromHTML`, `readClipboard`, `writeClipboard`, `svgToWidthHeight` | [dom](dom.module.md) |
+| `escapeHtml`, `unescapeHtml`, `setSanitizer`, `sanitizeHtml`, `createElementFromHTML`, `createSvgElementFromHTML`, `loadScript`, `readClipboard`, `writeClipboard`, `svgToWidthHeight` | [dom](dom.module.md) |
 | `markdownToHtml` | [markdown](markdown.module.md) |
 
 The bus itself (`core/bus.mjs`) is not exported: components use `listen()` and `emit()`. The utilities (dates,

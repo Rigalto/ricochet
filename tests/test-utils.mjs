@@ -10,8 +10,8 @@ import * as utils from '../src/ricochet-utils.mjs'
 import {
   today, isValidDate, parseDate, formatDate, toIsoDate, fromDate, toDate, compareDates, addDays, addMonths, addYears,
   differenceInDays, dateDifference, dayOfWeek, startOfWeek, startOfMonth, isLeapYear, getDaysInMonth, splitDuration,
-  formatDuration,
-  deburr, foldCase, upperFirst, truncateMiddle, countWords, indexesOf, urlHost,
+  formatDuration, convertDate,
+  deburr, foldCase, upperFirst, truncateMiddle, countWords, indexesOf, urlHost, formatNumber,
   clamp, isBetween, approxEqual, lerp, inverseLerp, mapLinear, damp, smoothstep, smootherstep, cosineInterpolate,
   sigmoid, degToRad, radToDeg, euclideanModulo, roundTo, splitNumber, isPowerOfTwo, isNumber, toNumber,
   Random, random, entropy, PerlinNoise, ValueNoise, Complex, djb2, djb2String, sha256,
@@ -33,7 +33,7 @@ const spaces = text => text.replace(/\s/g, ' ') // Intl writes no-break spaces
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 
 describe('Utils — entry point', () => {
-  assert('65 exports', Object.keys(utils).length === 65)
+  assert('67 exports', Object.keys(utils).length === 67)
   assert('every export is defined', Object.values(utils).every(v => v !== undefined))
 })
 
@@ -96,6 +96,11 @@ describe('Utils — date: patterns', () => {
   assert('formatDate: Intl never shifts the day', formatDate('2026-01-01', {day: 'numeric'}, 'en') === '1')
   assert('formatDate: invalid date', formatDate('2026-02-30', 'dd/MM/yyyy') === '')
   assert('parseDate and formatDate are inverse', parseDate(formatDate('2024-02-29', 'dd/MM/yyyy'), 'dd/MM/yyyy') === '2024-02-29')
+  assert('convertDate dd/MM/yyyy → yyyyMMdd', convertDate('20/10/2026', 'dd/MM/yyyy', 'yyyyMMdd') === '20261020')
+  assert('convertDate ISO → dd/MM/yyyy', convertDate('2026-03-07', 'yyyy-MM-dd', 'dd/MM/yyyy') === '07/03/2026')
+  assert('convertDate yyyyMMdd → ISO by default', convertDate('20261020', 'yyyyMMdd') === '2026-10-20')
+  assert('convertDate: no such date, empty, absent', convertDate('31/02/2026', 'dd/MM/yyyy') === '' && convertDate('', 'dd/MM/yyyy') === '' && convertDate(undefined) === '')
+  assert('convertDate: MySQL empty date', convertDate('0000-00-00', 'yyyy-MM-dd', 'dd/MM/yyyy') === '')
 })
 
 describe('Utils — date: durations', () => {
@@ -128,6 +133,13 @@ describe('Utils — string', () => {
   assert('urlHost with protocol', urlHost('https://www.example.com/a/b?c=1') === 'www.example.com')
   assert('urlHost without protocol, with port', urlHost('example.org:8080/path') === 'example.org')
   assert('urlHost empty', urlHost('') === '' && urlHost(undefined) === '')
+  assert('formatNumber in French', formatNumber(1234567.5, {locale: 'fr-FR'}) === '1\u202f234\u202f567,5')
+  assert('formatNumber in English', formatNumber(1234567.5, {locale: 'en'}) === '1,234,567.5')
+  assert('formatNumber decimals', formatNumber(0.0001234, {locale: 'fr-FR', decimals: 6}) === '0,000123' && formatNumber(2, {locale: 'fr-FR', decimals: 2}) === '2,00')
+  assert('formatNumber no separator inside the decimals', formatNumber(1.234567, {locale: 'fr-FR', decimals: 6}) === '1,234567')
+  assert('formatNumber at most 3 decimals by default', formatNumber(3.14159, {locale: 'fr-FR'}) === '3,142')
+  assert('formatNumber of a string', formatNumber('-1234', {locale: 'fr-FR'}) === '-1\u202f234')
+  assert('formatNumber: not a number', formatNumber('abc') === '' && formatNumber('') === '' && formatNumber(NaN) === '' && formatNumber(Infinity) === '')
   assert('unescapeHtml', unescapeHtml('&lt;b&gt; &amp; &quot;x&quot; &#39;y&#x27; &apos;z&apos;') === '<b> & "x" \'y\' \'z\'')
   assert('unescapeHtml keeps unknown entities', unescapeHtml('&copy; &bogus;') === '&copy; &bogus;')
   assert('unescapeHtml inverts escapeHtml', unescapeHtml(escapeHtml('<a href="x">T&C</a>')) === '<a href="x">T&C</a>')

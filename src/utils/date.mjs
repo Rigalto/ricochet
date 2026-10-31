@@ -37,6 +37,7 @@
  * | `today()` | the date of the computer |
  * | `isValidDate(date)` | `true` for an existing date in ISO format |
  * | `parseDate(text, pattern)`, `formatDate(date, pattern, locale)` | from and to other formats |
+ * | `convertDate(text, from, to)` | from one format to another: `'20/10/2026'` → `'20261020'` |
  * | `toIsoDate(year, month, day)` | the ISO date of three numbers |
  * | `fromDate(date)`, `toDate(date)` | from and to a `Date` object (at midnight, local time) |
  * | `compareDates(a, b)` | -1, 0 or 1, for `sort()` |
@@ -303,6 +304,25 @@ export const formatDate = (date, format = 'yyyy-MM-dd', locale) => {
       default: return token.slice(1, -1) // 'text'
     }
   })
+}
+
+/**
+ * Rewrites a date from one format to another (see the patterns of the module), in one call: `parseDate()` then
+ * `formatDate()`.
+ *
+ * ```js
+ * convertDate('20/10/2026', 'dd/MM/yyyy', 'yyyyMMdd') // '20261020'
+ * convertDate('2026-10-20', 'yyyy-MM-dd', 'dd/MM/yyyy') // '20/10/2026'
+ * convertDate('31/02/2026', 'dd/MM/yyyy') // '' : no such date
+ * ```
+ * @param {string} text - The date, written in the format `from`.
+ * @param {string} [from='yyyy-MM-dd'] - Its format.
+ * @param {string} [to='yyyy-MM-dd'] - The format wanted.
+ * @returns {string} The date in the format `to`, or `''` if the text is empty or is not a date of the format `from`.
+ */
+export const convertDate = (text, from = 'yyyy-MM-dd', to = 'yyyy-MM-dd') => {
+  const date = parseDate(text ?? '', from)
+  return date === null ? '' : formatDate(date, to)
 }
 
 /**

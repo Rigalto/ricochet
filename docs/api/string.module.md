@@ -13,9 +13,10 @@ Functions on texts. Their names follow lodash where it has the same function.
 | `countWords(text, locale)` | the number of words, with the rules of Unicode for the language (`Intl.Segmenter`) |
 | `indexesOf(text, search)` | every position of `search` in the text |
 | `urlHost(url)` | the host of a URL, without its protocol and path: `'www.example.com'` |
+| `formatNumber(value, options)` | a number written for a language: `1234567.5` → `'1 234 567,5'` in French |
 
-To escape or unescape HTML, see `escapeHtml()` and `unescapeHtml()` in the `dom` module. To format a number or a
-date for a language, use `Intl.NumberFormat` and `formatDate()` in the `date` module.
+To escape or unescape HTML, see `escapeHtml()` and `unescapeHtml()` in the `dom` module. To format a date for a
+language, use `formatDate()` in the `date` module.
 
 ```javascript
 import {foldCase} from 'ricochet/ricochet-utils.mjs'
@@ -34,6 +35,7 @@ const found = rows.filter(row => foldCase(row.title).includes(foldCase(search)))
 | `countWords` | function | Counts the words of a text, with the rules of Unicode for the language (`Intl.Segmenter`): an apostrophe inside a word does not split it (`l'arbre`, `don't`), a hyphen does (`peut-être` is two words). |
 | `indexesOf` | function | Every position of a string in a text. |
 | `urlHost` | function | The host of a URL: the URL without its protocol, its path, its query and its port. |
+| `formatNumber` | function | A number written for a language, by `Intl.NumberFormat`: the separator of thousands and the decimal mark of that language. In French: `'1 234 567,5'`, the thousands separated by a narrow no-break space (U+202F: a number is never split at the end of a line), a decimal comma, no separator inside the decimals. |
 
 ## Details
 
@@ -110,3 +112,16 @@ The host of a URL: the URL without its protocol, its path, its query and its por
 | `url` | string | The URL, with or without its protocol. |
 
 **Returns** `string` For instance `'www.example.com'`; `''` for an empty URL.
+
+### formatNumber()
+
+A number written for a language, by `Intl.NumberFormat`: the separator of thousands and the decimal mark of that
+language. In French: `'1 234 567,5'`, the thousands separated by a narrow no-break space (U+202F: a number is never
+split at the end of a line), a decimal comma, no separator inside the decimals.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `value` | number\|string | The number (a string is converted). |
+| `options` | {locale: string, decimals: number} | `locale`: the language (`'fr-FR'`), default: that of the browser. `decimals`: the exact number of decimals (the number is rounded, zeros added); default: as needed, 3 at most. |
+
+**Returns** `string` The number written, `''` if `value` is not a number.

@@ -21,6 +21,7 @@ import '../../src/ui/rc-tabs.mjs'
 import '../../src/ui/rc-slider.mjs'
 import '../../src/ui/rc-breadcrumb.mjs'
 import '../../src/ui/table-style.mjs'
+import {loadScript} from '../../src/utils/dom.mjs'
 
 const sandbox = document.getElementById('sandbox')
 const tick = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -907,4 +908,17 @@ await describe('rc-slider', async () => {
   await tick()
   bus.off('tuAction', onEvent)
   bus.off('tuOther', onEvent)
+})
+
+await describe('loadScript', async () => {
+  const src = 'data:text/javascript,window.tuLoadScript%20%3D%20(window.tuLoadScript%20%7C%7C%200)%20%2B%201'
+  const script = await loadScript(src)
+  assert('resolved once the script has run', window.tuLoadScript === 1 && script.localName === 'script')
+  const again = await loadScript(src)
+  assert('loaded once: same element, not run again', again === script && window.tuLoadScript === 1 && document.querySelectorAll(`script[src="${src}"]`).length === 1)
+  let failed = null
+  try { await loadScript('/tu-no-such-script.js') } catch (error) { failed = error }
+  assert('rejected when it cannot be loaded, element removed', failed !== null && document.querySelector('script[src="/tu-no-such-script.js"]') === null)
+  script.remove()
+  delete window.tuLoadScript
 })
