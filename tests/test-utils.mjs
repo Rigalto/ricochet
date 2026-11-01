@@ -8,7 +8,7 @@
 import {describe, assert, captureConsole, releaseConsole} from './kernel.mjs'
 import * as utils from '../src/ricochet-utils.mjs'
 import {
-  today, isValidDate, parseDate, formatDate, toIsoDate, fromDate, toDate, compareDates, addDays, addMonths, addYears,
+  today, localDateTime, isValidDate, parseDate, formatDate, toIsoDate, fromDate, toDate, compareDates, addDays, addMonths, addYears,
   differenceInDays, dateDifference, dayOfWeek, startOfWeek, startOfMonth, isLeapYear, getDaysInMonth, splitDuration,
   formatDuration, convertDate,
   deburr, foldCase, upperFirst, truncateMiddle, countWords, indexesOf, urlHost, formatNumber,
@@ -33,7 +33,7 @@ const spaces = text => text.replace(/\s/g, ' ') // Intl writes no-break spaces
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 
 describe('Utils — entry point', () => {
-  assert('67 exports', Object.keys(utils).length === 67)
+  assert('68 exports', Object.keys(utils).length === 68)
   assert('every export is defined', Object.values(utils).every(v => v !== undefined))
 })
 
@@ -49,6 +49,9 @@ describe('Utils — date: validity and calendar', () => {
   assert('toIsoDate pads', toIsoDate(987, 3, 7) === '0987-03-07')
   assert('today is valid', isValidDate(today()))
   assert('fromDate is local', fromDate(new Date(2026, 9, 20, 23, 59)) === '2026-10-20')
+  assert('localDateTime: local date and time, to the second', localDateTime(new Date(2026, 10, 1, 9, 5, 7, 900)) === '2026-11-01T09:05:07')
+  assert('localDateTime: now by default, starts with today', /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d$/.test(localDateTime()) &&
+    localDateTime().slice(0, 10) === today())
   const d = toDate('2026-10-20')
   assert('toDate at local midnight', d.getFullYear() === 2026 && d.getMonth() === 9 && d.getDate() === 20 && d.getHours() === 0)
   assert('toDate for a year below 100', toDate('0050-06-01').getFullYear() === 50)

@@ -35,6 +35,7 @@ Any other character is written as it is, and so is a text between apostrophes: `
 | Function | Result |
 | --- | --- |
 | `today()` | the date of the computer |
+| `localDateTime(date)` | the date and the time of a moment (now by default), in local time: `'2026-11-01T09:45:00'` |
 | `isValidDate(date)` | `true` for an existing date in ISO format |
 | `parseDate(text, pattern)`, `formatDate(date, pattern, locale)` | from and to other formats |
 | `convertDate(text, from, to)` | from one format to another: `'20/10/2026'` → `'20261020'` |
@@ -73,6 +74,7 @@ dateDifference('1990-05-14', today()).years // 36
 | `toIsoDate` | function | The ISO date of three numbers. |
 | `fromDate` | const | The date of a `Date` object, in local time. |
 | `today` | function | The date of today, where the computer is. |
+| `localDateTime` | const | The date and the time of a moment, in local time, to the second: the ISO form of `Temporal.PlainDateTime`, without time zone (`'2026-11-01T09:45:00'`). Its first ten characters are the ISO date of that day; two of them compare as strings. For a record of the moment something happened (the end of a game, a change), as the user lived it. |
 | `toDate` | function | A `Date` object for a date, at midnight, local time. |
 | `compareDates` | function | Compares two dates, for `sort()`. |
 | `addDays` | function | Moves a date by a number of days. |
@@ -149,6 +151,18 @@ The date of a `Date` object, in local time.
 The date of today, where the computer is.
 
 **Returns** `string` The ISO date.
+
+### localDateTime
+
+The date and the time of a moment, in local time, to the second: the ISO form of `Temporal.PlainDateTime`, without
+time zone (`'2026-11-01T09:45:00'`). Its first ten characters are the ISO date of that day; two of them compare as
+strings. For a record of the moment something happened (the end of a game, a change), as the user lived it.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `date` | Date | The moment; default: now. |
+
+**Returns** `string` `YYYY-MM-DDTHH:MM:SS`.
 
 ### toDate()
 

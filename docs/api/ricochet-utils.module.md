@@ -20,7 +20,7 @@ is the reference.
 
 | Export | Module |
 | --- | --- |
-| `today`, `isValidDate`, `parseDate`, `formatDate`, `toIsoDate`, `fromDate`, `toDate`, `compareDates`, `addDays`, `addMonths`, `addYears`, `differenceInDays`, `dateDifference`, `dayOfWeek`, `startOfWeek`, `startOfMonth`, `isLeapYear`, `getDaysInMonth`, `splitDuration`, `formatDuration`, `convertDate` | [date](date.module.md) |
+| `today`, `localDateTime`, `isValidDate`, `parseDate`, `formatDate`, `toIsoDate`, `fromDate`, `toDate`, `compareDates`, `addDays`, `addMonths`, `addYears`, `differenceInDays`, `dateDifference`, `dayOfWeek`, `startOfWeek`, `startOfMonth`, `isLeapYear`, `getDaysInMonth`, `splitDuration`, `formatDuration`, `convertDate` | [date](date.module.md) |
 | `deburr`, `foldCase`, `upperFirst`, `truncateMiddle`, `countWords`, `indexesOf`, `urlHost`, `formatNumber` | [string](string.module.md) |
 | `clamp`, `isBetween`, `approxEqual`, `lerp`, `inverseLerp`, `mapLinear`, `damp`, `smoothstep`, `smootherstep`, `cosineInterpolate`, `sigmoid`, `degToRad`, `radToDeg`, `euclideanModulo`, `roundTo`, `splitNumber`, `isPowerOfTwo`, `isNumber`, `toNumber` | [math](math.module.md) |
 | `Random`, `random`, `entropy` | [random](random.module.md) |

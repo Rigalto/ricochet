@@ -35,6 +35,7 @@
  * | Function | Result |
  * | --- | --- |
  * | `today()` | the date of the computer |
+ * | `localDateTime(date)` | the date and the time of a moment (now by default), in local time: `'2026-11-01T09:45:00'` |
  * | `isValidDate(date)` | `true` for an existing date in ISO format |
  * | `parseDate(text, pattern)`, `formatDate(date, pattern, locale)` | from and to other formats |
  * | `convertDate(text, from, to)` | from one format to another: `'20/10/2026'` → `'20261020'` |
@@ -150,6 +151,16 @@ export const fromDate = (date = new Date()) => toIsoDate(date.getFullYear(), dat
  * @returns {string} The ISO date.
  */
 export const today = () => fromDate(new Date())
+
+/**
+ * The date and the time of a moment, in local time, to the second: the ISO form of `Temporal.PlainDateTime`, without
+ * time zone (`'2026-11-01T09:45:00'`). Its first ten characters are the ISO date of that day; two of them compare as
+ * strings. For a record of the moment something happened (the end of a game, a change), as the user lived it.
+ * @param {Date} [date] - The moment; default: now.
+ * @returns {string} `YYYY-MM-DDTHH:MM:SS`.
+ */
+export const localDateTime = (date = new Date()) => `${fromDate(date)}T${pad(date.getHours(), 2)}:` +
+  `${pad(date.getMinutes(), 2)}:${pad(date.getSeconds(), 2)}`
 
 /**
  * A `Date` object for a date, at midnight, local time.
