@@ -7,7 +7,7 @@
 import {describe, assert, captureConsole, releaseConsole} from './kernel.mjs'
 import {Microtasker} from '../src/core/microtasker.mjs'
 import {Scheduler} from '../src/core/scheduler.mjs'
-import {GameClock} from '../src/core/clock.mjs'
+import {GameClock, Stopwatch} from '../src/core/clock.mjs'
 import {FrameLoop} from '../src/core/loop.mjs'
 import {WController} from '../src/core/w-controller.mjs'
 import {microtasker as kernelTasks} from '../src/core/microtasker.mjs'
@@ -164,6 +164,39 @@ describe('Tasks — game clock', () => {
   assert('paused: no advance', clock.advance(10) === 0 && clock.time === 1036 && clock.paused)
   clock.resume()
   assert('resume', clock.advance(1) === 2)
+})
+
+describe('Stopwatch', () => {
+  const time = fakeTime()
+  let pauses = 0
+  const watch = new Stopwatch({now: time.fn, onPause: () => { pauses++ }})
+  time.work(500)
+  assert('not started: nothing counted', watch.elapsed === 0 && !watch.running)
+  watch.start()
+  time.work(1000)
+  assert('counts while the page is visible', watch.elapsed === 1000 && watch.running)
+  Stopwatch.visibilityChanged(true)
+  assert('page hidden: onPause, elapsed up to date', pauses === 1 && watch.elapsed === 1000)
+  time.work(60000)
+  assert('page hidden: paused', watch.elapsed === 1000 && watch.running)
+  Stopwatch.visibilityChanged(false)
+  time.work(200)
+  assert('page shown again: goes on', watch.elapsed === 1200)
+  watch.start()
+  assert('start() again: nothing changes', watch.elapsed === 1200)
+  watch.stop()
+  time.work(300)
+  assert('stopped: elapsed kept', watch.elapsed === 1200 && !watch.running)
+  Stopwatch.visibilityChanged(true)
+  assert('stopped: not warned when the page is hidden', pauses === 1)
+  Stopwatch.visibilityChanged(false)
+  const again = new Stopwatch({elapsed: 1200, now: time.fn})
+  again.start()
+  time.work(100)
+  assert('a saved elapsed time goes on', again.elapsed === 1300)
+  again.reset()
+  assert('reset(): stopped, zero', again.elapsed === 0 && !again.running)
+  assert('an invalid elapsed time counts as zero', new Stopwatch({elapsed: -5}).elapsed === 0 && new Stopwatch({elapsed: 'x'}).elapsed === 0)
 })
 
 // a loop driven by hand: request() keeps the callback, frame(t) runs it

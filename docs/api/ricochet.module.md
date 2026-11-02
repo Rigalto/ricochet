@@ -28,7 +28,7 @@ application imports once, at startup, when it uses them. Each module stays impor
 | `runActions`, `runDoubleClickActions`, `isDisabled` | [actions](actions.module.md) |
 | `css` | [css](css.module.md) |
 | `declareTasks`, `defer`, `schedule`, `cancel` | [microtasker](microtasker.module.md), [scheduler](scheduler.module.md) |
-| `loop`, `realClock`, `gameClock` | [loop](loop.module.md), [clock](clock.module.md) |
+| `loop`, `realClock`, `gameClock`, `Stopwatch` | [loop](loop.module.md), [clock](clock.module.md) |
 | `displayMode`, `chooseDisplayMode` | [display](display.module.md) |
 | `$global`, `quietEvents`, `addDebugSwitches`, `trace`, `addLog`, `countLeak`, `leakSnapshot`, `leakChanges` | [global](global.module.md), [debug](debug.module.md) |
 | `escapeHtml`, `unescapeHtml`, `setSanitizer`, `sanitizeHtml`, `createElementFromHTML`, `createSvgElementFromHTML`, `loadScript`, `readClipboard`, `writeClipboard`, `svgToWidthHeight` | [dom](dom.module.md) |
