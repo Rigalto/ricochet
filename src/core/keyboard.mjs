@@ -29,12 +29,21 @@
  *
  * ## Declaring keys
  *
- * Each layer receives an array of `{key, action}` objects. `key` is a string, an array of strings or a regular
- * expression, matched against the key written as `Ctrl-Shift-Alt-<key>` (modifiers in this order, only those
- * pressed): `u`, `Shift-U`, `Ctrl-u`, `Alt-Shift-U`, `ArrowRight`, `0` to `9` and `.` for the numeric keypad,
- * `Shift-0` for the main keyboard… `action` holds what to do:
+ * Each layer receives an array of `{key, action}` or `{code, action}` objects (or both: either may match).
  *
- * - `event` and `param`: emits the event, with `param` plus `key`, `shift`, `ctrl` and `alt` as payload;
+ * - `key` names the **character** typed: a string, an array of strings or a regular expression, matched against the
+ *   key written as `Ctrl-Shift-Alt-<key>` (modifiers in this order, only those pressed): `u`, `Shift-U`, `Ctrl-u`,
+ *   `Alt-Shift-U`, `ArrowRight`, `0` to `9` and `.` for the numeric keypad, `Shift-0` for the main keyboard of a
+ *   French layout…
+ * - `code` names the **physical key**, whatever the layout: matched the same way against `Ctrl-Shift-Alt-<code>`:
+ *   `Digit1` (the key 1 of the main keyboard: `&` on a French layout, `1` with Shift), `Shift-Digit1`, `Numpad1`,
+ *   `KeyA`… A game that wants the digits 1 to 9 on every layout, with or without Shift, declares
+ *   `{code: /^(Shift-)?(Digit|Numpad)[1-9]$/, action}`.
+ *
+ * `action` holds what to do:
+ *
+ * - `event` and `param`: emits the event, with `param` plus `key`, `code` (the physical key, as matched by `code`,
+ *   with its modifiers), `shift`, `ctrl` and `alt` as payload;
  * - `item` and `value`: sets a configuration item;
  * - `click`: an element to click.
  *
@@ -68,6 +77,12 @@ const FIELDS = new Set(['INPUT', 'TEXTAREA', 'SELECT'])
 // keys left to the component on a focused item of a group (a radio button, a tab): they move in the group
 const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'])
 const GROUP_ITEMS = '[role="radio"], [role="tab"], [role="gridcell"]'
+
+// a declared key (a string, an array of strings, a regular expression, or nothing) matches the key pressed
+const matches = (declared, pressed) => declared === undefined || declared === null ? false
+  : Array.isArray(declared) ? declared.includes(pressed)
+    : declared instanceof RegExp ? declared.test(pressed)
+      : declared === pressed
 
 // the focused element is a control (a button, a link…), not the page or a canvas
 const onControl = target => target instanceof Element && target !== document.body && target.matches(CONTROLS)
@@ -158,27 +173,26 @@ export class KeyboardController {
     }
   }
 
-  // runs the actions of the keys that match; returns true if at least one matched
+  // runs the actions of the keys that match (by character or by physical key); returns true if at least one matched
   #run (e, keys) {
     if (keys === null || keys === undefined) { return false }
-    const pressed = (e.ctrlKey ? 'Ctrl-' : '') + (e.shiftKey ? 'Shift-' : '') + (e.altKey ? 'Alt-' : '') + e.key
+    const modifiers = (e.ctrlKey ? 'Ctrl-' : '') + (e.shiftKey ? 'Shift-' : '') + (e.altKey ? 'Alt-' : '')
+    const pressed = modifiers + e.key
+    const physical = modifiers + (e.code ?? '')
     let handled = false
-    for (const {key, action} of keys) {
-      const match = Array.isArray(key) ? key.includes(pressed)
-        : key instanceof RegExp ? key.test(pressed)
-          : key === pressed
-      if (match) {
-        this.#action(e, pressed, action)
+    for (const {key, code, action} of keys) {
+      if (matches(key, pressed) || (e.code && matches(code, physical))) {
+        this.#action(e, pressed, physical, action)
         handled = true
       }
     }
     return handled
   }
 
-  #action (e, key, {event, param, item, value, click}) {
+  #action (e, key, code, {event, param, item, value, click}) {
     e.stopPropagation()
     e.preventDefault()
-    if (event !== undefined) { bus.emit(event, {...param, key, shift: e.shiftKey, ctrl: e.ctrlKey, alt: e.altKey}) }
+    if (event !== undefined) { bus.emit(event, {...param, key, code, shift: e.shiftKey, ctrl: e.ctrlKey, alt: e.altKey}) }
     if ((item !== undefined) && (value !== undefined)) { itemStore().setItem(item, value) }
     if (click !== undefined) { click.click() }
   }
@@ -189,7 +203,7 @@ export class KeyboardController {
    * Opens the layer of a window, on top of the others; called again by the same owner, it changes the keys and the
    * window stays where it is in the stack.
    * @param {object} owner - The window (a component).
-   * @param {Array} [keys] - Array of `{key, action}`.
+   * @param {Array} [keys] - Array of `{key, action}` or `{code, action}`.
    */
   openLayer (owner, keys = []) {
     console.assert(Array.isArray(keys), 'KeyboardController.openLayer: an array is expected')
@@ -229,7 +243,7 @@ export class KeyboardController {
   /**
    * Keys of the alert shown; `null` when the alert closes.
    * @deprecated Open a window with `openLayer()`.
-   * @param {Array|null} keys - Array of `{key, action}`.
+   * @param {Array|null} keys - Array of `{key, action}` or `{code, action}`.
    */
   setAlertKeys (keys) {
     if (keys === null) {
@@ -243,7 +257,7 @@ export class KeyboardController {
   /**
    * Keys of the modal opened by `dropdownOpen`.
    * @deprecated Open a window with `openLayer()`.
-   * @param {Array|null} keys - Array of `{key, action}`.
+   * @param {Array|null} keys - Array of `{key, action}` or `{code, action}`.
    */
   setModalKeys (keys) {
     if (keys !== null) { console.assert(Array.isArray(keys), 'KeyboardController.setModalKeys: an array is expected') }
@@ -254,7 +268,7 @@ export class KeyboardController {
   /**
    * Keys of a module, used while it has the keyboard focus; `null` forgets them.
    * @param {string} module - Module name.
-   * @param {Array|null} keys - Array of `{key, action}`.
+   * @param {Array|null} keys - Array of `{key, action}` or `{code, action}`.
    * @param {object} [owner] - The component that declares them (see `release()`).
    */
   setModuleKeys (module, keys, owner = null) {
@@ -266,7 +280,7 @@ export class KeyboardController {
   /**
    * Keys of a group of floating buttons. All groups are active together.
    * @param {string} group - Group name.
-   * @param {Array} keys - Array of `{key, action}`.
+   * @param {Array} keys - Array of `{key, action}` or `{code, action}`.
    */
   setFloatingKeys (group, keys) {
     console.assert(Array.isArray(keys), 'KeyboardController.setFloatingKeys: an array is expected')
@@ -275,7 +289,7 @@ export class KeyboardController {
 
   /**
    * Keys of the current view; `null` forgets them.
-   * @param {Array|null} keys - Array of `{key, action}`.
+   * @param {Array|null} keys - Array of `{key, action}` or `{code, action}`.
    * @param {object} [owner] - The component that declares them (see `release()`).
    */
   setViewKeys (keys, owner = null) {

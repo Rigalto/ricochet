@@ -30,7 +30,7 @@ window stays where it is in the stack.
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `owner` | object | The window (a component). |
-| `keys` | Array | Array of `{key, action}`. |
+| `keys` | Array | Array of `{key, action}` or `{code, action}`. |
 
 ### closeLayer(owner)
 
@@ -60,7 +60,7 @@ Keys of the alert shown; `null` when the alert closes.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `keys` | Array\|null | Array of `{key, action}`. |
+| `keys` | Array\|null | Array of `{key, action}` or `{code, action}`. |
 
 ### setModalKeys(keys)
 
@@ -70,7 +70,7 @@ Keys of the modal opened by `dropdownOpen`.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `keys` | Array\|null | Array of `{key, action}`. |
+| `keys` | Array\|null | Array of `{key, action}` or `{code, action}`. |
 
 ### setModuleKeys(module, keys, owner = null)
 
@@ -79,7 +79,7 @@ Keys of a module, used while it has the keyboard focus; `null` forgets them.
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `module` | string | Module name. |
-| `keys` | Array\|null | Array of `{key, action}`. |
+| `keys` | Array\|null | Array of `{key, action}` or `{code, action}`. |
 | `owner` | object | The component that declares them (see `release()`). |
 
 ### setFloatingKeys(group, keys)
@@ -89,7 +89,7 @@ Keys of a group of floating buttons. All groups are active together.
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `group` | string | Group name. |
-| `keys` | Array | Array of `{key, action}`. |
+| `keys` | Array | Array of `{key, action}` or `{code, action}`. |
 
 ### setViewKeys(keys, owner = null)
 
@@ -97,7 +97,7 @@ Keys of the current view; `null` forgets them.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `keys` | Array\|null | Array of `{key, action}`. |
+| `keys` | Array\|null | Array of `{key, action}` or `{code, action}`. |
 | `owner` | object | The component that declares them (see `release()`). |
 
 ### release(owner)

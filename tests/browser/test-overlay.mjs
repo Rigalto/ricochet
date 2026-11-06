@@ -73,6 +73,35 @@ await describe('Keyboard — layers of the windows', async () => {
   keyboard.release(owner1)
 })
 
+await describe('Keyboard — characters and physical keys', async () => {
+  const owner = {name: 'physical keys'}
+  // a key press of a French layout: the character typed and the physical key differ
+  const type = (k, code, {shiftKey = false, ctrlKey = false} = {}) =>
+    document.body.dispatchEvent(new KeyboardEvent('keydown', {key: k, code, shiftKey, ctrlKey, bubbles: true, cancelable: true}))
+  got.length = 0
+  keyboard.setViewKeys([
+    {code: /^(Shift-)?(Digit|Numpad)[1-9]$/, action: {event: 'ovAction', param: {from: 'digit'}}},
+    {key: 'x', action: {event: 'ovAction', param: {from: 'x'}}},
+    {key: 'q', code: 'KeyA', action: {event: 'ovAction', param: {from: 'both'}}}
+  ], owner)
+  type('&', 'Digit1')
+  assert('code: the key 1 of a French keyboard without Shift (character &)', got.length === 1 && got[0].from === 'digit' && got[0].code === 'Digit1' && got[0].key === '&')
+  type('1', 'Digit1', {shiftKey: true})
+  assert('… with Shift (character 1): the code carries the modifier', got.length === 2 && got[1].code === 'Shift-Digit1' && got[1].key === 'Shift-1')
+  type('7', 'Numpad7')
+  assert('… the numeric keypad', got.length === 3 && got[2].code === 'Numpad7')
+  type('à', 'Digit0')
+  assert('a code outside the pattern: not handled', got.length === 3)
+  type('x', 'KeyX')
+  assert('key: by character, as before; the payload holds the code too', got.length === 4 && got[3].from === 'x' && got[3].code === 'KeyX')
+  type('q', 'KeyQ')
+  type('a', 'KeyA')
+  assert('key and code together: either matches', got.length === 6 && got[4].from === 'both' && got[5].from === 'both')
+  type('&', 'Digit1', {ctrlKey: true})
+  assert('Ctrl: the code becomes Ctrl-Digit1, outside the pattern', got.length === 6)
+  keyboard.release(owner)
+})
+
 await describe('rc-dropdown', async () => {
   sandbox.innerHTML = `
     <rc-dropdown id="d1" icon="filter" label="Filter" title="Filter the table">

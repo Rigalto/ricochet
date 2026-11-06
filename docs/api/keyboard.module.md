@@ -29,12 +29,21 @@ the focus (`role="radio"`, `role="tab"`, `role="gridcell"`): they move in its gr
 
 ## Declaring keys
 
-Each layer receives an array of `{key, action}` objects. `key` is a string, an array of strings or a regular
-expression, matched against the key written as `Ctrl-Shift-Alt-<key>` (modifiers in this order, only those
-pressed): `u`, `Shift-U`, `Ctrl-u`, `Alt-Shift-U`, `ArrowRight`, `0` to `9` and `.` for the numeric keypad,
-`Shift-0` for the main keyboard… `action` holds what to do:
+Each layer receives an array of `{key, action}` or `{code, action}` objects (or both: either may match).
 
-- `event` and `param`: emits the event, with `param` plus `key`, `shift`, `ctrl` and `alt` as payload;
+- `key` names the **character** typed: a string, an array of strings or a regular expression, matched against the
+  key written as `Ctrl-Shift-Alt-<key>` (modifiers in this order, only those pressed): `u`, `Shift-U`, `Ctrl-u`,
+  `Alt-Shift-U`, `ArrowRight`, `0` to `9` and `.` for the numeric keypad, `Shift-0` for the main keyboard of a
+  French layout…
+- `code` names the **physical key**, whatever the layout: matched the same way against `Ctrl-Shift-Alt-<code>`:
+  `Digit1` (the key 1 of the main keyboard: `&` on a French layout, `1` with Shift), `Shift-Digit1`, `Numpad1`,
+  `KeyA`… A game that wants the digits 1 to 9 on every layout, with or without Shift, declares
+  `{code: /^(Shift-)?(Digit|Numpad)[1-9]$/, action}`.
+
+`action` holds what to do:
+
+- `event` and `param`: emits the event, with `param` plus `key`, `code` (the physical key, as matched by `code`,
+  with its modifiers), `shift`, `ctrl` and `alt` as payload;
 - `item` and `value`: sets a configuration item;
 - `click`: an element to click.
 
