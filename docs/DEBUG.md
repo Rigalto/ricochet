@@ -163,6 +163,21 @@ import {addLog} from 'ricochet/ricochet.mjs'
 addLog('ajax', {url, status, duration, body}, {ajax: `${url} (${status} - ${duration} ms)`})
 ```
 
+**The log of the requests.** `logRequest()` records a request in the log `ajax` (and the timeline), with who
+answers, the address, the status, the duration and the data sent. The address is masked first by `maskSecrets()`:
+the value of the parameters that carry a key or a token (`token`, `access_token`, `key`, `apikey`, `password`…) is
+replaced by `***`. A header (`Authorization: Bearer …`) is never passed; the application must not pass a body that
+holds a secret:
+
+```javascript
+import {logRequest, maskSecrets} from 'ricochet/ricochet.mjs'
+
+const begin = Date.now()
+const response = await fetch(url, {method: 'POST', body: JSON.stringify(body)})
+logRequest({source: 'server', url, status: response.status, duration: Date.now() - begin, body})
+if (!response.ok) { console.warn('Request failed', response.status, maskSecrets(url)) }
+```
+
 **A leak counter.** `countLeak()` moves a counter of `$global.memoryLeak` (created at the first call): +1 when the
 application makes a subscription that the kernel does not know, -1 when it releases it. `leakChanges()` then watches
 it as the others:

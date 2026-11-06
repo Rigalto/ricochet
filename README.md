@@ -96,6 +96,7 @@ Ricochet has two base classes and three communication channels.
 | **Storage adapters** | Where the configuration items are loaded from and saved to: in memory or in the local database of the browser (provided), an HTTP server or Google Drive (a few lines in the application). |
 | **Session** | State that lives as long as the tab and survives a reload (the pages seen lately): `session.get(name, fallback)` / `session.set(name, value)`, any JSON value, in `sessionStorage`. |
 | **Secrets** | API keys and passwords given by the user, kept in the browser only: `secrets.get(name)` / `secrets.set(name, value)`, never sent to an adapter nor written to the logs. |
+| **Log of the requests** | Every request of the application (server, web services, Google) in one log of debugging: `logRequest({source, url, status, duration, body})`; keys and tokens are masked in the address (`maskSecrets(url)`). |
 
 Everything a component subscribes to — events, items, attributes, window events, intervals, animation frames — is
 released when it is detached. No manual cleanup in normal use.
