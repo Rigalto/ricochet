@@ -1,0 +1,65 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Copyright (c) 2026 Rigalto -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Règles de confidentialité — applications de rigalto.github.io</title>
+  <link rel="icon" href="ricochet.svg">
+  <style>
+    :root { color-scheme: light dark; }
+    body { font: 16px/1.6 system-ui, sans-serif; margin: 0; }
+    main { max-width: 46rem; margin: 0 auto; padding: 2rem 1rem 3rem; }
+    h1 { font-size: 1.6rem; margin: 0 0 .5rem; }
+    h2 { font-size: 1.15rem; margin: 1.6rem 0 .4rem; }
+    .date { color: GrayText; margin: 0 0 1.5rem; }
+    ul { padding-left: 1.2rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Règles de confidentialité</h1>
+    <p class="date">Applications publiées sur rigalto.github.io (SweetHome, démonstrations de Ricochet) — 6 novembre 2026</p>
+
+    <p>Ces applications sont des projets personnels, utilisés par leur auteur et quelques proches. Elles fonctionnent
+      entièrement dans votre navigateur : <strong>il n'y a aucun serveur</strong> qui recevrait ou conserverait vos
+      données.</p>
+
+    <h2>Les données auxquelles l'application accède</h2>
+    <ul>
+      <li><strong>Votre adresse e-mail Google</strong> : pour afficher le compte connecté et le reproposer lors d'une
+        reconnexion.</li>
+      <li><strong>Google Drive</strong> (autorisation <code>drive.file</code>) : uniquement les fichiers que
+        l'application a créés, ou que vous avez vous-même ouverts avec elle. Elle ne voit pas vos autres fichiers.</li>
+      <li><strong>Google Tasks</strong> : vos listes et vos tâches, pour les afficher et les modifier à votre demande.
+        Cet accès n'est demandé que si vous ouvrez une fonction qui en a besoin.</li>
+    </ul>
+
+    <h2>Où vont ces données</h2>
+    <ul>
+      <li>Les échanges ont lieu directement entre votre navigateur et Google. Les données restent dans votre compte
+        Google.</li>
+      <li>Le jeton d'accès donné par Google est gardé dans votre navigateur seulement. Il n'est envoyé qu'à Google.</li>
+      <li>L'application peut garder une copie de travail de vos données dans votre navigateur, pour démarrer plus vite.
+        Elle est effacée quand vous vous déconnectez de l'application.</li>
+      <li>Aucune donnée n'est vendue, partagée, transmise à un tiers, ni utilisée pour de la publicité ou pour entraîner
+        un modèle d'intelligence artificielle.</li>
+    </ul>
+    <p>L'utilisation et le transfert vers toute autre application des informations reçues des API Google respectent les
+      <a href="https://developers.google.com/terms/api-services-user-data-policy">règles relatives aux données
+      utilisateur des services d'API Google</a>, y compris les exigences d'utilisation limitée.</p>
+
+    <h2>Retirer l'accès</h2>
+    <ul>
+      <li>Dans l'application : « Se déconnecter et retirer l'accès ».</li>
+      <li>Ou à tout moment dans votre compte Google :
+        <a href="https://myaccount.google.com/connections">myaccount.google.com/connections</a>.</li>
+    </ul>
+
+    <h2>Code source et contact</h2>
+    <p>Le code du noyau est public : <a href="https://github.com/Rigalto/ricochet">github.com/Rigalto/ricochet</a>.
+      Pour toute question, ouvrez une demande sur ce dépôt.</p>
+  </main>
+</body>
+</html>

@@ -289,7 +289,11 @@ palettes and themes, the UI components `rc-*`, unit and browser tests.
 
 1. **Tools for palettes.** Done: the palette editor ([demo/modules.html](demo/modules.html)). To come: a helper that
    shows which classes and attributes give an element a look.
-2. **Storage in Google Drive.** An adapter for configuration items and data records, with IndexedDB as a cache.
+2. **Storage in Google Drive.** Done: the connection to the Google account of the user, without any server, and the
+   requests to the APIs of Google with its token (`ricochet/adapters/google.mjs`,
+   [demo/google.html](demo/google.html)). To come: an adapter for the configuration items in Drive; a store of data
+   records (`data`, `data-field`), with IndexedDB as a cache and the changes made elsewhere taken back; adapters for
+   spreadsheets and Google Tasks.
 
 The demos and the documentation are gathered on the home page,
 [rigalto.github.io/ricochet](https://rigalto.github.io/ricochet/).

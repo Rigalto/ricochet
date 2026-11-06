@@ -15,6 +15,9 @@ application never emits nor listens to them, and does not create names with this
 | `configRefreshed` | `config` | the application | `{}` | The configuration items are loaded again (`config.load()` called a second time): caches built from them must be rebuilt. Every item observer is called too. |
 | `dropdownOpen` | the application (a window of the former API) | `keyboard` (`core/keyboard.mjs`) | `{}` | Deprecated: a window opens and takes the keyboard, with the keys given to `keyboard.setModalKeys()`. The new windows call `keyboard.openLayer()`. |
 | `dropdownClose` | the application (a button inside a dropdown); `keyboard` when `Escape` is pressed in a window of the former API; `rc-dropdown` on `Escape` | `keyboard`, `rc-dropdown` (`ui/rc-dropdown.mjs`), the application | `{}`, or `{id}` | Closes the open dropdowns: all of them, or the one whose `id` is given. Also closes the window of the former API. |
+| `googleConnected` | `googleAccount` (`adapters/google.mjs`) | the application | `{email}` | A Google account is connected: signed in, or reconnected after the expiry of its token (also in another tab). Never the token. |
+| `googleExpired` | `googleAccount` | the application | `{email}` | The token of the Google account is expired: the application shows a « Reconnect » button whose click calls `googleAccount.signIn()`; the requests wait. |
+| `googleDisconnected` | `googleAccount` | the application | `{revoked}` | The Google account is signed out (in this tab or another); `revoked`: the access was also withdrawn at Google. The application erases the user's data kept in this browser. |
 | `moduleFocus` | the application; `keyboard` when `Escape` is pressed in a module | `keyboard`, the application | `{module: string}` | A module takes the keyboard focus (`module: ''`: none). Its keys are those given to `keyboard.setModuleKeys()`. |
 | `overlayChanged` | `keyboard` | `rc-floating-bar` (`ui/rc-floating.mjs`), the application | `{open: number}` | A window opened or closed above the page (dropdown, dialog, alert): `open` windows are open. The application hides what must not show above a window (floating buttons). |
 | `routeChanged` | `router` (`core/router.mjs`) | the application | the route: `{path, terms, scope, …}` | The route changed. The scope of the configuration items is already set, and the module of the route loaded. A component that listens to it also receives the current route at the end of the current task. |
@@ -30,6 +33,7 @@ application never emits nor listens to them, and does not create names with this
 | `rcInterval` | Internal use only, do not use it. |
 | `rcConfigSave` | Internal use only, do not use it. |
 | `rcDialogClose` | Internal use only, do not use it. |
+| `rcGoogleCheck` | Internal use only, do not use it. |
 
 ## Events declared by the application
 
