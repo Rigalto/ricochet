@@ -6,21 +6,6 @@ Storage adapter for `config`: a local copy, and the Google Drive of the user.
 
 ## Methods
 
-### constructor({name, local, account, folder = name, file = 'configuration.json', seed = null, uploadDelay = 5000, storage, store = config})
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `options` | object |  |
-| `options.name` | string | The name of the application: the meta data in the local storage, the property of the file in Drive. |
-| `options.local` | object | The local adapter (`IndexedDBAdapter`), with its default values. |
-| `options.account` | object | The Google account (`googleAccount` of `adapters/google.mjs`, configured). |
-| `options.folder` | string | The folder of the file in Drive (default: the name). |
-| `options.file` | string | The name of the file (default `configuration.json`). |
-| `options.seed` | Function | `async () => ({item: value, …})`: the items of a former storage, read once. |
-| `options.uploadDelay` | number | The delay before a change is copied into Drive, in ms (default 5000). |
-| `options.storage` | Storage | Where the meta data are kept (default `localStorage`); for the tests. |
-| `options.store` | object | The store loaded again after a change from Drive (default `config`); for the tests. |
-
 ### get saveDelay
 
 The delay of the store before it saves: the one of the local adapter (the local copy is written at once).

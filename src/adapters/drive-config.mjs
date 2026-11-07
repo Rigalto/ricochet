@@ -36,9 +36,13 @@
  *   file is read; the items changed in Drive (by another computer, another tab) and not changed here are copied into
  *   the local copy, then the store is loaded again (`configRefreshed`). The first time, when there is no file yet, it
  *   is created with the local items: they are copied into Drive.
- * - **After a change**, the items changed here are copied into Drive a few seconds later (`uploadDelay`, 5 seconds by
- *   default), merged with the file as it is in Drive: an item changed by another tab and not here is kept. The last
- *   change of an item wins.
+ * - **After a change**, the items changed here are copied into Drive a few seconds later (`uploadDelay`, 2 seconds by
+ *   default: the changes of a few successive actions go together), merged with the file as it is in Drive: an item
+ *   changed by another tab and not here is kept. The last change of an item wins. A failed sending is tried again 30
+ *   seconds later (`retryDelay`).
+ * - **What waits** is reported to `pendingWrites` (source `config`): the application shows when everything is in
+ *   Drive. Without an account, nothing waits: the items are local only, and are all copied into Drive at the first
+ *   connection.
  * - **Not connected, or token expired**: the changes wait in the local copy, and are copied into Drive at the next
  *   connection.
  * - **No permanent synchronization**: after the start, the changes made elsewhere are not taken back (until `pull()`,
@@ -61,6 +65,7 @@
 
 import {bus} from '../core/bus.mjs'
 import {config} from '../core/config.mjs'
+import {pendingWrites} from '../core/pending.mjs'
 
 const DRIVE = 'https://www.googleapis.com/drive/v3/files'
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files'
@@ -94,9 +99,13 @@ export class DriveConfigAdapter {
   #memoryMeta = null // the meta data {fileId, pending: {item: 'set'|'remove'}, seeded}, without local storage
   #pulled = false // Drive read once in this page
   #running = null // the synchronization in progress (promise), one at a time
-  #again = false // another synchronization asked while one is running
+  #again = null // another synchronization asked while one is running: {promise, resolve}
   #timer = null
   #listening = false
+  #source
+  #registry
+  #retryDelay
+  #failed = false // the last sending failed: tried again after retryDelay
 
   /**
    * @param {object} options
@@ -107,12 +116,20 @@ export class DriveConfigAdapter {
    * @param {string} [options.folder] - The folder of the file in Drive (default: the name).
    * @param {string} [options.file] - The name of the file (default `configuration.json`).
    * @param {Function} [options.seed] - `async () => ({item: value, …})`: the items of a former storage, read once.
-   * @param {number} [options.uploadDelay] - The delay before a change is copied into Drive, in ms (default 5000).
+   * @param {number} [options.uploadDelay] - The delay before a change is copied into Drive, in ms (default 2000):
+   *   the changes of a few successive actions go together.
+   * @param {number} [options.retryDelay] - The delay before a failed sending is tried again, in ms (default 30000).
+   * @param {string} [options.source] - The name of the source in `pendingWrites` (default `config`).
    * @param {Storage} [options.storage] - Where the meta data are kept (default `localStorage`); for the tests.
    * @param {object} [options.store] - The store loaded again after a change from Drive (default `config`); for the tests.
+   * @param {object} [options.registry] - Where the changes that wait are reported (default `pendingWrites`); for the tests.
    */
-  constructor ({name, local, account, folder = name, file = 'configuration.json', seed = null, uploadDelay = 5000, storage, store = config}) {
+  constructor ({name, local, account, folder = name, file = 'configuration.json', seed = null, uploadDelay = 2000,
+    retryDelay = 30000, source = 'config', storage, store = config, registry = pendingWrites}) {
     this.#config = store
+    this.#source = source
+    this.#registry = registry
+    this.#retryDelay = retryDelay
     this.#name = name
     this.#local = local
     this.#account = account
@@ -149,6 +166,7 @@ export class DriveConfigAdapter {
       }
     }
     const items = await this.#local.load()
+    this.#report()
     if (!this.#pulled && this.#account.connected) { this.sync() }
     return items
   }
@@ -183,20 +201,40 @@ export class DriveConfigAdapter {
    * @returns {Promise<void>}
    */
   sync () {
-    if (!this.#account.connected) { return Promise.resolve() }
-    if (this.#running !== null) {
-      this.#again = true
-      return this.#running
+    if (!this.#account.connected) {
+      this.#report()
+      return Promise.resolve()
     }
+    if (this.#running !== null) {
+      // asked during a synchronization: one more after it (the caller waits for that one)
+      if (this.#again === null) {
+        let resolve
+        const promise = new Promise(done => { resolve = done })
+        this.#again = {promise, resolve}
+      }
+      return this.#again.promise
+    }
+    clearTimeout(this.#timer)
+    this.#timer = null
     this.#running = this.#synchronize()
-      .catch(error => console.warn('DriveConfigAdapter: Drive cannot be reached, the changes wait', error.message))
+      .then(() => {
+        this.#failed = false
+      })
+      .catch(error => {
+        this.#failed = true
+        console.warn('DriveConfigAdapter: Drive cannot be reached, the changes wait', error.message)
+        this.#later(this.#retryDelay)
+      })
       .finally(() => {
         this.#running = null
-        if (this.#again) {
-          this.#again = false
-          this.sync()
+        this.#report()
+        if (this.#again !== null) {
+          const {resolve} = this.#again
+          this.#again = null
+          resolve(this.sync())
         }
       })
+    this.#report()
     return this.#running
   }
 
@@ -222,6 +260,8 @@ export class DriveConfigAdapter {
     if (items.length > 0) { await this.#local.remove(items) }
     this.#writeMeta({fileId: null, pending: {}, seeded: true})
     this.#pulled = false
+    this.#failed = false
+    this.#report()
     await this.#config.load()
   }
 
@@ -231,15 +271,17 @@ export class DriveConfigAdapter {
     if (this.#listening) { return }
     this.#listening = true
     bus.on('googleConnected', () => this.sync())
+    bus.on('googleExpired', () => this.#report())
+    bus.on('googleDisconnected', () => this.#report())
   }
 
   // the copy into Drive, a few seconds after the last change
-  #later () {
+  #later (delay = this.#uploadDelay) {
     clearTimeout(this.#timer)
     this.#timer = setTimeout(() => {
       this.#timer = null
       this.sync()
-    }, this.#uploadDelay)
+    }, delay)
     this.#timer?.unref?.() // Node: does not keep the tests running
   }
 
@@ -247,6 +289,19 @@ export class DriveConfigAdapter {
     const meta = this.#readMeta()
     for (const item of items) { meta.pending[item] = change }
     this.#writeMeta(meta)
+    this.#report()
+  }
+
+  // what waits, to pendingWrites; without an account, nothing waits: the items are local only (they are all copied
+  // into Drive at the first connection)
+  #report () {
+    const state = this.#account.state ?? (this.#account.connected ? 'connected' : 'signed-out')
+    const count = state === 'signed-out' ? 0 : Object.keys(this.#readMeta().pending).length
+    this.#registry.report(this.#source, {
+      count,
+      state: this.#running !== null ? 'saving' : this.#failed ? 'error' : state !== 'connected' ? 'offline' : 'queued',
+      saved: false
+    })
   }
 
   async #synchronize () {
@@ -302,6 +357,7 @@ export class DriveConfigAdapter {
     const meta = this.#readMeta()
     for (const [item, change] of Object.entries(copied)) { if (meta.pending[item] === change) { delete meta.pending[item] } }
     this.#writeMeta(meta)
+    this.#registry.report(this.#source, {count: Object.keys(meta.pending).length, state: 'saving', saved: true})
   }
 
   // the file of this adapter in Drive (its property), or null

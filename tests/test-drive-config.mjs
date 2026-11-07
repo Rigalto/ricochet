@@ -10,6 +10,7 @@ import {describe, assert, captureConsole, releaseConsole} from './kernel.mjs'
 import {DriveConfigAdapter} from '../src/adapters/drive-config.mjs'
 import {ConfigStore} from '../src/core/config.mjs'
 import {MemoryAdapter} from '../src/adapters/memory.mjs'
+import {PendingWrites} from '../src/core/pending.mjs'
 import {bus} from '../src/core/bus.mjs'
 import '../src/core/loop.mjs'
 
@@ -65,22 +66,25 @@ const account = (drive, connected = true) => ({connected, request: (url, options
 const contentOf = drive => JSON.parse([...drive.files.values()].find(f => f.name === 'configuration.json').content)
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 let count = 0
-const make = ({drive, connected = true, storage = new FakeStorage(), local = new MemoryAdapter({theme: 'system'}), seed = null}) => {
+const make = ({drive, connected = true, storage = new FakeStorage(), local = new MemoryAdapter({theme: 'system'}), seed = null, retryDelay = 30000}) => {
   const store = new ConfigStore({name: `drive${++count}`})
-  const adapter = new DriveConfigAdapter({name: 'app', local, account: account(drive, connected), folder: 'App', seed, uploadDelay: 20, storage, store})
+  const registry = new PendingWrites()
+  const adapter = new DriveConfigAdapter({name: 'app', local, account: account(drive, connected), folder: 'App', seed, uploadDelay: 20,
+    retryDelay, storage, store, registry})
   store.setAdapter(adapter)
-  return {store, adapter, local, storage}
+  return {store, adapter, local, storage, registry}
 }
 
 await describe('DriveConfig — the first start, without Google', async () => {
   const drive = new FakeDrive()
-  const {store, adapter} = make({drive, connected: false, seed: async () => ({modules: 'yes', theme: 'night'})})
+  const {store, adapter, registry} = make({drive, connected: false, seed: async () => ({modules: 'yes', theme: 'night'})})
   await store.load()
   assert('the seed is read once, over the defaults', store.get('modules') === 'yes' && store.get('theme') === 'night')
   store.setItem('theme', 'day')
   await store.save()
   await sleep(40)
   assert('not connected: written locally, waiting for Drive', adapter.pending.join() === 'theme' && drive.calls.length === 0)
+  assert('without an account, nothing is reported as waiting (local only)', registry.total === 0 && registry.state === 'idle')
 })
 
 await describe('DriveConfig — the first connection: the local items go into Drive', async () => {
@@ -125,8 +129,10 @@ await describe('DriveConfig — a start with a file in Drive', async () => {
   // a change here, and a change of another tab in Drive
   b.store.setItem('theme', 'day')
   await b.store.save()
+  assert('a change: reported at once, queued', b.registry.total === 1 && b.registry.state === 'queued')
   file.content = JSON.stringify({theme: 'night', modules: 'yes', zoom: '2'})
   await sleep(60)
+  assert('sent: nothing waits, the time of the sending', b.registry.total === 0 && b.registry.state === 'idle' && b.registry.savedAt > 0)
   const merged = contentOf(drive)
   assert('a change goes into Drive a few moments later, merged with the file', merged.theme === 'day' && merged.zoom === '2' &&
     merged.modules === 'yes' && b.adapter.pending.length === 0)
@@ -163,15 +169,21 @@ await describe('DriveConfig — the file deleted in Drive, forget()', async () =
 
 await describe('DriveConfig — Drive unreachable', async () => {
   const drive = new FakeDrive()
-  drive.request = async () => { throw new Error('offline') }
-  const {store, adapter} = make({drive})
+  let fails = true
+  const request = drive.request.bind(drive)
+  drive.request = async (url, options) => { if (fails) { throw new Error('offline') } return request(url, options) }
+  const {store, adapter, registry} = make({drive, retryDelay: 30})
   await store.load()
   store.setItem('theme', 'day')
   await store.save()
   captureConsole()
   await adapter.sync()
   releaseConsole()
-  assert('the change waits locally', adapter.pending.join() === 'theme' && store.get('theme') === 'day')
+  assert('the change waits locally, the state is error', adapter.pending.join() === 'theme' && store.get('theme') === 'day' &&
+    registry.state === 'error' && registry.total === 1)
+  fails = false
+  await sleep(80)
+  assert('tried again later: sent', adapter.pending.length === 0 && registry.state === 'idle' && contentOf(drive).theme === 'day')
 })
 
 await describe('DriveConfig — pull()', async () => {

@@ -36,9 +36,13 @@ Drive.
   file is read; the items changed in Drive (by another computer, another tab) and not changed here are copied into
   the local copy, then the store is loaded again (`configRefreshed`). The first time, when there is no file yet, it
   is created with the local items: they are copied into Drive.
-- **After a change**, the items changed here are copied into Drive a few seconds later (`uploadDelay`, 5 seconds by
-  default), merged with the file as it is in Drive: an item changed by another tab and not here is kept. The last
-  change of an item wins.
+- **After a change**, the items changed here are copied into Drive a few seconds later (`uploadDelay`, 2 seconds by
+  default: the changes of a few successive actions go together), merged with the file as it is in Drive: an item
+  changed by another tab and not here is kept. The last change of an item wins. A failed sending is tried again 30
+  seconds later (`retryDelay`).
+- **What waits** is reported to `pendingWrites` (source `config`): the application shows when everything is in
+  Drive. Without an account, nothing waits: the items are local only, and are all copied into Drive at the first
+  connection.
 - **Not connected, or token expired**: the changes wait in the local copy, and are copied into Drive at the next
   connection.
 - **No permanent synchronization**: after the start, the changes made elsewhere are not taken back (until `pull()`,
