@@ -163,8 +163,8 @@ Custom elements live in the light DOM: global styles and utility classes apply t
 > **Note:** configuration items are loaded and saved by a storage adapter that the application gives to the store,
 > before loading it: `config.setAdapter(adapter)`, then `await config.load()` (`ricochet/core/config.mjs`). Ricochet
 > provides an adapter in memory (`ricochet/adapters/memory.mjs`) and one in the local database of the browser, IndexedDB,
-> for applications without a server (`ricochet/adapters/indexeddb.mjs`); an HTTP server or Google Drive need a few
-> lines. [demo/air-quality.html](demo/air-quality.html) is such an application: its settings in IndexedDB, the API key
+> for applications without a server (`ricochet/adapters/indexeddb.mjs`), and one in the Google Drive of the user, with
+> a local copy (`ricochet/adapters/drive-config.mjs`); an HTTP server needs a few lines. [demo/air-quality.html](demo/air-quality.html) is such an application: its settings in IndexedDB, the API key
 > of its service kept by `secrets`.
 
 The button does not know the counter exists. Add a second counter anywhere in the page and it works with no change.
@@ -291,7 +291,8 @@ palettes and themes, the UI components `rc-*`, unit and browser tests.
    shows which classes and attributes give an element a look.
 2. **Storage in Google Drive.** Done: the connection to the Google account of the user, without any server, and the
    requests to the APIs of Google with its token (`ricochet/adapters/google.mjs`,
-   [demo/google.html](demo/google.html)). To come: an adapter for the configuration items in Drive; a store of data
+   [demo/google.html](demo/google.html)); the configuration items in Drive, with a local copy in IndexedDB
+   (`ricochet/adapters/drive-config.mjs`). To come: a store of data
    records (`data`, `data-field`), with IndexedDB as a cache and the changes made elsewhere taken back; adapters for
    spreadsheets and Google Tasks.
 

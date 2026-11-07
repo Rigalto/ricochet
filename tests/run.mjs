@@ -26,6 +26,7 @@ const REGISTRY = [
   {name: 'Debug', file: './test-debug.mjs'},
   {name: 'Requests', file: './test-requests.mjs'},
   {name: 'Google', file: './test-google.mjs'},
+  {name: 'DriveConfig', file: './test-drive-config.mjs'},
 ]
 
 const target = process.argv[2] ?? null
