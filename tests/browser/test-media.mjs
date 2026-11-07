@@ -62,4 +62,7 @@ await describe('Media — images, canvas, sounds', async () => {
   assert('a sound decoded by the browser; a missing one left out', sounds.loaded.join() === 'blank')
   sounds.play('blank', {volume: 0.1})
   assert('played without error (silent here: no click yet)', true)
+  const music = sounds.play('blank', {volume: 0.1, loop: true})
+  music.stop()
+  assert('a music played then stopped without error', music !== null)
 })

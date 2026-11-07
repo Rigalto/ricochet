@@ -29,14 +29,18 @@ Loads and decodes every sound (once for the page).
 
 Allows the sound: to call in the handler of a click (the browser plays nothing before a gesture of the user).
 
-### play(name, {volume = 1} = {})
+### play(name, {volume = 1, loop = false} = {})
 
 Plays a sound (nothing when muted, or when the sound is not loaded).
 
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `name` | string | The name of the sound. |
-| `options` | {volume: number} | The volume, from 0 to 1 (default 1). |
+| `options` | object |  |
+| `options.volume` | number | The volume, from 0 to 1 (default 1). |
+| `options.loop` | boolean | Repeats the sound until it is stopped (default `false`): a music. |
+
+**Returns** `{stop: Function}|null` The sound being played, to stop it; `null` when nothing is played.
 
 ### stop()
 

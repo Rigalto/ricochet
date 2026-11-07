@@ -16,6 +16,10 @@ startButton.onclick = () => {
 }
 sounds.play('shot', {volume: 0.8})
 sounds.muted = true              // the sound setting of the game
+
+const music = new SoundBank({theme: '/assets/game/theme.mp3'})  // its own bank: its own setting
+const playing = music.play('theme', {loop: true, volume: 0.5})   // until stopped
+playing?.stop()                                                   // the pause of the game
 ```
 
 - **Loading.** `load()` fetches and decodes every file; a file shared by several banks, or a bank created again
@@ -24,6 +28,9 @@ sounds.muted = true              // the sound setting of the game
 - **The first click.** A browser plays no sound before a gesture of the user: `unlock()`, called in a click (the
   one that starts the game), allows them for the whole page.
 - **One audio context** for the page, created at the first need.
+- **Music.** `play(name, {loop: true})` repeats the sound until it is stopped: by the object it returns, or by
+  `stop()` (every sound of the bank). A bank of its own for the music gives it a setting of its own (`muted`); the
+  game stops the music when it is muted or paused, and plays it again (from the start) afterwards.
 
 ## Exports
 

@@ -16,6 +16,10 @@
  * }
  * sounds.play('shot', {volume: 0.8})
  * sounds.muted = true              // the sound setting of the game
+ *
+ * const music = new SoundBank({theme: '/assets/game/theme.mp3'})  // its own bank: its own setting
+ * const playing = music.play('theme', {loop: true, volume: 0.5})   // until stopped
+ * playing?.stop()                                                   // the pause of the game
  * ```
  *
  * - **Loading.** `load()` fetches and decodes every file; a file shared by several banks, or a bank created again
@@ -24,6 +28,9 @@
  * - **The first click.** A browser plays no sound before a gesture of the user: `unlock()`, called in a click (the
  *   one that starts the game), allows them for the whole page.
  * - **One audio context** for the page, created at the first need.
+ * - **Music.** `play(name, {loop: true})` repeats the sound until it is stopped: by the object it returns, or by
+ *   `stop()` (every sound of the bank). A bank of its own for the music gives it a setting of its own (`muted`); the
+ *   game stops the music when it is muted or paused, and plays it again (from the start) afterwards.
  *
  * @module sound
  */
@@ -104,21 +111,31 @@ export class SoundBank {
   /**
    * Plays a sound (nothing when muted, or when the sound is not loaded).
    * @param {string} name - The name of the sound.
-   * @param {{volume: number}} [options] - The volume, from 0 to 1 (default 1).
+   * @param {object} [options]
+   * @param {number} [options.volume] - The volume, from 0 to 1 (default 1).
+   * @param {boolean} [options.loop] - Repeats the sound until it is stopped (default `false`): a music.
+   * @returns {{stop: Function}|null} The sound being played, to stop it; `null` when nothing is played.
    */
-  play (name, {volume = 1} = {}) {
+  play (name, {volume = 1, loop = false} = {}) {
     const buffer = this.#decoded.get(name)
     const context = this.#context
-    if (this.muted || buffer === undefined || context === null) { return }
+    if (this.muted || buffer === undefined || context === null) { return null }
     if (context.state === 'suspended') { context.resume().catch(() => {}) }
     const source = context.createBufferSource()
     source.buffer = buffer
+    source.loop = loop
     const gain = context.createGain()
     gain.gain.value = volume
     source.connect(gain).connect(context.destination)
     this.#playing.add(source)
     source.onended = () => this.#playing.delete(source)
     source.start()
+    return {
+      stop: () => {
+        try { source.stop() } catch { /* already stopped */ }
+        this.#playing.delete(source)
+      }
+    }
   }
 
   /** Stops the sounds being played by this bank. */
