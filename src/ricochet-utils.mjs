@@ -3,7 +3,7 @@
 
 /**
  * The entry point of the utilities: dates, texts, numbers, random numbers, noise, complex numbers, identifiers,
- * debounce and throttle. They are apart from the kernel (`ricochet.mjs`): an application may use its own utilities,
+ * debounce and throttle, and a few tools for games. They are apart from the kernel (`ricochet.mjs`): an application may use its own utilities,
  * or a library it knows, and never load these.
  *
  * ```javascript
@@ -30,6 +30,13 @@
  * | `clearObject`, `removeWhere`, `removeUnordered`, `firstOf` | [collection](collection.module.md) |
  * | `IdGenerator`, `createIdGenerator`, `uniqueId` | [id](id.module.md) |
  * | `debounce`, `throttle`, `promiseState` | [timing](timing.module.md) |
+ * | `circlesOverlap`, `rectsOverlap`, `circleRectOverlap`, `pointInCircle`, `pointInRect` | [geometry](geometry.module.md) |
+ * | `setupCanvas`, `canvasPoint` | [canvas](canvas.module.md) |
+ * | `loadImage`, `loadImages`, `drawImageCentered`, `SpriteAnimation` | [sprites](sprites.module.md) |
+ * | `SoundBank` | [sound](sound.module.md) |
+ *
+ * The last four modules are for games: overlaps of shapes, a canvas of fixed logical size, images and animations
+ * cut from a sheet, sounds played with the Web Audio API. They use the browser only when they are called.
  *
  * The utilities for the DOM and the Markdown (`escapeHtml`, `unescapeHtml`, `sanitizeHtml`, `markdownToHtml`…) are
  * part of the kernel: the components use them. They are exported by `ricochet.mjs`.
@@ -51,3 +58,7 @@ export {djb2, djb2String, sha256} from './utils/hash.mjs'
 export {clearObject, removeWhere, removeUnordered, firstOf} from './utils/collection.mjs'
 export {IdGenerator, createIdGenerator, uniqueId} from './utils/id.mjs'
 export {debounce, throttle, promiseState} from './utils/timing.mjs'
+export {circlesOverlap, rectsOverlap, circleRectOverlap, pointInCircle, pointInRect} from './utils/geometry.mjs'
+export {setupCanvas, canvasPoint} from './utils/canvas.mjs'
+export {loadImage, loadImages, drawImageCentered, SpriteAnimation} from './utils/sprites.mjs'
+export {SoundBank} from './utils/sound.mjs'

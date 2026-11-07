@@ -27,6 +27,7 @@ const REGISTRY = [
   {name: 'Requests', file: './test-requests.mjs'},
   {name: 'Google', file: './test-google.mjs'},
   {name: 'Pending', file: './test-pending.mjs'},
+  {name: 'GameUtils', file: './test-game-utils.mjs'},
   {name: 'DriveConfig', file: './test-drive-config.mjs'},
 ]
 

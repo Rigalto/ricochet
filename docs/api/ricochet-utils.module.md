@@ -3,7 +3,7 @@
 Module `ricochet-utils` · group `entry` · source [`src/ricochet-utils.mjs`](../../src/ricochet-utils.mjs)
 
 The entry point of the utilities: dates, texts, numbers, random numbers, noise, complex numbers, identifiers,
-debounce and throttle. They are apart from the kernel (`ricochet.mjs`): an application may use its own utilities,
+debounce and throttle, and a few tools for games. They are apart from the kernel (`ricochet.mjs`): an application may use its own utilities,
 or a library it knows, and never load these.
 
 ```javascript
@@ -30,6 +30,13 @@ is the reference.
 | `clearObject`, `removeWhere`, `removeUnordered`, `firstOf` | [collection](collection.module.md) |
 | `IdGenerator`, `createIdGenerator`, `uniqueId` | [id](id.module.md) |
 | `debounce`, `throttle`, `promiseState` | [timing](timing.module.md) |
+| `circlesOverlap`, `rectsOverlap`, `circleRectOverlap`, `pointInCircle`, `pointInRect` | [geometry](geometry.module.md) |
+| `setupCanvas`, `canvasPoint` | [canvas](canvas.module.md) |
+| `loadImage`, `loadImages`, `drawImageCentered`, `SpriteAnimation` | [sprites](sprites.module.md) |
+| `SoundBank` | [sound](sound.module.md) |
+
+The last four modules are for games: overlaps of shapes, a canvas of fixed logical size, images and animations
+cut from a sheet, sounds played with the Web Audio API. They use the browser only when they are called.
 
 The utilities for the DOM and the Markdown (`escapeHtml`, `unescapeHtml`, `sanitizeHtml`, `markdownToHtml`…) are
 part of the kernel: the components use them. They are exported by `ricochet.mjs`.
