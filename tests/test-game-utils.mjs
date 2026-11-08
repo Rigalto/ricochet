@@ -6,7 +6,7 @@
 // (with a fake canvas, a fake context of drawing and a fake audio context).
 
 import {describe, assert, captureConsole, releaseConsole} from './kernel.mjs'
-import {circlesOverlap, rectsOverlap, circleRectOverlap, pointInCircle, pointInRect} from '../src/utils/geometry.mjs'
+import {circlesOverlap, rectsOverlap, circleRectOverlap, pointInCircle, pointInRect, bounceCircleOnRect} from '../src/utils/geometry.mjs'
 import {setupCanvas, canvasPoint} from '../src/utils/canvas.mjs'
 import {drawImageCentered, SpriteAnimation} from '../src/utils/sprites.mjs'
 import {SoundBank} from '../src/utils/sound.mjs'
@@ -31,6 +31,27 @@ describe('GameUtils — overlaps', () => {
   assert('a circle whose centre is in the rectangle', circleRectOverlap({x: 5, y: 2, radius: 1}, r))
   assert('a point in a circle', pointInCircle({x: 6, y: 7}, a) && !pointInCircle({x: 8, y: 8}, a))
   assert('a point in a rectangle, edges included', pointInRect({x: 10, y: 5}, r) && !pointInRect({x: 10.1, y: 5}, r))
+})
+
+describe('GameUtils — bounce', () => {
+  const brick = {x: 100, y: 100, width: 50, height: 20}
+  const ball = (x, y, vx, vy) => ({x, y, radius: 10, vx, vy})
+  const away = ball(125, 80, 0.1, 0.3)
+  assert('apart: nothing', bounceCircleOnRect(away, brick) === null && away.x === 125 && away.y === 80 && away.vy === 0.3)
+  const down = ball(125, 94, 0.1, 0.3)
+  assert('coming down on the top: back up, out by as much as it went in', bounceCircleOnRect(down, brick) === 'top' && down.vy === -0.3 &&
+    down.vx === 0.1 && down.y === 86)
+  const up = ball(120, 125, -0.2, -0.3)
+  assert('going up into the bottom', bounceCircleOnRect(up, brick) === 'bottom' && up.vy === 0.3 && up.y === 135)
+  const right = ball(95, 110, 0.3, 0.05)
+  assert('going right into the left side', bounceCircleOnRect(right, brick) === 'left' && right.vx === -0.3 && right.x === 85 && right.vy === 0.05)
+  const left = ball(155, 112, -0.3, 0)
+  assert('going left, horizontally, into the right side', bounceCircleOnRect(left, brick) === 'right' && left.vx === 0.3 && left.x === 165)
+  const straight = ball(125, 95, 0, 0.3)
+  assert('straight down', bounceCircleOnRect(straight, brick) === 'top' && straight.vy === -0.3)
+  const wall = {x: -500, y: 0, width: 500, height: 600}
+  const edge = ball(5, 300, -0.3, 0.2)
+  assert('a wall: a wide rectangle out of the field', bounceCircleOnRect(edge, wall) === 'right' && edge.vx === 0.3 && edge.x === 15)
 })
 
 describe('GameUtils — canvas', () => {
