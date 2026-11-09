@@ -30,13 +30,12 @@ icons in the *Icons* view.
 
 ## Checks
 
-When the module loads, it checks that:
+The rules are checked by `checkIconsetPath` ([svg-path](svg-path.module.md)): an icon editor shows what a path
+breaks while it is drawn. The tests of the icon set check that:
 
 - every icon belongs to at least one category, and every icon of a category exists;
 - every icon is compressed (two decimals at most, no double space);
-- every redrawn icon only uses the allowed commands.
-
-Errors are reported in the console, along with the number of icons still to redraw.
+- every redrawn icon is valid SVG, made of shapes `M…z`, with two decimals at most.
 
 ## Exports
 

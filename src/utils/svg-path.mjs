@@ -1,0 +1,523 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
+/**
+ * The `d` attribute of an SVG `<path>`, as a list of segments: read it (with the place of the first error), write it
+ * back (plain or compact), turn its commands absolute or relative, round its numbers, move, scale, turn or mirror it,
+ * and check it against the drawing rules of the icon set ([iconset](iconset.module.md)). No DOM: it runs in a page or
+ * in Node.
+ *
+ * ```javascript
+ * import {parsePath, serializePath, rotatePath, checkIconsetPath} from 'ricochet/ricochet-utils.mjs'
+ *
+ * const {segments, errors} = parsePath('M4 11h16a1 1 0 0 1 0 2h-16a1 1 0 0 1 0-2z')
+ * serializePath(rotatePath(segments))           // 'M13 4v16a1 1 0 0 1-2 0v-16a1 1 0 0 1 2 0z'
+ * checkIconsetPath('M4 11h16.125v2h-16z')      // [{code: 'decimals', level: 'error', segment: 1}]
+ * ```
+ *
+ * ## Segments
+ *
+ * A segment is `{command, values}`: the letter of the command, upper case when absolute, lower case when relative,
+ * and its numbers in the order of the SVG syntax. A command repeated without its letter (`l1 2 3 4`) gives one segment
+ * per repetition; the pairs after a move (`M1 2 3 4`) are lines (`L`, or `l` after `m`).
+ *
+ * | Command | Values |
+ * | --- | --- |
+ * | `M` `L` `T` | `x y` |
+ * | `H` / `V` | `x` / `y` |
+ * | `C` | `x1 y1 x2 y2 x y` |
+ * | `S` `Q` | `x1 y1 x y` |
+ * | `A` | `rx ry angle large-arc sweep x y` |
+ * | `Z` | none |
+ *
+ * The functions never change the segments they are given: they return new ones.
+ *
+ * ## Writing
+ *
+ * `serializePath` writes the letter, then the numbers separated by a space, with no space before a minus sign
+ * (`l4.08-4.08`), the style of the icon set. The compact writing also drops the zero before the decimal point (`.28`,
+ * `-.5`) and the space before a number starting with a point when the previous one already has its own (`1.5.5`): the
+ * writing of the minifiers, a few bytes less. Both are read back the same.
+ *
+ * ## Transformations
+ *
+ * Moving, scaling, turning a quarter turn and mirroring keep each command absolute or relative, and keep the
+ * horizontal and vertical lines horizontal or vertical (a quarter turn makes an `h` a `v`). The arcs follow: radii
+ * scaled, axis turned, sweep reversed by a mirror. The first move of a path is absolute even when written `m`.
+ * Coordinates are those of the screen: `y` goes down, so a quarter turn clockwise sends the right to the bottom. The
+ * centre is `12 12` by default, the middle of an icon.
+ *
+ * ## Icon set rules
+ *
+ * `checkIconsetPath(d)` lists what breaks the rules of the icon set, each with its level and, when it has one, the
+ * index of the segment at fault:
+ *
+ * | Code | Level | Rule |
+ * | --- | --- | --- |
+ * | `syntax` | error | the path is not valid SVG (`error`: the error of `parsePath`) |
+ * | `empty` | error | there is no shape |
+ * | `shape-start` | error | a shape does not start with `M` |
+ * | `shape-end` | error | a shape does not end with `z` |
+ * | `command` | error | a command other than `h`, `v`, `l` and `a` inside a shape |
+ * | `decimals` | error | a number with more than two decimals |
+ * | `bounds` | error | the drawing goes out of the 24 × 24 square |
+ * | `writing` | warning | the text is not written as `serializePath` writes it, plain or compact |
+ * | `slope` | warning | a slanted line whose sides have no integer ratio (a guideline, not a law) |
+ *
+ * The width of the strokes (2) and the rounded ends cannot be checked: they are left to the eye.
+ *
+ * @module svg-path
+ */
+
+// the number of values of each command (repeated for a command written once and used several times)
+const ARITY = {m: 2, l: 2, h: 1, v: 1, c: 6, s: 4, q: 4, t: 2, a: 7, z: 0}
+const NUMBER = /[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/y
+const SEPARATOR = /[\s,]*/y
+const ICON_SIZE = 24
+const EPSILON = 1e-9
+
+const isRelative = (command) => command === command.toLowerCase()
+
+/**
+ * Reads the `d` attribute of a path. Reading stops at the first error, as the browser draws a path up to its first
+ * error: the segments read so far are returned with it.
+ *
+ * | Error code | Meaning |
+ * | --- | --- |
+ * | `start` | the path does not start with a move (`M` or `m`) |
+ * | `character` | a character that is no command and no number |
+ * | `number` | a number is missing after a command |
+ * | `flag` | a flag of an arc is not `0` or `1` |
+ *
+ * @param {string} d - The `d` attribute.
+ * @returns {{segments: Array<{command: string, values: number[]}>, errors: Array<{code: string, index: number, command?: string}>}}
+ *   The segments, and the error (at most one) with the index of its character in `d`.
+ */
+export const parsePath = (d) => {
+  const segments = []
+  const errors = []
+  let i = 0
+  const skip = () => { SEPARATOR.lastIndex = i; SEPARATOR.exec(d); i = SEPARATOR.lastIndex }
+  const readNumber = () => {
+    NUMBER.lastIndex = i
+    const match = NUMBER.exec(d)
+    if (match === null) { return null }
+    i = NUMBER.lastIndex
+    return Number(match[0])
+  }
+  const readFlag = () => {
+    if (d[i] !== '0' && d[i] !== '1') { return null }
+    return Number(d[i++])
+  }
+  // the values of one use of a command; null when one is missing (the error is then recorded)
+  const readValues = (command) => {
+    const values = []
+    const arity = ARITY[command.toLowerCase()]
+    for (let k = 0; k < arity; k++) {
+      if (k > 0) { skip() }
+      const isFlag = command.toLowerCase() === 'a' && (k === 3 || k === 4)
+      const value = isFlag ? readFlag() : readNumber()
+      if (value === null) {
+        errors.push({code: isFlag ? 'flag' : 'number', index: i, command})
+        return null
+      }
+      values.push(value)
+    }
+    return values
+  }
+  skip()
+  while (i < d.length && errors.length === 0) {
+    const letter = d[i]
+    const lower = letter.toLowerCase()
+    if (ARITY[lower] === undefined || !/[a-z]/i.test(letter)) {
+      errors.push({code: 'character', index: i})
+      break
+    }
+    if (segments.length === 0 && lower !== 'm') {
+      errors.push({code: 'start', index: i})
+      break
+    }
+    i++
+    skip()
+    if (lower === 'z') {
+      segments.push({command: letter, values: []})
+      continue
+    }
+    let command = letter
+    let first = true
+    // the command, then its repetitions without letter
+    while (first || /[-+.\d]/.test(d[i] ?? '')) {
+      const values = readValues(command)
+      if (values === null) { break }
+      segments.push({command, values})
+      skip()
+      if (lower === 'm') { command = letter === 'm' ? 'l' : 'L' } // the pairs after a move are lines
+      first = false
+    }
+  }
+  return {segments, errors}
+}
+
+// a number, written as short as possible (no float noise, no -0)
+const formatValue = (value, compact) => {
+  let text = String(Number(value.toFixed(6)))
+  if (text === '-0') { text = '0' }
+  if (compact) { text = text.replace(/^(-?)0\./, '$1.') }
+  return text
+}
+
+/**
+ * Writes segments back as the `d` attribute of a path. A command that follows the same command is written without
+ * its letter (`a1 1 0 0 1 2 0 1 1 0 0 1-2 0`), as the icon set does.
+ *
+ * @param {Array<{command: string, values: number[]}>} segments - The segments.
+ * @param {{compact?: boolean}} [options] - `compact`: drop the zeros before the decimal point and the spaces they
+ *   free (`.5.5` for `0.5 0.5`).
+ * @returns {string} The `d` attribute.
+ * @example
+ * serializePath([{command: 'M', values: [0.5, 2]}, {command: 'l', values: [3, -0.5]}])  // 'M0.5 2l3-0.5'
+ * serializePath(…, {compact: true})                                                      // 'M.5 2l3-.5'
+ */
+export const serializePath = (segments, {compact = false} = {}) => {
+  let text = ''
+  let previous = null // the last number written, null after a letter
+  segments.forEach(({command, values}, index) => {
+    // a command repeated without its letter, as the icon set writes it (never a move: it would turn into a line)
+    const repeated = index > 0 && command === segments[index - 1].command && command.toLowerCase() !== 'm' &&
+      command.toLowerCase() !== 'z'
+    if (!repeated) {
+      text += command
+      previous = null
+    }
+    for (const value of values) {
+      const number = formatValue(value, compact)
+      const glued = previous === null || number.startsWith('-') ||
+        (compact && number.startsWith('.') && previous.includes('.'))
+      text += (glued ? '' : ' ') + number
+      previous = number
+    }
+  })
+  return text
+}
+
+// the centre of an arc (the endpoint parametrisation of the SVG specification, radii enlarged when too small)
+const arcCenter = (x1, y1, [rx, ry, angle, large, sweep, x2, y2]) => {
+  rx = Math.abs(rx)
+  ry = Math.abs(ry)
+  if (rx < EPSILON || ry < EPSILON) { return null }
+  const phi = angle * Math.PI / 180
+  const cos = Math.cos(phi)
+  const sin = Math.sin(phi)
+  const dx = (x1 - x2) / 2
+  const dy = (y1 - y2) / 2
+  const x1p = cos * dx + sin * dy
+  const y1p = -sin * dx + cos * dy
+  const lambda = (x1p * x1p) / (rx * rx) + (y1p * y1p) / (ry * ry)
+  if (lambda > 1) { rx *= Math.sqrt(lambda); ry *= Math.sqrt(lambda) }
+  const num = rx * rx * ry * ry - rx * rx * y1p * y1p - ry * ry * x1p * x1p
+  const den = rx * rx * y1p * y1p + ry * ry * x1p * x1p
+  let coef = den === 0 ? 0 : Math.sqrt(Math.max(0, num / den))
+  if (large === sweep) { coef = -coef }
+  const cxp = coef * rx * y1p / ry
+  const cyp = -coef * ry * x1p / rx
+  const cx = cos * cxp - sin * cyp + (x1 + x2) / 2
+  const cy = sin * cxp + cos * cyp + (y1 + y2) / 2
+  const vector = (ux, uy, vx, vy) => Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy)
+  const theta = vector(1, 0, (x1p - cxp) / rx, (y1p - cyp) / ry)
+  let delta = vector((x1p - cxp) / rx, (y1p - cyp) / ry, (-x1p - cxp) / rx, (-y1p - cyp) / ry)
+  if (!sweep && delta > 0) { delta -= 2 * Math.PI }
+  if (sweep && delta < 0) { delta += 2 * Math.PI }
+  return {x: cx, y: cy, rx, ry, phi, theta, delta}
+}
+
+/**
+ * The points of each segment, absolute: where it starts, where it ends, its control points (curves) and the centre
+ * of an arc. They are what an editor shows on the drawing.
+ *
+ * @param {Array<{command: string, values: number[]}>} segments - The segments.
+ * @returns {Array<{start: {x: number, y: number}, end: {x: number, y: number}, controls: Array<{x: number, y: number}>, center?: {x: number, y: number}}>}
+ *   One entry per segment.
+ */
+export const pathPoints = (segments) => {
+  const points = []
+  let x = 0
+  let y = 0
+  let startX = 0
+  let startY = 0
+  let lastControl = null // the last control point of a curve, for S and T
+  segments.forEach(({command, values}, index) => {
+    const relative = isRelative(command) && index > 0
+    const lower = command.toLowerCase()
+    const ox = relative ? x : 0
+    const oy = relative ? y : 0
+    const start = {x, y}
+    const controls = []
+    let center
+    let control = null
+    let ex = x
+    let ey = y
+    if (lower === 'm' || lower === 'l' || lower === 't') {
+      ex = ox + values[0]
+      ey = oy + values[1]
+      if (lower === 't') {
+        control = lastControl?.quadratic ? {x: 2 * x - lastControl.x, y: 2 * y - lastControl.y} : {x, y}
+        controls.push(control)
+        control = {...control, quadratic: true}
+      }
+    } else if (lower === 'h') {
+      ex = (relative ? x : 0) + values[0]
+    } else if (lower === 'v') {
+      ey = (relative ? y : 0) + values[0]
+    } else if (lower === 'c') {
+      controls.push({x: ox + values[0], y: oy + values[1]}, {x: ox + values[2], y: oy + values[3]})
+      ex = ox + values[4]
+      ey = oy + values[5]
+      control = {...controls[1], cubic: true}
+    } else if (lower === 's') {
+      const first = lastControl?.cubic ? {x: 2 * x - lastControl.x, y: 2 * y - lastControl.y} : {x, y}
+      controls.push(first, {x: ox + values[0], y: oy + values[1]})
+      ex = ox + values[2]
+      ey = oy + values[3]
+      control = {...controls[1], cubic: true}
+    } else if (lower === 'q') {
+      controls.push({x: ox + values[0], y: oy + values[1]})
+      ex = ox + values[2]
+      ey = oy + values[3]
+      control = {...controls[0], quadratic: true}
+    } else if (lower === 'a') {
+      ex = ox + values[5]
+      ey = oy + values[6]
+      const arc = arcCenter(x, y, [values[0], values[1], values[2], values[3], values[4], ex, ey])
+      if (arc !== null) { center = {x: arc.x, y: arc.y} }
+    } else if (lower === 'z') {
+      ex = startX
+      ey = startY
+    }
+    if (lower === 'm') { startX = ex; startY = ey }
+    lastControl = control
+    x = ex
+    y = ey
+    const entry = {start, end: {x: ex, y: ey}, controls: controls.map(({x, y}) => ({x, y}))}
+    if (center !== undefined) { entry.center = center }
+    points.push(entry)
+  })
+  return points
+}
+
+// the segment written in the other mode: absolute (from the points) or relative (from its start)
+const convert = (segment, point, toRelative, first) => {
+  const lower = segment.command.toLowerCase()
+  if (lower === 'z') { return {command: toRelative ? 'z' : 'Z', values: []} }
+  const {start, end, controls} = point
+  const ox = toRelative && !first ? start.x : 0
+  const oy = toRelative && !first ? start.y : 0
+  // the first move stays 'M': written 'm', it means the same
+  const command = toRelative && !first ? lower : lower.toUpperCase()
+  if (lower === 'h') { return {command, values: [end.x - ox]} }
+  if (lower === 'v') { return {command, values: [end.y - oy]} }
+  if (lower === 'a') {
+    const [rx, ry, angle, large, sweep] = segment.values
+    return {command, values: [rx, ry, angle, large, sweep, end.x - ox, end.y - oy]}
+  }
+  // the controls of S and T are implied: only the written ones are kept
+  const written = lower === 'c' ? controls : lower === 's' ? controls.slice(1) : lower === 'q' ? controls : []
+  return {command, values: [...written, end].flatMap(p => [p.x - ox, p.y - oy])}
+}
+
+const convertAll = (segments, indexes, toRelative) => {
+  const points = pathPoints(segments)
+  const chosen = indexes === undefined ? null : new Set([indexes].flat())
+  return segments.map((segment, index) => chosen === null || chosen.has(index)
+    ? convert(segment, points[index], toRelative, index === 0)
+    : {command: segment.command, values: [...segment.values]})
+}
+
+/**
+ * Writes the segments with absolute commands (upper case); the drawing does not change.
+ *
+ * @param {Array<{command: string, values: number[]}>} segments - The segments.
+ * @param {number|number[]} [indexes] - The segments to convert (all by default).
+ * @returns {Array<{command: string, values: number[]}>} New segments.
+ */
+export const toAbsolute = (segments, indexes) => convertAll(segments, indexes, false)
+
+/**
+ * Writes the segments with relative commands (lower case); the drawing does not change. The first move stays `M`
+ * (a relative first move means the same).
+ *
+ * @param {Array<{command: string, values: number[]}>} segments - The segments.
+ * @param {number|number[]} [indexes] - The segments to convert (all by default).
+ * @returns {Array<{command: string, values: number[]}>} New segments.
+ */
+export const toRelative = (segments, indexes) => convertAll(segments, indexes, true)
+
+/**
+ * Rounds the numbers of the segments (the flags of the arcs stay as they are).
+ *
+ * @param {Array<{command: string, values: number[]}>} segments - The segments.
+ * @param {number} [decimals=2] - The number of decimals kept.
+ * @returns {Array<{command: string, values: number[]}>} New segments.
+ */
+export const roundPath = (segments, decimals = 2) => {
+  const factor = 10 ** decimals
+  const round = (value) => Math.sign(value) * Math.round((Math.abs(value) + Number.EPSILON) * factor) / factor
+  return segments.map(({command, values}) => ({
+    command,
+    values: values.map((value, k) => command.toLowerCase() === 'a' && (k === 3 || k === 4) ? value : round(value) + 0)
+  }))
+}
+
+// applies x' = a x + b y + e, y' = c x + d y + f, where (a, b, c, d) keeps the axes (a scale, a mirror or a quarter
+// turn): the relative values only take the linear part
+const transform = (segments, [a, b, c, d, e, f]) => {
+  const swap = Math.abs(a) < EPSILON // a quarter turn: x comes from y and y from x
+  const det = a * d - b * c
+  const scale = Math.sqrt(Math.abs(det))
+  const point = (x, y, relative) => [a * x + b * y + (relative ? 0 : e), c * x + d * y + (relative ? 0 : f)]
+  const points = pathPoints(segments)
+  return segments.map(({command, values}, index) => {
+    const lower = command.toLowerCase()
+    const relative = isRelative(command) && index > 0
+    const upper = relative ? (s) => s : (s) => s.toUpperCase()
+    if (lower === 'z') { return {command, values: []} }
+    if (lower === 'h' || lower === 'v') {
+      // an absolute H keeps the current y, which the transformation needs
+      const {x, y} = points[index].end
+      const [nx, ny] = relative
+        ? point(lower === 'h' ? values[0] : 0, lower === 'v' ? values[0] : 0, true)
+        : point(x, y, false)
+      const horizontal = (lower === 'h') !== swap
+      return {command: upper(horizontal ? 'h' : 'v'), values: [horizontal ? nx : ny]}
+    }
+    if (lower === 'a') {
+      const [rx, ry, angle, large, sweep, x, y] = values
+      // the axis of an ellipse turns; a circle has none
+      let newAngle = swap && Math.abs(rx - ry) > EPSILON ? angle + 90 : angle
+      if (det < 0) { newAngle = -newAngle }
+      newAngle = ((newAngle % 180) + 180) % 180 // an ellipse turned by 180° is the same: kept within ]-90, 90]
+      if (newAngle > 90) { newAngle -= 180 }
+      return {command, values: [rx * scale, ry * scale, newAngle + 0, large, det < 0 ? 1 - sweep : sweep, ...point(x, y, relative)]}
+    }
+    const out = []
+    for (let k = 0; k < values.length; k += 2) { out.push(...point(values[k], values[k + 1], relative)) }
+    return {command, values: out}
+  })
+}
+
+/**
+ * Moves the drawing.
+ *
+ * @param {Array<{command: string, values: number[]}>} segments - The segments.
+ * @param {number} dx - The move to the right.
+ * @param {number} dy - The move down.
+ * @returns {Array<{command: string, values: number[]}>} New segments.
+ */
+export const translatePath = (segments, dx, dy) => transform(segments, [1, 0, 0, 1, dx, dy])
+
+/**
+ * Scales the drawing around a centre.
+ *
+ * @param {Array<{command: string, values: number[]}>} segments - The segments.
+ * @param {number} factor - The factor, greater than 0 (`0.5` halves the drawing).
+ * @param {number} [cx=12] - The centre (it does not move).
+ * @param {number} [cy=12] - The centre.
+ * @returns {Array<{command: string, values: number[]}>} New segments.
+ */
+export const scalePath = (segments, factor, cx = 12, cy = 12) =>
+  transform(segments, [factor, 0, 0, factor, cx * (1 - factor), cy * (1 - factor)])
+
+/**
+ * Turns the drawing a quarter turn clockwise around a centre.
+ *
+ * @param {Array<{command: string, values: number[]}>} segments - The segments.
+ * @param {number} [cx=12] - The centre.
+ * @param {number} [cy=12] - The centre.
+ * @returns {Array<{command: string, values: number[]}>} New segments.
+ */
+export const rotatePath = (segments, cx = 12, cy = 12) => transform(segments, [0, -1, 1, 0, cx + cy, cy - cx])
+
+/**
+ * Mirrors the drawing: `x` swaps the left and the right, `y` the top and the bottom.
+ *
+ * @param {Array<{command: string, values: number[]}>} segments - The segments.
+ * @param {'x'|'y'} axis - The coordinate that changes.
+ * @param {number} [center=12] - The line of the mirror (`x = 12` or `y = 12`).
+ * @returns {Array<{command: string, values: number[]}>} New segments.
+ */
+export const flipPath = (segments, axis, center = 12) => axis === 'x'
+  ? transform(segments, [-1, 0, 0, 1, 2 * center, 0])
+  : transform(segments, [1, 0, 0, -1, 0, 2 * center])
+
+// the points drawn by a segment, enough to know whether it leaves the square (arcs and curves are sampled)
+const samples = (segment, point) => {
+  const lower = segment.command.toLowerCase()
+  const {start, end, controls} = point
+  const out = [end]
+  if (lower === 'a') {
+    const arc = arcCenter(start.x, start.y, [...segment.values.slice(0, 5), end.x, end.y])
+    if (arc !== null) {
+      for (let k = 1; k < 32; k++) {
+        const t = arc.theta + arc.delta * k / 32
+        const ux = arc.rx * Math.cos(t)
+        const uy = arc.ry * Math.sin(t)
+        out.push({x: arc.x + Math.cos(arc.phi) * ux - Math.sin(arc.phi) * uy, y: arc.y + Math.sin(arc.phi) * ux + Math.cos(arc.phi) * uy})
+      }
+    }
+  } else if (controls.length > 0) {
+    const all = [start, ...controls, end]
+    for (let k = 1; k < 16; k++) {
+      let level = all
+      const t = k / 16
+      while (level.length > 1) {
+        level = level.slice(1).map((p, j) => ({x: level[j].x + (p.x - level[j].x) * t, y: level[j].y + (p.y - level[j].y) * t}))
+      }
+      out.push(level[0])
+    }
+  }
+  return out
+}
+
+/**
+ * Checks a path against the drawing rules of the icon set (see the table above). An empty list means a path that
+ * follows the rules.
+ *
+ * @param {string} d - The `d` attribute.
+ * @returns {Array<{code: string, level: 'error'|'warning', segment?: number, error?: object}>} The breaches, in the
+ *   order of the path.
+ */
+export const checkIconsetPath = (d) => {
+  const {segments, errors} = parsePath(d)
+  const issues = []
+  if (errors.length > 0) {
+    issues.push({code: 'syntax', level: 'error', error: errors[0]})
+    return issues
+  }
+  if (segments.length === 0) { return [{code: 'empty', level: 'error'}] }
+  const points = pathPoints(segments)
+  let inShape = false
+  segments.forEach((segment, index) => {
+    const {command, values} = segment
+    if (!inShape) {
+      if (command !== 'M') { issues.push({code: 'shape-start', level: 'error', segment: index}) }
+      inShape = true
+    } else if (command === 'z') {
+      inShape = false
+    } else if (!['h', 'v', 'l', 'a'].includes(command)) {
+      issues.push({code: 'command', level: 'error', segment: index})
+    }
+    if (values.some(value => Math.abs(value * 100 - Math.round(value * 100)) > 1e-6)) {
+      issues.push({code: 'decimals', level: 'error', segment: index})
+    }
+    const out = samples(segment, points[index]).some(({x, y}) => x < -0.005 || y < -0.005 || x > ICON_SIZE + 0.005 || y > ICON_SIZE + 0.005)
+    if (out) { issues.push({code: 'bounds', level: 'error', segment: index}) }
+    if (command === 'l' && Math.abs(values[0]) > EPSILON && Math.abs(values[1]) > EPSILON) {
+      const ratio = Math.max(Math.abs(values[0]), Math.abs(values[1])) / Math.min(Math.abs(values[0]), Math.abs(values[1]))
+      if (Math.abs(ratio - Math.round(ratio)) > 0.02) { issues.push({code: 'slope', level: 'warning', segment: index}) }
+    }
+  })
+  if (inShape) { issues.push({code: 'shape-end', level: 'error', segment: segments.length - 1}) }
+  if (d !== serializePath(segments) && d !== serializePath(segments, {compact: true})) {
+    issues.push({code: 'writing', level: 'warning'})
+  }
+  return issues
+}

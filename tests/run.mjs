@@ -21,6 +21,7 @@ const REGISTRY = [
   {name: 'Css', file: './test-css.mjs'},
   {name: 'Events', file: './test-events.mjs'},
   {name: 'Iconset', file: './test-iconset.mjs'},
+  {name: 'SvgPath', file: './test-svg-path.mjs'},
   {name: 'Utils', file: './test-utils.mjs'},
   {name: 'Markdown', file: './test-markdown.mjs'},
   {name: 'Debug', file: './test-debug.mjs'},

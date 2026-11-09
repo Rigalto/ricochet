@@ -7,6 +7,7 @@
 
 import {describe, assert} from './kernel.mjs'
 import {iconset, iconcategory, iconsetList, iconsetCount, iconPrivate} from '../src/icons/iconset.mjs'
+import {checkIconsetPath} from '../src/utils/svg-path.mjs'
 
 describe('Iconset — tables', () => {
   const categorised = new Set(Object.values(iconcategory).flat())
@@ -24,4 +25,8 @@ describe('Iconset — drawing rules', () => {
   assert(`numbers with two decimals at most, no double space (${uncompressed.join(', ') || 'all compressed'})`, uncompressed.length === 0)
   const forbidden = iconPrivate.filter(name => !/^(?:M[-0-9. vhla]*z)+$/.test(iconset[name]))
   assert(`the icons drawn by hand use only M, v, h, l, a and z (${forbidden.join(', ') || 'all valid'})`, forbidden.length === 0)
+  // the other rules (commands, square, writing, slopes) are not met by every redrawn icon yet: the editor shows them
+  const STRICT = ['syntax', 'empty', 'shape-start', 'shape-end', 'decimals']
+  const broken = iconPrivate.filter(name => checkIconsetPath(iconset[name]).some(issue => STRICT.includes(issue.code)))
+  assert(`the icons drawn by hand: valid SVG, shapes M…z, two decimals (${broken.join(', ') || 'all valid'})`, broken.length === 0)
 })

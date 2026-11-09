@@ -31,6 +31,7 @@
  * | `IdGenerator`, `createIdGenerator`, `uniqueId` | [id](id.module.md) |
  * | `debounce`, `throttle`, `promiseState` | [timing](timing.module.md) |
  * | `circlesOverlap`, `rectsOverlap`, `circleRectOverlap`, `pointInCircle`, `pointInRect`, `bounceCircleOnRect` | [geometry](geometry.module.md) |
+ * | `parsePath`, `serializePath`, `pathPoints`, `toAbsolute`, `toRelative`, `roundPath`, `translatePath`, `scalePath`, `rotatePath`, `flipPath`, `checkIconsetPath` | [svg-path](svg-path.module.md) |
  * | `setupCanvas`, `canvasPoint` | [canvas](canvas.module.md) |
  * | `loadImage`, `loadImages`, `drawImageCentered`, `SpriteAnimation` | [sprites](sprites.module.md) |
  * | `SoundBank` | [sound](sound.module.md) |
@@ -59,6 +60,8 @@ export {clearObject, removeWhere, removeUnordered, firstOf} from './utils/collec
 export {IdGenerator, createIdGenerator, uniqueId} from './utils/id.mjs'
 export {debounce, throttle, promiseState} from './utils/timing.mjs'
 export {circlesOverlap, rectsOverlap, circleRectOverlap, pointInCircle, pointInRect, bounceCircleOnRect} from './utils/geometry.mjs'
+export {parsePath, serializePath, pathPoints, toAbsolute, toRelative, roundPath, translatePath, scalePath, rotatePath,
+  flipPath, checkIconsetPath} from './utils/svg-path.mjs'
 export {setupCanvas, canvasPoint} from './utils/canvas.mjs'
 export {loadImage, loadImages, drawImageCentered, SpriteAnimation} from './utils/sprites.mjs'
 export {SoundBank} from './utils/sound.mjs'
