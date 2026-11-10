@@ -7,7 +7,7 @@
 
 import {describe, assert} from './kernel.mjs'
 import {parsePath, serializePath, pathPoints, toAbsolute, toRelative, roundPath, translatePath, scalePath, rotatePath,
-  flipPath, checkIconsetPath} from '../src/utils/svg-path.mjs'
+  flipPath, reversePath, checkIconsetPath} from '../src/utils/svg-path.mjs'
 import {iconset, iconsetList} from '../src/icons/iconset.mjs'
 
 const BAR = 'M4 11h16a1 1 0 0 1 0 2h-16a1 1 0 0 1 0-2z' // a horizontal bar with rounded ends
@@ -115,6 +115,26 @@ describe('SvgPath — icon set rules', () => {
     codes('M0 12a1 1 0 0 0 2 0z').length === 0 && codes('M0 0.5a1 1 0 0 1 2 0z').includes('bounds'))
   assert('writing: a space before a minus sign is a warning', same(checkIconsetPath('M4 4h2 -1z'),
     [{code: 'writing', level: 'warning'}]))
-  assert('slope: integer ratio accepted, other ratio a warning', codes('M4 4l2 4-2-4z').length === 0 &&
-    same(checkIconsetPath('M4 4l2 3h-2z'), [{code: 'slope', level: 'warning', segment: 1}]))
+  assert('slope: simple ratios accepted (2/1, 3/2, 6/5, 5/6)', codes('M4 4l2 4-2-4z').length === 0 &&
+    codes('M4 4l2 3h-2z').length === 0 && codes('M4 4l6 5h-6z').length === 0 && codes('M4 4l5 6h-5z').length === 0)
+  assert('slope: within the rounding of two decimals (l2.12 0.71 is 3/1)', codes('M4 4l2.12 0.71h-2.12z').length === 0)
+  assert('slope: other ratio a warning (9/7, 7/3.1)', same(checkIconsetPath('M4 4l7 9h-7z'), [{code: 'slope', level: 'warning', segment: 1}]) &&
+    same(checkIconsetPath('M4 4l3.1 7h-3.1z'), [{code: 'slope', level: 'warning', segment: 1}]))
+})
+
+describe('SvgPath — reversing', () => {
+  const reverse = (d) => serializePath(roundPath(reversePath(parsePath(d).segments)))
+  assert('a bar with rounded ends: arcs with the other sweep', reverse(BAR) === 'M4 11a1 1 0 0 0 0 2h16a1 1 0 0 0 0-2h-16z')
+  assert('the closing line becomes the first command, horizontal or vertical', reverse('M2 2h2v2h-2z') === 'M2 2v2h2v-2h-2z' &&
+    reverse('M4 4h4v4z') === 'M4 4l4 4v-4h-4z')
+  assert('an open shape starts at its end', reverse('M2 2l4 4') === 'M6 6l-4-4')
+  assert('each shape on its own, starting with M', reverse('M4 4h4v4zm6 6h2v2h-2z') === 'M4 4l4 4v-4h-4zM10 10v2h2v-2h-2z')
+  assert('curves: controls in the other order, S becomes C', reverse('M0 0C1 1 2 1 3 0S5-1 6 0') === 'M6 0C5-1 4-1 3 0 2 1 1 1 0 0')
+  assert('reversed twice: the same path (closing line already drawn)', reverse(reverse(BAR)) === BAR)
+  // a closing z that drew a line gets it written out the first time: from then on, reversing twice changes nothing
+  const changed = iconsetList.filter(name => {
+    const twice = reversePath(reversePath(parsePath(iconset[name]).segments))
+    return serializePath(roundPath(reversePath(reversePath(twice)))) !== serializePath(roundPath(twice))
+  })
+  assert(`every icon: reversed four times as twice (${changed.slice(0, 5).join(', ') || 'all'})`, changed.length === 0)
 })

@@ -41,6 +41,8 @@ writing of the minifiers, a few bytes less. Both are read back the same.
 
 ## Transformations
 
+`reversePath` draws each shape the other way round (a hole goes in the direction opposite to its outline).
+
 Moving, scaling, turning a quarter turn and mirroring keep each command absolute or relative, and keep the
 horizontal and vertical lines horizontal or vertical (a quarter turn makes an `h` a `v`). The arcs follow: radii
 scaled, axis turned, sweep reversed by a mirror. The first move of a path is absolute even when written `m`.
@@ -62,7 +64,7 @@ index of the segment at fault:
 | `decimals` | error | a number with more than two decimals |
 | `bounds` | error | the drawing goes out of the 24 × 24 square |
 | `writing` | warning | the text is not written as `serializePath` writes it, plain or compact |
-| `slope` | warning | a slanted line whose sides have no integer ratio (a guideline, not a law) |
+| `slope` | warning | a slanted line whose sides are not in a simple ratio, `p/q` with `q` at most 6: `1/2`, `2/3`, `5/4`, `6/5`… (a guideline, not a law) |
 
 The width of the strokes (2) and the rounded ends cannot be checked: they are left to the eye.
 
@@ -80,6 +82,7 @@ The width of the strokes (2) and the rounded ends cannot be checked: they are le
 | `scalePath` | function | Scales the drawing around a centre. |
 | `rotatePath` | function | Turns the drawing a quarter turn clockwise around a centre. |
 | `flipPath` | function | Mirrors the drawing: `x` swaps the left and the right, `y` the top and the bottom. |
+| `reversePath` | function | Draws each shape of the path the other way round: same drawing, opposite direction. A hole is drawn in the direction opposite to its outline (the icon set uses the `nonzero` fill rule). Each command keeps its mode (absolute or relative); `S` and `T` become `C` and `Q`; a closing `z` from a point other than the start becomes an explicit line (horizontal or vertical when it can), drawn first. Every shape starts with an absolute `M`. |
 | `checkIconsetPath` | function | Checks a path against the drawing rules of the icon set (see the table above). An empty list means a path that follows the rules. |
 
 ## Details
@@ -205,6 +208,19 @@ Mirrors the drawing: `x` swaps the left and the right, `y` the top and the botto
 | `segments` | Array<{command: string, values: number[]}> |  | The segments. |
 | `axis` | 'x'\|'y' |  | The coordinate that changes. |
 | `center` | number | `12` | The line of the mirror (`x = 12` or `y = 12`). |
+
+**Returns** `Array<{command: string, values: number[]}>` New segments.
+
+### reversePath()
+
+Draws each shape of the path the other way round: same drawing, opposite direction. A hole is drawn in the
+direction opposite to its outline (the icon set uses the `nonzero` fill rule). Each command keeps its mode
+(absolute or relative); `S` and `T` become `C` and `Q`; a closing `z` from a point other than the start becomes
+an explicit line (horizontal or vertical when it can), drawn first. Every shape starts with an absolute `M`.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `segments` | Array<{command: string, values: number[]}> | The segments. |
 
 **Returns** `Array<{command: string, values: number[]}>` New segments.
 

@@ -31,7 +31,7 @@ is the reference.
 | `IdGenerator`, `createIdGenerator`, `uniqueId` | [id](id.module.md) |
 | `debounce`, `throttle`, `promiseState` | [timing](timing.module.md) |
 | `circlesOverlap`, `rectsOverlap`, `circleRectOverlap`, `pointInCircle`, `pointInRect`, `bounceCircleOnRect` | [geometry](geometry.module.md) |
-| `parsePath`, `serializePath`, `pathPoints`, `toAbsolute`, `toRelative`, `roundPath`, `translatePath`, `scalePath`, `rotatePath`, `flipPath`, `checkIconsetPath` | [svg-path](svg-path.module.md) |
+| `parsePath`, `serializePath`, `pathPoints`, `toAbsolute`, `toRelative`, `roundPath`, `translatePath`, `scalePath`, `rotatePath`, `flipPath`, `reversePath`, `checkIconsetPath` | [svg-path](svg-path.module.md) |
 | `setupCanvas`, `canvasPoint` | [canvas](canvas.module.md) |
 | `loadImage`, `loadImages`, `drawImageCentered`, `SpriteAnimation` | [sprites](sprites.module.md) |
 | `SoundBank` | [sound](sound.module.md) |

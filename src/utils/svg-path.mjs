@@ -41,6 +41,8 @@
  *
  * ## Transformations
  *
+ * `reversePath` draws each shape the other way round (a hole goes in the direction opposite to its outline).
+ *
  * Moving, scaling, turning a quarter turn and mirroring keep each command absolute or relative, and keep the
  * horizontal and vertical lines horizontal or vertical (a quarter turn makes an `h` a `v`). The arcs follow: radii
  * scaled, axis turned, sweep reversed by a mirror. The first move of a path is absolute even when written `m`.
@@ -62,7 +64,7 @@
  * | `decimals` | error | a number with more than two decimals |
  * | `bounds` | error | the drawing goes out of the 24 × 24 square |
  * | `writing` | warning | the text is not written as `serializePath` writes it, plain or compact |
- * | `slope` | warning | a slanted line whose sides have no integer ratio (a guideline, not a law) |
+ * | `slope` | warning | a slanted line whose sides are not in a simple ratio, `p/q` with `q` at most 6: `1/2`, `2/3`, `5/4`, `6/5`… (a guideline, not a law) |
  *
  * The width of the strokes (2) and the rounded ends cannot be checked: they are left to the eye.
  *
@@ -448,6 +450,74 @@ export const flipPath = (segments, axis, center = 12) => axis === 'x'
   ? transform(segments, [-1, 0, 0, 1, 2 * center, 0])
   : transform(segments, [1, 0, 0, -1, 0, 2 * center])
 
+// a segment drawn backwards, absolute: from the end of the original to its start (points: its pathPoints entry)
+const backwards = (segment, {start, controls}) => {
+  const lower = segment.command.toLowerCase()
+  if (lower === 'h') { return {command: 'H', values: [start.x]} }
+  if (lower === 'v') { return {command: 'V', values: [start.y]} }
+  if (lower === 'a') {
+    const [rx, ry, angle, large, sweep] = segment.values
+    return {command: 'A', values: [rx, ry, angle, large, 1 - sweep, start.x, start.y]}
+  }
+  // the curves: controls written out (S and T become C and Q), in the other order
+  if (lower === 'c' || lower === 's') {
+    return {command: 'C', values: [controls[1].x, controls[1].y, controls[0].x, controls[0].y, start.x, start.y]}
+  }
+  if (lower === 'q' || lower === 't') { return {command: 'Q', values: [controls[0].x, controls[0].y, start.x, start.y]} }
+  return {command: 'L', values: [start.x, start.y]}
+}
+
+/**
+ * Draws each shape of the path the other way round: same drawing, opposite direction. A hole is drawn in the
+ * direction opposite to its outline (the icon set uses the `nonzero` fill rule). Each command keeps its mode
+ * (absolute or relative); `S` and `T` become `C` and `Q`; a closing `z` from a point other than the start becomes
+ * an explicit line (horizontal or vertical when it can), drawn first. Every shape starts with an absolute `M`.
+ *
+ * @param {Array<{command: string, values: number[]}>} segments - The segments.
+ * @returns {Array<{command: string, values: number[]}>} New segments.
+ * @example
+ * serializePath(reversePath(parsePath('M4 4h4v4z').segments))  // 'M4 4l4 4v-4h-4z'
+ * serializePath(reversePath(parsePath('M2 2h2v2h-2z').segments)) // 'M2 2v2h2v-2h-2z'
+ */
+export const reversePath = (segments) => {
+  const points = pathPoints(segments)
+  const out = []
+  let start = 0
+  while (start < segments.length) {
+    let end = start + 1
+    while (end < segments.length && segments[end].command.toLowerCase() !== 'm') { end++ }
+    // the shape: segments[start] (the move) to segments[end - 1]
+    const closed = segments[end - 1].command.toLowerCase() === 'z'
+    const last = closed ? end - 2 : end - 1 // the last drawing command
+    const origin = points[start].end
+    const reversed = []
+    const relative = []
+    if (closed) {
+      const {x, y} = points[last]?.end ?? origin
+      // the closing line, now drawn first
+      const dx = Math.abs(x - origin.x) > EPSILON
+      const dy = Math.abs(y - origin.y) > EPSILON
+      if (dx || dy) {
+        // horizontal or vertical when it can
+        reversed.push(dx && dy ? {command: 'L', values: [x, y]} : dx ? {command: 'H', values: [x]} : {command: 'V', values: [y]})
+        relative.push(isRelative(segments[end - 1].command))
+      }
+    }
+    for (let index = last; index > start; index--) {
+      reversed.push(backwards(segments[index], points[index]))
+      relative.push(isRelative(segments[index].command))
+    }
+    const moveTo = closed ? origin : (points[last]?.end ?? origin)
+    const shape = [{command: 'M', values: [moveTo.x, moveTo.y]}, ...reversed]
+    if (closed) { shape.push({command: segments[end - 1].command, values: []}) }
+    // each command back in its mode
+    const indexes = relative.flatMap((r, k) => r ? [k + 1] : [])
+    out.push(...(indexes.length > 0 ? toRelative(shape, indexes) : shape))
+    start = end
+  }
+  return out
+}
+
 // the points drawn by a segment, enough to know whether it leaves the square (arcs and curves are sampled)
 const samples = (segment, point) => {
   const lower = segment.command.toLowerCase()
@@ -475,6 +545,19 @@ const samples = (segment, point) => {
     }
   }
   return out
+}
+
+// the sides of a slanted line are in a simple ratio p/q (q from 1 to 6), within the rounding of two decimals: each
+// side may be off by 0.005, so the ratio by 0.005 × (1 + ratio) / the short side (l2.12 0.71 is 3/1)
+const MAX_DENOMINATOR = 6
+const isSimpleRatio = (a, b) => {
+  const short = Math.min(a, b)
+  const ratio = Math.max(a, b) / short
+  const tolerance = 0.005 * (1 + ratio) / short + EPSILON
+  for (let q = 1; q <= MAX_DENOMINATOR; q++) {
+    if (Math.abs(ratio - Math.round(ratio * q) / q) <= tolerance) { return true }
+  }
+  return false
 }
 
 /**
@@ -510,9 +593,9 @@ export const checkIconsetPath = (d) => {
     }
     const out = samples(segment, points[index]).some(({x, y}) => x < -0.005 || y < -0.005 || x > ICON_SIZE + 0.005 || y > ICON_SIZE + 0.005)
     if (out) { issues.push({code: 'bounds', level: 'error', segment: index}) }
-    if (command === 'l' && Math.abs(values[0]) > EPSILON && Math.abs(values[1]) > EPSILON) {
-      const ratio = Math.max(Math.abs(values[0]), Math.abs(values[1])) / Math.min(Math.abs(values[0]), Math.abs(values[1]))
-      if (Math.abs(ratio - Math.round(ratio)) > 0.02) { issues.push({code: 'slope', level: 'warning', segment: index}) }
+    if (command === 'l' && Math.abs(values[0]) > EPSILON && Math.abs(values[1]) > EPSILON &&
+      !isSimpleRatio(Math.abs(values[0]), Math.abs(values[1]))) {
+      issues.push({code: 'slope', level: 'warning', segment: index})
     }
   })
   if (inShape) { issues.push({code: 'shape-end', level: 'error', segment: segments.length - 1}) }

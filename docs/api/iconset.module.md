@@ -17,7 +17,7 @@ Icon set drawn by hand on a common 24 × 24 grid. Each icon is the `d` attribute
 - An icon is made of one or more shapes, each starting with `Mx y` and ending with `z`.
 - Inside a shape, only the `h`, `v`, `l` and `a` commands are used, so that all icons look alike.
 - Line ends and corners are always rounded (`a1 1 0 0 1 x y`).
-- Slopes have an integer ratio between the X axis and the Y axis.
+- Slopes have a simple ratio between the X axis and the Y axis: `p/q`, `q` from 1 to 6 (`2/1`, `3/2`, `6/5`…).
 
 > **Note:** some icons were downloaded from the web and do not follow these rules yet. They are being redrawn one by
 > one, which also halves the size of their path on average. Icons not yet redrawn are shown in orange in the
