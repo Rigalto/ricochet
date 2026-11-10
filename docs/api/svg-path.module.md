@@ -41,6 +41,8 @@ writing of the minifiers, a few bytes less. Both are read back the same.
 
 ## Transformations
 
+`cleanPath` rewrites a path in the writing of the icon set (relative commands, `h` and `v`, nothing useless).
+
 `reversePath` draws each shape the other way round (a hole goes in the direction opposite to its outline).
 
 Moving, scaling, turning a quarter turn and mirroring keep each command absolute or relative, and keep the
@@ -82,6 +84,7 @@ The width of the strokes (2) and the rounded ends cannot be checked: they are le
 | `scalePath` | function | Scales the drawing around a centre. |
 | `rotatePath` | function | Turns the drawing a quarter turn clockwise around a centre. |
 | `flipPath` | function | Mirrors the drawing: `x` swaps the left and the right, `y` the top and the bottom. |
+| `cleanPath` | function | Cleans a path into the writing of the icon set, without changing the drawing: every shape starts with an absolute `M`, the other commands become relative (`Z` becomes `z`), a line that only goes across or down becomes `h` or `v`, the commands that draw nothing (`l0 0`, `h0`, an arc to its own start) are removed, and two `h` (or two `v`) in a row going the same way are merged. |
 | `reversePath` | function | Draws each shape of the path the other way round: same drawing, opposite direction. A hole is drawn in the direction opposite to its outline (the icon set uses the `nonzero` fill rule). Each command keeps its mode (absolute or relative); `S` and `T` become `C` and `Q`; a closing `z` from a point other than the start becomes an explicit line (horizontal or vertical when it can), drawn first. Every shape starts with an absolute `M`. |
 | `checkIconsetPath` | function | Checks a path against the drawing rules of the icon set (see the table above). An empty list means a path that follows the rules. |
 
@@ -208,6 +211,19 @@ Mirrors the drawing: `x` swaps the left and the right, `y` the top and the botto
 | `segments` | Array<{command: string, values: number[]}> |  | The segments. |
 | `axis` | 'x'\|'y' |  | The coordinate that changes. |
 | `center` | number | `12` | The line of the mirror (`x = 12` or `y = 12`). |
+
+**Returns** `Array<{command: string, values: number[]}>` New segments.
+
+### cleanPath()
+
+Cleans a path into the writing of the icon set, without changing the drawing: every shape starts with an absolute
+`M`, the other commands become relative (`Z` becomes `z`), a line that only goes across or down becomes `h` or
+`v`, the commands that draw nothing (`l0 0`, `h0`, an arc to its own start) are removed, and two `h` (or two `v`)
+in a row going the same way are merged.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `segments` | Array<{command: string, values: number[]}> | The segments. |
 
 **Returns** `Array<{command: string, values: number[]}>` New segments.
 

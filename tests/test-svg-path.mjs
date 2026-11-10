@@ -7,7 +7,7 @@
 
 import {describe, assert} from './kernel.mjs'
 import {parsePath, serializePath, pathPoints, toAbsolute, toRelative, roundPath, translatePath, scalePath, rotatePath,
-  flipPath, reversePath, checkIconsetPath} from '../src/utils/svg-path.mjs'
+  flipPath, reversePath, cleanPath, checkIconsetPath} from '../src/utils/svg-path.mjs'
 import {iconset, iconsetList} from '../src/icons/iconset.mjs'
 
 const BAR = 'M4 11h16a1 1 0 0 1 0 2h-16a1 1 0 0 1 0-2z' // a horizontal bar with rounded ends
@@ -137,4 +137,27 @@ describe('SvgPath — reversing', () => {
     return serializePath(roundPath(reversePath(reversePath(twice)))) !== serializePath(roundPath(twice))
   })
   assert(`every icon: reversed four times as twice (${changed.slice(0, 5).join(', ') || 'all'})`, changed.length === 0)
+})
+
+describe('SvgPath — cleaning', () => {
+  const clean = (d) => serializePath(roundPath(cleanPath(parsePath(d).segments)))
+  assert('absolute lines become h and v, nothing useless, merged', clean('M4 4L8 4l0 0h2h1V8H4z') === 'M4 4h7v4h-7z')
+  assert('every shape starts with M, Z becomes z', clean('M4 4h2v2h-2Zm6 0h2v2h-2z') === 'M4 4h2v2h-2zM10 4h2v2h-2z')
+  assert('the pairs after M (absolute lines) become relative', clean('M17 8 14.16 5.16a1 1 0 0 1 2 0z') === 'M17 8l-2.84-2.84a1 1 0 0 1 2 0z')
+  assert('an arc to its own start is removed, two h going opposite ways are kept', clean('M4 4a1 1 0 0 1 0 0h2h-1z') === 'M4 4h2-1z')
+  assert('a clean path stays the same', clean(BAR) === BAR)
+  // the points reached, without the closing ones and the repeated ones, within 0.001
+  const reached = (s) => pathPoints(s).filter((_, i) => s[i].command.toLowerCase() !== 'z').map(({end}) => end)
+    .filter((p, i, all) => i === 0 || Math.hypot(p.x - all[i - 1].x, p.y - all[i - 1].y) > 0.001)
+  const changed = iconsetList.filter(name => {
+    const {segments} = parsePath(iconset[name])
+    const before = reached(segments)
+    // merged lines skip a point in the middle: every point reached once cleaned was reached before, in the same order
+    let k = 0
+    return !reached(cleanPath(segments)).every(p => {
+      while (k < before.length && Math.hypot(p.x - before[k].x, p.y - before[k].y) > 0.001) { k++ }
+      return k++ < before.length
+    })
+  })
+  assert(`every icon: once cleaned, the same points (merged lines skip some) (${changed.slice(0, 5).join(', ') || 'all'})`, changed.length === 0)
 })

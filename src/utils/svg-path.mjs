@@ -41,6 +41,8 @@
  *
  * ## Transformations
  *
+ * `cleanPath` rewrites a path in the writing of the icon set (relative commands, `h` and `v`, nothing useless).
+ *
  * `reversePath` draws each shape the other way round (a hole goes in the direction opposite to its outline).
  *
  * Moving, scaling, turning a quarter turn and mirroring keep each command absolute or relative, and keep the
@@ -449,6 +451,47 @@ export const rotatePath = (segments, cx = 12, cy = 12) => transform(segments, [0
 export const flipPath = (segments, axis, center = 12) => axis === 'x'
   ? transform(segments, [-1, 0, 0, 1, 2 * center, 0])
   : transform(segments, [1, 0, 0, -1, 0, 2 * center])
+
+/**
+ * Cleans a path into the writing of the icon set, without changing the drawing: every shape starts with an absolute
+ * `M`, the other commands become relative (`Z` becomes `z`), a line that only goes across or down becomes `h` or
+ * `v`, the commands that draw nothing (`l0 0`, `h0`, an arc to its own start) are removed, and two `h` (or two `v`)
+ * in a row going the same way are merged.
+ *
+ * @param {Array<{command: string, values: number[]}>} segments - The segments.
+ * @returns {Array<{command: string, values: number[]}>} New segments.
+ * @example
+ * serializePath(cleanPath(parsePath('M4 4L8 4l0 0h2h1V8H4z').segments))  // 'M4 4h7v4h-7z'
+ */
+export const cleanPath = (segments) => {
+  const moves = []
+  const others = []
+  segments.forEach(({command}, index) => (command.toLowerCase() === 'm' ? moves : others).push(index))
+  const relative = toAbsolute(toRelative(segments, others), moves)
+  const zero = (value) => Math.abs(value) < EPSILON
+  const out = []
+  for (const {command, values} of relative) {
+    let segment = {command, values: [...values]}
+    if (command === 'l') {
+      const [dx, dy] = values
+      if (zero(dx) && zero(dy)) { continue }
+      if (zero(dy)) { segment = {command: 'h', values: [dx]} } else if (zero(dx)) { segment = {command: 'v', values: [dy]} }
+    } else if ((command === 'h' || command === 'v') && zero(values[0])) {
+      continue
+    } else if (command === 'a' && zero(values[5]) && zero(values[6])) {
+      continue
+    }
+    // two horizontals (or verticals) in a row, the same way: one
+    const previous = out.at(-1)
+    if ((segment.command === 'h' || segment.command === 'v') && previous?.command === segment.command &&
+      Math.sign(previous.values[0]) === Math.sign(segment.values[0])) {
+      previous.values[0] += segment.values[0]
+      continue
+    }
+    out.push(segment)
+  }
+  return out
+}
 
 // a segment drawn backwards, absolute: from the end of the original to its start (points: its pathPoints entry)
 const backwards = (segment, {start, controls}) => {
