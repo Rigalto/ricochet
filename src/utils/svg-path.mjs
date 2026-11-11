@@ -707,7 +707,39 @@ const shapePieces = (segments) => {
   const first = points[0].end
   const last = points.at(-1).end
   if (Math.hypot(last.x - first.x, last.y - first.y) > EPSILON) { pieces.push({type: 'line', a: last, b: first, segment: absolute.length - 1}) }
-  return pieces
+  return mergeLines(pieces)
+}
+
+// two lines in a row on the same straight line (a closing z that goes back over the first line, for example, when the
+// path does not start where it ends) are one line, from the start of the first to the end of the second; the shape
+// is filled the same, and the inset needs a real corner between two pieces
+const mergeLines = (pieces) => {
+  const list = [...pieces]
+  const collinear = (p, q) => {
+    if (p.type !== 'line' || q.type !== 'line') { return false }
+    const d1 = {x: p.b.x - p.a.x, y: p.b.y - p.a.y}
+    const d2 = {x: q.b.x - q.a.x, y: q.b.y - q.a.y}
+    // within half a degree: the coordinates are rounded to two decimals, a short line's direction is not exact
+    return Math.abs(d1.x * d2.y - d1.y * d2.x) < 0.01 * Math.hypot(d1.x, d1.y) * Math.hypot(d2.x, d2.y)
+  }
+  for (let changed = true; changed && list.length > 1;) {
+    changed = false
+    for (let i = 0; i < list.length && list.length > 1; i++) {
+      const j = (i + 1) % list.length
+      if (!collinear(list[i], list[j])) { continue }
+      const merged = {type: 'line', a: list[i].a, b: list[j].b, segment: list[i].segment}
+      const zero = Math.hypot(merged.b.x - merged.a.x, merged.b.y - merged.a.y) < EPSILON
+      // the pair replaced by one line (nothing if it goes back to its start)
+      const rest = list.filter((_, k) => k !== i && k !== j)
+      const at = j === 0 ? rest.length : i
+      if (!zero) { rest.splice(at, 0, merged) }
+      list.length = 0
+      list.push(...rest)
+      changed = true
+      break
+    }
+  }
+  return list
 }
 
 // a polyline along the pieces (arcs sampled), for the area and the crossings

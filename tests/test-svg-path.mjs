@@ -181,6 +181,14 @@ describe('SvgPath — inset', () => {
     'M12 5a3 7 0 0 0 0 14 3 7 0 0 0 0-14z' && ellipse.warnings.length === 2 && ellipse.warnings[0].width === 1.88)
   assert('the hole of an icon follows the rules', checkIconsetPath(inset('M2 22l10-20 10 20z')).every(issue => issue.level !== 'error'))
   assert('too thin: nothing left', inset('M4 11h16a1 1 0 0 1 0 2h-16a1 1 0 0 1 0-2z') === 'small' && inset('M2 2h20v3h-20z') === 'small')
+  // a quadrilateral with corners of radius 2 (the corner tool), whose path starts at a corner, not where it ends: z
+  // goes back over the first line; the hole's corners are the centres of the arcs
+  const quad = 'M8.85 9.68l-6.86 5.48 6.84 6.84 5.48-6.86z'
+  assert('a path going back over its first line', inset('M9 7l6.73 6.73a2 2 0 0 1 0.15 2.66l-5.48 6.86a2 2 0 0 1-2.98 0.17' +
+    'l-6.84-6.84a2 2 0 0 1 0.16-2.98l6.86-5.48a2 2 0 0 1 2.66 0.15z') === 'M14.32 15.14l-5.47-5.46-6.86 5.48 6.84 6.84z' &&
+    inset('M10.26 8.27l5.47 5.46a2 2 0 0 1 0.15 2.66l-5.48 6.86a2 2 0 0 1-2.98 0.17l-6.84-6.84a2 2 0 0 1 0.16-2.98' +
+    'l6.86-5.48a2 2 0 0 1 2.66 0.15z') === quad)
+  assert('two lines in a row on the same straight line: one', inset('M2 2h10h10v20h-20z') === 'M4 4v16h16v-16z')
   assert('a narrow waist: the hole would cross itself', inset('M2 2h20l-9 10 9 10h-20l9-10z') === 'narrow')
   assert('a curve: refused', inset('M2 2C4 4 6 6 8 8z') === 'command')
   assert('two shapes: refused', inset('M3 3h18v18h-18zM5 5h1v1h-1z') === 'shapes')
