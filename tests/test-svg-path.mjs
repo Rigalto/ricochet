@@ -7,7 +7,7 @@
 
 import {describe, assert} from './kernel.mjs'
 import {parsePath, serializePath, pathPoints, toAbsolute, toRelative, roundPath, translatePath, scalePath, rotatePath,
-  flipPath, reversePath, cleanPath, checkIconsetPath} from '../src/utils/svg-path.mjs'
+  flipPath, reversePath, cleanPath, insetPath, checkIconsetPath} from '../src/utils/svg-path.mjs'
 import {iconset, iconsetList} from '../src/icons/iconset.mjs'
 
 const BAR = 'M4 11h16a1 1 0 0 1 0 2h-16a1 1 0 0 1 0-2z' // a horizontal bar with rounded ends
@@ -160,4 +160,28 @@ describe('SvgPath — cleaning', () => {
     })
   })
   assert(`every icon: once cleaned, the same points (merged lines skip some) (${changed.slice(0, 5).join(', ') || 'all'})`, changed.length === 0)
+})
+
+describe('SvgPath — inset', () => {
+  const inset = (d, distance) => {
+    const result = insetPath(parsePath(d).segments, distance)
+    return result.error ?? serializePath(result.segments)
+  }
+  assert('a square: the hole, the other way round', inset('M2 2h20v20h-20z') === 'M4 4v16h16v-16z')
+  assert('another width', inset('M2 2h20v20h-20z', 1) === 'M3 3v18h18v-18z')
+  assert('a circle: radius minus the width', inset('M12 2a10 10 0 0 1 0 20a10 10 0 0 1 0-20z') === 'M12 4a8 8 0 0 0 0 16 8 8 0 0 0 0-16z')
+  assert('rounded corners: radius 3 becomes 1', inset('M5 2h14a3 3 0 0 1 3 3v14a3 3 0 0 1-3 3h-14a3 3 0 0 1-3-3v-14a3 3 0 0 1 3-3z') ===
+    'M5 4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-14a1 1 0 0 0-1-1z')
+  assert('corners of radius 2 or less: sharp inside', inset('M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2h-16a2 2 0 0 1-2-2v-16a2 2 0 0 1 2-2z') ===
+    'M4 4v16h16v-16z')
+  assert('a corner pointing inwards: an arc around it', inset('M2 2h20v20h-8v-10h-4v10h-8z') ===
+    'M4 4v16h4v-8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8h4v-16z')
+  const ellipse = insetPath(parsePath('M12 3a5 9 0 0 1 0 18a5 9 0 0 1 0-18z').segments)
+  assert('an ellipse: the concentric one, the thinnest width as a warning', serializePath(ellipse.segments) ===
+    'M12 5a3 7 0 0 0 0 14 3 7 0 0 0 0-14z' && ellipse.warnings.length === 2 && ellipse.warnings[0].width === 1.88)
+  assert('the hole of an icon follows the rules', checkIconsetPath(inset('M2 22l10-20 10 20z')).every(issue => issue.level !== 'error'))
+  assert('too thin: nothing left', inset('M4 11h16a1 1 0 0 1 0 2h-16a1 1 0 0 1 0-2z') === 'small' && inset('M2 2h20v3h-20z') === 'small')
+  assert('a narrow waist: the hole would cross itself', inset('M2 2h20l-9 10 9 10h-20l9-10z') === 'narrow')
+  assert('a curve: refused', inset('M2 2C4 4 6 6 8 8z') === 'command')
+  assert('two shapes: refused', inset('M3 3h18v18h-18zM5 5h1v1h-1z') === 'shapes')
 })

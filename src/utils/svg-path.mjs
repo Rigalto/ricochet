@@ -41,6 +41,8 @@
  *
  * ## Transformations
  *
+ * `insetPath` moves the outline of a shape inwards: drawn the other way round, the hole that leaves a stroke.
+ *
  * `cleanPath` rewrites a path in the writing of the icon set (relative commands, `h` and `v`, nothing useless).
  *
  * `reversePath` draws each shape the other way round (a hole goes in the direction opposite to its outline).
@@ -455,8 +457,8 @@ export const flipPath = (segments, axis, center = 12) => axis === 'x'
 /**
  * Cleans a path into the writing of the icon set, without changing the drawing: every shape starts with an absolute
  * `M`, the other commands become relative (`Z` becomes `z`), a line that only goes across or down becomes `h` or
- * `v`, the commands that draw nothing (`l0 0`, `h0`, an arc to its own start) are removed, and two `h` (or two `v`)
- * in a row going the same way are merged.
+ * `v`, the commands that draw nothing (`l0 0`, `h0`, an arc to its own start) are removed, two `h` (or two `v`)
+ * in a row going the same way are merged, and a line back to the start just before `z` is left to `z`.
  *
  * @param {Array<{command: string, values: number[]}>} segments - The segments.
  * @returns {Array<{command: string, values: number[]}>} New segments.
@@ -490,7 +492,15 @@ export const cleanPath = (segments) => {
     }
     out.push(segment)
   }
-  return out
+  // a line back to the start of the shape just before z: z draws it
+  const points = pathPoints(out)
+  return out.filter((segment, index) => {
+    const next = out[index + 1]
+    if (next?.command !== 'z' || !['l', 'h', 'v'].includes(segment.command)) { return true }
+    const shapeStart = points[index + 1].end // where z goes back to
+    const {end} = points[index]
+    return Math.hypot(end.x - shapeStart.x, end.y - shapeStart.y) > EPSILON
+  })
 }
 
 // a segment drawn backwards, absolute: from the end of the original to its start (points: its pathPoints entry)
@@ -646,4 +656,271 @@ export const checkIconsetPath = (d) => {
     issues.push({code: 'writing', level: 'warning'})
   }
   return issues
+}
+
+// ////////////////////////////////////////////
+// Inset: the outline moved inwards
+// ////////////////////////////////////////////
+
+// the geometric pieces of a closed shape: lines {type: 'line', a, b} and arcs of ellipse {type: 'arc', cx, cy, rx, ry,
+// phi, theta, delta} (theta: parameter of the start, delta: signed span, > 0 with the sweep flag); null for a curve
+const ellipsePoint = ({cx, cy, rx, ry, phi}, t) => ({
+  x: cx + rx * Math.cos(t) * Math.cos(phi) - ry * Math.sin(t) * Math.sin(phi),
+  y: cy + rx * Math.cos(t) * Math.sin(phi) + ry * Math.sin(t) * Math.cos(phi)
+})
+const ellipseParam = ({cx, cy, rx, ry, phi}, {x, y}) => {
+  const dx = x - cx
+  const dy = y - cy
+  return Math.atan2((-dx * Math.sin(phi) + dy * Math.cos(phi)) / ry, (dx * Math.cos(phi) + dy * Math.sin(phi)) / rx)
+}
+// the direction of travel, unit
+const unit = (x, y) => { const length = Math.hypot(x, y); return {x: x / length, y: y / length} }
+const ellipseTangent = ({rx, ry, phi, delta}, t) => {
+  const sign = delta >= 0 ? 1 : -1
+  return unit(sign * (-rx * Math.sin(t) * Math.cos(phi) - ry * Math.cos(t) * Math.sin(phi)),
+    sign * (-rx * Math.sin(t) * Math.sin(phi) + ry * Math.cos(t) * Math.cos(phi)))
+}
+const startTangent = (piece) => piece.type === 'line' ? unit(piece.b.x - piece.a.x, piece.b.y - piece.a.y) : ellipseTangent(piece, piece.theta)
+const endTangent = (piece) => piece.type === 'line' ? unit(piece.b.x - piece.a.x, piece.b.y - piece.a.y) : ellipseTangent(piece, piece.theta + piece.delta)
+const startPoint = (piece) => piece.type === 'line' ? piece.a : ellipsePoint(piece, piece.theta)
+const endPoint = (piece) => piece.type === 'line' ? piece.b : ellipsePoint(piece, piece.theta + piece.delta)
+
+const shapePieces = (segments) => {
+  const absolute = toAbsolute(segments)
+  const points = pathPoints(absolute)
+  const pieces = []
+  for (let index = 1; index < absolute.length; index++) {
+    const {command, values} = absolute[index]
+    const {start, end} = points[index]
+    if (Math.hypot(end.x - start.x, end.y - start.y) < EPSILON) { continue }
+    if (command === 'L' || command === 'H' || command === 'V' || command === 'Z') {
+      pieces.push({type: 'line', a: start, b: end, segment: index})
+    } else if (command === 'A') {
+      const arc = arcCenter(start.x, start.y, [...values.slice(0, 5), end.x, end.y])
+      if (arc === null) { pieces.push({type: 'line', a: start, b: end, segment: index}); continue }
+      pieces.push({type: 'arc', cx: arc.x, cy: arc.y, rx: arc.rx, ry: arc.ry, phi: arc.phi, theta: arc.theta, delta: arc.delta, segment: index})
+    } else {
+      return null
+    }
+  }
+  // the closing line, when z draws one
+  const first = points[0].end
+  const last = points.at(-1).end
+  if (Math.hypot(last.x - first.x, last.y - first.y) > EPSILON) { pieces.push({type: 'line', a: last, b: first, segment: absolute.length - 1}) }
+  return pieces
+}
+
+// a polyline along the pieces (arcs sampled), for the area and the crossings
+const piecePolyline = (piece, steps = 24) => piece.type === 'line'
+  ? [piece.a, piece.b]
+  : Array.from({length: steps + 1}, (_, k) => ellipsePoint(piece, piece.theta + piece.delta * k / steps))
+
+// the intersections of two pieces taken whole (infinite line, full ellipse)
+const toUnit = (e, {x, y}) => {
+  const dx = x - e.cx
+  const dy = y - e.cy
+  return {u: (dx * Math.cos(e.phi) + dy * Math.sin(e.phi)) / e.rx, v: (-dx * Math.sin(e.phi) + dy * Math.cos(e.phi)) / e.ry}
+}
+const intersections = (p, q) => {
+  if (p.type === 'line' && q.type === 'line') {
+    const d1 = {x: p.b.x - p.a.x, y: p.b.y - p.a.y}
+    const d2 = {x: q.b.x - q.a.x, y: q.b.y - q.a.y}
+    const den = d1.x * d2.y - d1.y * d2.x
+    if (Math.abs(den) < EPSILON) { return [] }
+    const s = ((q.a.x - p.a.x) * d2.y - (q.a.y - p.a.y) * d2.x) / den
+    return [{x: p.a.x + s * d1.x, y: p.a.y + s * d1.y}]
+  }
+  if (p.type === 'arc' && q.type === 'line') { return intersections(q, p) }
+  if (p.type === 'line') {
+    // the line in the frame where the ellipse is the unit circle: a quadratic
+    const a = toUnit(q, p.a)
+    const b = toUnit(q, p.b)
+    const du = b.u - a.u
+    const dv = b.v - a.v
+    const A = du * du + dv * dv
+    const B = 2 * (a.u * du + a.v * dv)
+    const C = a.u * a.u + a.v * a.v - 1
+    let disc = B * B - 4 * A * C
+    if (disc < 0) { if (disc > -1e-9) { disc = 0 } else { return [] } }
+    return [-1, 1].map(sign => (-B + sign * Math.sqrt(disc)) / (2 * A))
+      .map(s => ({x: p.a.x + s * (p.b.x - p.a.x), y: p.a.y + s * (p.b.y - p.a.y)}))
+  }
+  // two ellipses: the sign of the second one's equation along the first, then bisection
+  const f = (t) => { const {u, v} = toUnit(q, ellipsePoint(p, t)); return u * u + v * v - 1 }
+  const found = []
+  const steps = 720
+  for (let k = 0; k < steps; k++) {
+    let t0 = 2 * Math.PI * k / steps
+    let t1 = 2 * Math.PI * (k + 1) / steps
+    let f0 = f(t0)
+    if (Math.sign(f0) === Math.sign(f(t1))) { continue }
+    for (let n = 0; n < 50; n++) {
+      const tm = (t0 + t1) / 2
+      const fm = f(tm)
+      if (Math.sign(fm) === Math.sign(f0)) { t0 = tm; f0 = fm } else { t1 = tm }
+    }
+    found.push(ellipsePoint(p, (t0 + t1) / 2))
+  }
+  return found
+}
+const nearest = (points, target) => points.reduce((best, point) => best === null ||
+  Math.hypot(point.x - target.x, point.y - target.y) < Math.hypot(best.x - target.x, best.y - target.y) ? point : best, null)
+
+// do two segments of polylines cross (strictly)?
+const crosses = (a, b, c, d) => {
+  const side = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x)
+  const d1 = side(c, d, a)
+  const d2 = side(c, d, b)
+  const d3 = side(a, b, c)
+  const d4 = side(a, b, d)
+  return d1 * d2 < -1e-9 && d3 * d4 < -1e-9
+}
+
+/**
+ * The outline of a closed shape moved inwards by a distance: drawn the other way round, it is the hole that leaves a
+ * stroke of that width (an icon's ring, frame or outline). The shape is made of lines and arcs (the icon set's
+ * commands); curves are refused.
+ *
+ * - A line moves parallel to itself; an arc whose centre is inside keeps its centre, its radii shrink by the distance;
+ *   an arc whose centre is outside grows by it.
+ * - An arc whose smaller radius is not greater than the distance disappears: inside, the corner is sharp.
+ * - At a corner that points outwards, the moved pieces are cut where they meet; at a corner that points inwards, they
+ *   are joined by an arc of radius `distance` around the corner.
+ * - A piece eaten by its neighbours (too short) is removed.
+ * - The inner ellipse of an ellipse is the concentric one: its distance to the outline is only exact at the ends of
+ *   the axes. The thinnest width is given as a warning when it is less than 98 % of the distance.
+ *
+ * | Error | Meaning |
+ * | --- | --- |
+ * | `shapes` | the path is not one shape `M…z` |
+ * | `command` | a curve (`C`, `S`, `Q`, `T`) |
+ * | `small` | the shape is too small: nothing is left inside |
+ * | `join` | two moved pieces do not meet |
+ * | `narrow` | the shape is too narrow in places: the hole would cross itself |
+ *
+ * @param {Array<{command: string, values: number[]}>} segments - One closed shape.
+ * @param {number} [distance=2] - The width of the stroke left.
+ * @returns {{segments: Array<{command: string, values: number[]}>, warnings: Array<{code: 'thin', segment: number, width: number}>} | {error: string}}
+ *   The hole (absolute `M`, then relative commands, rounded to two decimals, the other way round), with the warnings;
+ *   or the error.
+ * @example
+ * serializePath(insetPath(parsePath('M2 2h20v20h-20z').segments).segments)  // 'M4 4v16h16v-16z'
+ */
+export const insetPath = (segments, distance = 2) => {
+  const moves = segments.filter(({command}) => command.toLowerCase() === 'm').length
+  if (moves !== 1 || segments[0]?.command.toLowerCase() !== 'm') { return {error: 'shapes'} }
+  const pieces = shapePieces(segments)
+  if (pieces === null) { return {error: 'command'} }
+  if (pieces.length < 2) { return {error: 'small'} }
+  // the inside: the sign of the area (with y down, > 0 for a shape drawn clockwise on the screen)
+  const outline = pieces.flatMap(piece => piecePolyline(piece).slice(1))
+  const area = outline.reduce((sum, p, i) => { const q = outline[(i + 1) % outline.length]; return sum + p.x * q.y - q.x * p.y }, 0)
+  const k = area > 0 ? 1 : -1
+  const inward = ({x, y}) => ({x: -k * y * distance, y: k * x * distance}) // the inward offset for a direction
+  // each piece moved inwards (an arc too small disappears)
+  const moved = []
+  const warnings = []
+  for (const piece of pieces) {
+    if (piece.type === 'line') {
+      const n = inward(unit(piece.b.x - piece.a.x, piece.b.y - piece.a.y))
+      moved.push({...piece, a: {x: piece.a.x + n.x, y: piece.a.y + n.y}, b: {x: piece.b.x + n.x, y: piece.b.y + n.y}, from: piece})
+      continue
+    }
+    const middle = ellipsePoint(piece, piece.theta + piece.delta / 2)
+    const n = inward(ellipseTangent(piece, piece.theta + piece.delta / 2))
+    const convex = (piece.cx - middle.x) * n.x + (piece.cy - middle.y) * n.y > 0 // the centre is inside
+    const change = convex ? -distance : distance
+    if (convex && Math.min(piece.rx, piece.ry) <= distance + EPSILON) { continue }
+    const inner = {...piece, rx: piece.rx + change, ry: piece.ry + change, from: piece}
+    moved.push(inner)
+    if (Math.abs(piece.rx - piece.ry) > EPSILON) {
+      // the thinnest width between the ellipse and its concentric inner one, along the arc
+      let width = Infinity
+      for (let i = 0; i <= 32; i++) {
+        const p = ellipsePoint(inner, inner.theta + inner.delta * i / 32)
+        for (let j = 0; j <= 256; j++) {
+          const o = ellipsePoint(piece, 2 * Math.PI * j / 256)
+          width = Math.min(width, Math.hypot(o.x - p.x, o.y - p.y))
+        }
+      }
+      if (width < 0.98 * distance) { warnings.push({code: 'thin', segment: piece.segment, width: Math.round(width * 100) / 100}) }
+    }
+  }
+  if (moved.length < 2) { return {error: 'small'} }
+  // the corners: cut where the moved pieces meet (pointing outwards) or a joining arc (pointing inwards); a piece whose
+  // ends come in the wrong order is removed, and its neighbours meet instead
+  const corner = (p, q) => {
+    const t1 = endTangent(p.from)
+    const t2 = startTangent(q.from)
+    const cross = t1.x * t2.y - t1.y * t2.x
+    const original = endPoint(p.from)
+    const pEnd = endPoint(p)
+    const qStart = startPoint(q)
+    if (Math.hypot(pEnd.x - qStart.x, pEnd.y - qStart.y) < 1e-6) { return {point: pEnd} } // smooth: the ends meet
+    const touching = Math.hypot(endPoint(p.from).x - startPoint(q.from).x, endPoint(p.from).y - startPoint(q.from).y) < 1e-6
+    if (touching && k * cross < -1e-9) {
+      return {point: pEnd, round: {to: qStart, sweep: cross > 0 ? 1 : 0}} // inwards: an arc around the corner
+    }
+    const found = intersections(p, q)
+    // two parallel lines: the sides are closer than twice the distance, nothing is left between them
+    if (found.length === 0 && p.type === 'line' && q.type === 'line') { return {small: true} }
+    const point = nearest(found, touching ? original : {x: (pEnd.x + qStart.x) / 2, y: (pEnd.y + qStart.y) / 2})
+    return point === null ? null : {point}
+  }
+  let pieces2 = moved
+  let corners
+  for (let pass = 0; ; pass++) {
+    if (pieces2.length < 2 || pass > 100) { return {error: 'small'} }
+    corners = pieces2.map((piece, i) => corner(piece, pieces2[(i + 1) % pieces2.length]))
+    if (corners.some(c => c === null)) { return {error: 'join'} }
+    if (corners.some(c => c.small)) { return {error: 'small'} }
+    // a piece reversed by its corners
+    const reversed = pieces2.findIndex((piece, i) => {
+      const start = corners[(i - 1 + pieces2.length) % pieces2.length].round?.to ?? corners[(i - 1 + pieces2.length) % pieces2.length].point
+      const end = corners[i].point
+      if (piece.type === 'line') {
+        const d = unit(piece.b.x - piece.a.x, piece.b.y - piece.a.y)
+        return (end.x - start.x) * d.x + (end.y - start.y) * d.y < -1e-6
+      }
+      const span = Math.abs(piece.delta)
+      let swept = (ellipseParam(piece, end) - ellipseParam(piece, start)) * Math.sign(piece.delta)
+      swept = ((swept % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
+      return swept > span + 1e-6 && swept > Math.PI
+    })
+    if (reversed < 0) { break }
+    pieces2 = pieces2.filter((_, i) => i !== reversed)
+  }
+  // the hole, drawn the same way as the shape
+  const out = []
+  const n = pieces2.length
+  const startOf = (i) => corners[(i - 1 + n) % n].round?.to ?? corners[(i - 1 + n) % n].point
+  out.push({command: 'M', values: [startOf(0).x, startOf(0).y]})
+  pieces2.forEach((piece, i) => {
+    const start = startOf(i)
+    const end = corners[i].point
+    if (piece.type === 'line') {
+      // the last line back to the start: drawn by z
+      if (i < n - 1 || corners[i].round !== undefined) { out.push({command: 'L', values: [end.x, end.y]}) }
+    } else {
+      let swept = (ellipseParam(piece, end) - ellipseParam(piece, start)) * Math.sign(piece.delta)
+      swept = ((swept % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
+      out.push({command: 'A', values: [piece.rx, piece.ry, piece.phi * 180 / Math.PI, swept > Math.PI ? 1 : 0, piece.delta > 0 ? 1 : 0, end.x, end.y]})
+    }
+    const round = corners[i].round
+    if (round !== undefined) { out.push({command: 'A', values: [distance, distance, 0, 0, round.sweep, round.to.x, round.to.y]}) }
+  })
+  out.push({command: 'Z', values: []})
+  // a hole that crosses itself: the shape is too narrow somewhere
+  const polyline = pathPoints(out).flatMap((point, index) => {
+    const segment = out[index]
+    if (segment.command !== 'A') { return [point.end] }
+    return samples(segment, point).slice(1).concat([point.end])
+  })
+  for (let i = 0; i < polyline.length - 1; i++) {
+    for (let j = i + 2; j < polyline.length - 1; j++) {
+      if (i === 0 && j === polyline.length - 2) { continue }
+      if (crosses(polyline[i], polyline[i + 1], polyline[j], polyline[j + 1])) { return {error: 'narrow'} }
+    }
+  }
+  return {segments: roundPath(cleanPath(reversePath(out))), warnings}
 }
