@@ -33,7 +33,7 @@ const spaces = text => text.replace(/\s/g, ' ') // Intl writes no-break spaces
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 
 describe('Utils — entry point', () => {
-  assert('101 exports', Object.keys(utils).length === 101)
+  assert('102 exports', Object.keys(utils).length === 102)
   assert('every export is defined', Object.values(utils).every(v => v !== undefined))
 })
 

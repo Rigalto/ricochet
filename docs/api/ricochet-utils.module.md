@@ -33,15 +33,17 @@ is the reference.
 | `circlesOverlap`, `rectsOverlap`, `circleRectOverlap`, `pointInCircle`, `pointInRect`, `bounceCircleOnRect` | [geometry](geometry.module.md) |
 | `SpatialGrid` | [spatial-grid](spatial-grid.module.md) |
 | `QuadTree` | [quadtree](quadtree.module.md) |
+| `ObjectPool` | [object-pool](object-pool.module.md) |
 | `parsePath`, `serializePath`, `pathPoints`, `toAbsolute`, `toRelative`, `roundPath`, `translatePath`, `scalePath`, `rotatePath`, `flipPath`, `reversePath`, `cleanPath`, `insetPath`, `checkIconsetPath` | [svg-path](svg-path.module.md) |
 | `setupCanvas`, `canvasPoint` | [canvas](canvas.module.md) |
 | `loadImage`, `loadImages`, `drawImageCentered`, `SpriteAnimation` | [sprites](sprites.module.md) |
 | `SoundBank` | [sound](sound.module.md) |
 | `requestGpu`, `resetGpu`, `gpuBuffer`, `configureCanvas` | [gpu](gpu.module.md) |
 
-The modules geometry, spatial-grid, quadtree, canvas, sprites, sound and gpu are for games and simulations:
-overlaps of shapes, the neighbours of a point among thousands, a canvas of fixed logical size, images and animations
-cut from a sheet, sounds played with the Web Audio API, the WebGPU device. They use the browser only when they are
+The modules geometry, spatial-grid, quadtree, object-pool, canvas, sprites, sound and gpu are for games and
+simulations: overlaps of shapes, the neighbours of a point among thousands, objects reused without the garbage
+collector, a canvas of fixed logical size, images and animations cut from a sheet, sounds played with the Web Audio
+API, the WebGPU device. They use the browser only when they are
 called.
 
 The utilities for the DOM and the Markdown (`escapeHtml`, `unescapeHtml`, `sanitizeHtml`, `markdownToHtml`…) are
