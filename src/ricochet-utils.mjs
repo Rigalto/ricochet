@@ -35,9 +35,11 @@
  * | `setupCanvas`, `canvasPoint` | [canvas](canvas.module.md) |
  * | `loadImage`, `loadImages`, `drawImageCentered`, `SpriteAnimation` | [sprites](sprites.module.md) |
  * | `SoundBank` | [sound](sound.module.md) |
+ * | `requestGpu`, `resetGpu`, `gpuBuffer`, `configureCanvas` | [gpu](gpu.module.md) |
  *
- * The last four modules are for games: overlaps of shapes, a canvas of fixed logical size, images and animations
- * cut from a sheet, sounds played with the Web Audio API. They use the browser only when they are called.
+ * The last five modules are for games and simulations: overlaps of shapes, a canvas of fixed logical size, images
+ * and animations cut from a sheet, sounds played with the Web Audio API, the WebGPU device. They use the browser only
+ * when they are called.
  *
  * The utilities for the DOM and the Markdown (`escapeHtml`, `unescapeHtml`, `sanitizeHtml`, `markdownToHtml`…) are
  * part of the kernel: the components use them. They are exported by `ricochet.mjs`.
@@ -65,3 +67,4 @@ export {parsePath, serializePath, pathPoints, toAbsolute, toRelative, roundPath,
 export {setupCanvas, canvasPoint} from './utils/canvas.mjs'
 export {loadImage, loadImages, drawImageCentered, SpriteAnimation} from './utils/sprites.mjs'
 export {SoundBank} from './utils/sound.mjs'
+export {requestGpu, resetGpu, gpuBuffer, configureCanvas} from './utils/gpu.mjs'
