@@ -30,6 +30,7 @@ const REGISTRY = [
   {name: 'Pending', file: './test-pending.mjs'},
   {name: 'GameUtils', file: './test-game-utils.mjs'},
   {name: 'Gpu', file: './test-gpu.mjs'},
+  {name: 'Spatial', file: './test-spatial.mjs'},
   {name: 'DriveConfig', file: './test-drive-config.mjs'},
 ]
 

@@ -31,15 +31,18 @@
  * | `IdGenerator`, `createIdGenerator`, `uniqueId` | [id](id.module.md) |
  * | `debounce`, `throttle`, `promiseState` | [timing](timing.module.md) |
  * | `circlesOverlap`, `rectsOverlap`, `circleRectOverlap`, `pointInCircle`, `pointInRect`, `bounceCircleOnRect` | [geometry](geometry.module.md) |
+ * | `SpatialGrid` | [spatial-grid](spatial-grid.module.md) |
+ * | `QuadTree` | [quadtree](quadtree.module.md) |
  * | `parsePath`, `serializePath`, `pathPoints`, `toAbsolute`, `toRelative`, `roundPath`, `translatePath`, `scalePath`, `rotatePath`, `flipPath`, `reversePath`, `cleanPath`, `insetPath`, `checkIconsetPath` | [svg-path](svg-path.module.md) |
  * | `setupCanvas`, `canvasPoint` | [canvas](canvas.module.md) |
  * | `loadImage`, `loadImages`, `drawImageCentered`, `SpriteAnimation` | [sprites](sprites.module.md) |
  * | `SoundBank` | [sound](sound.module.md) |
  * | `requestGpu`, `resetGpu`, `gpuBuffer`, `configureCanvas` | [gpu](gpu.module.md) |
  *
- * The last five modules are for games and simulations: overlaps of shapes, a canvas of fixed logical size, images
- * and animations cut from a sheet, sounds played with the Web Audio API, the WebGPU device. They use the browser only
- * when they are called.
+ * The modules geometry, spatial-grid, quadtree, canvas, sprites, sound and gpu are for games and simulations:
+ * overlaps of shapes, the neighbours of a point among thousands, a canvas of fixed logical size, images and animations
+ * cut from a sheet, sounds played with the Web Audio API, the WebGPU device. They use the browser only when they are
+ * called.
  *
  * The utilities for the DOM and the Markdown (`escapeHtml`, `unescapeHtml`, `sanitizeHtml`, `markdownToHtml`…) are
  * part of the kernel: the components use them. They are exported by `ricochet.mjs`.
@@ -62,6 +65,8 @@ export {clearObject, removeWhere, removeUnordered, firstOf} from './utils/collec
 export {IdGenerator, createIdGenerator, uniqueId} from './utils/id.mjs'
 export {debounce, throttle, promiseState} from './utils/timing.mjs'
 export {circlesOverlap, rectsOverlap, circleRectOverlap, pointInCircle, pointInRect, bounceCircleOnRect} from './utils/geometry.mjs'
+export {SpatialGrid} from './utils/spatial-grid.mjs'
+export {QuadTree} from './utils/quadtree.mjs'
 export {parsePath, serializePath, pathPoints, toAbsolute, toRelative, roundPath, translatePath, scalePath, rotatePath,
   flipPath, reversePath, cleanPath, insetPath, checkIconsetPath} from './utils/svg-path.mjs'
 export {setupCanvas, canvasPoint} from './utils/canvas.mjs'
