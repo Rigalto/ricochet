@@ -98,7 +98,7 @@ Ricochet has two base classes and three communication channels.
 | **Secrets** | API keys and passwords given by the user, kept in the browser only: `secrets.get(name)` / `secrets.set(name, value)`, never sent to an adapter nor written to the logs. |
 | **Log of the requests** | Every request of the application (server, web services, Google) in one log of debugging: `logRequest({source, url, status, duration, body})`; keys and tokens are masked in the address (`maskSecrets(url)`). |
 | **Changes not saved yet** | The adapters of remote stores report what waits (`pendingWrites.report(source, {count, state})`); the kernel announces the total and the state of the whole (`pendingChanged`: `idle`, `queued`, `saving`, `offline`, `error`), so that the application shows when everything is saved. |
-| **Tools for games** | Among the utilities: overlaps of shapes, a canvas of fixed logical size scaled to its container (`setupCanvas`, `canvasPoint`), images and animations cut from a sheet (`loadImages`, `SpriteAnimation`), sounds with the Web Audio API (`SoundBank`). The frame loop of the kernel does the rest (`setAnimationFrame`). |
+| **Tools for games and simulations** | Among the utilities: overlaps of shapes, a canvas of fixed logical size scaled to its container (`setupCanvas`, `canvasPoint`), images and animations cut from a sheet (`loadImages`, `SpriteAnimation`), sounds with the Web Audio API (`SoundBank`), the neighbours of a point among thousands (`SpatialGrid`, `QuadTree`), objects reused without the garbage collector (`ObjectPool`), the WebGPU device shared by the page, with the reason when there is none (`requestGpu`, `gpuBuffer`, `configureCanvas`). The frame loop of the kernel does the rest (`setAnimationFrame`). |
 
 Everything a component subscribes to — events, items, attributes, window events, intervals, animation frames — is
 released when it is detached. No manual cleanup in normal use.
@@ -274,7 +274,8 @@ The events that Ricochet emits and listens to, and the `rc` prefix reserved for 
   (`addMonths`, `dateDifference`, `parseDate`, `formatDate` with `Intl`), texts (`deburr`, `foldCase`, `countWords`),
   numbers (`clamp`, `lerp`, `damp`, `mapLinear`), a seeded random generator (`Random`, sfc32), Perlin and value noise,
   complex numbers, hashes (`djb2`, `sha256`), short unique identifiers kept in a configuration item, and `debounce` /
-  `throttle`, which emit events through the scheduled tasks and the microtasks of the kernel.
+  `throttle`, which emit events through the scheduled tasks and the microtasks of the kernel; the paths of SVG icons
+  (`parsePath`, `insetPath`, `checkIconsetPath`), and the tools for games and simulations (see above).
 
 ## Browser support
 
