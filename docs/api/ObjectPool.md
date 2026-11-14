@@ -6,12 +6,14 @@ A pool of reusable objects.
 
 ## Methods
 
-### constructor(count, template)
+### constructor(count, template, {name = ''} = {})
 
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `count` | number | The number of objects created at once (at least 1). |
 | `template` | Function\|object | A function that returns a new object, or an object to copy. |
+| `options` | object |  |
+| `options.name` | string | The name of the pool: it then warns in the console when it grows past `count`. |
 
 ### get length
 
@@ -30,7 +32,7 @@ them all.
 
 ### recycle(obj)
 
-Gives an object back: it is free again, for a next `use()`. Allowed while walking the pool.
+Gives an object back: it is free again, for a next `use()`. Allowed for the current object of a walk.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
@@ -42,7 +44,7 @@ Gives all the objects back.
 
 ### forEach(callback)
 
-Calls `callback` for each object in use (in no particular order); the callback may recycle the object.
+Calls `callback` for each object in use, from the last to the first; the callback may recycle the current object.
 
 | Parameter | Type | Description |
 | --- | --- | --- |

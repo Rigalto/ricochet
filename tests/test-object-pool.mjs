@@ -57,6 +57,38 @@ describe('ObjectPool — walk', () => {
   assert('all reused after clear', pool.size === 10 && pool.length === 10)
 })
 
+describe('ObjectPool — the array', () => {
+  const pool = new ObjectPool(4, () => new Spark())
+  const all = [pool.use().create(1), pool.use().create(2), pool.use().create(3)]
+  pool.recycle(all[1])
+  pool.recycle(all[1])
+  assert('recycled twice: once', pool.length === 2 && pool.map(s => s.x).sort().join() === '1,3')
+  pool.recycle({_slot: 0})
+  assert('an object of another pool: ignored', pool.length === 2)
+  pool.forEach(s => { pool.recycle(s) })
+  assert('recycling all during the walk', pool.length === 0)
+  for (let x = 1; x <= 4; x++) { pool.use().create(x) }
+  const walked = []
+  pool.forEach(s => {
+    walked.push(s.x)
+    if (s.x === 2) { pool.use().create(9) }
+  })
+  assert('taking during the walk: not walked', walked.length === 4 && pool.length === 5 && !walked.includes(9))
+  const warnings = []
+  const warn = console.warn
+  console.warn = message => warnings.push(message)
+  const named = new ObjectPool(2, () => ({}), {name: 'sparks'})
+  for (let k = 0; k < 9; k++) { named.use() }
+  console.warn = warn
+  assert('a named pool warns when it grows past count, then at each doubling', warnings.length === 3 && warnings[0].includes('"sparks"') && warnings[0].includes('3 objects'))
+  const silent = new ObjectPool(1, () => ({}))
+  console.warn = message => warnings.push(message)
+  silent.use()
+  silent.use()
+  console.warn = warn
+  assert('without a name: silent', warnings.length === 3)
+})
+
 describe('ObjectPool — template object', () => {
   const pool = new ObjectPool(2, {x: 0, position: {x: 1, y: 2}, tags: ['a'], color: {clone () { return {cloned: true} }}})
   const a = pool.use()

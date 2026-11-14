@@ -9,20 +9,27 @@ run in the middle of an animation, and creating an object costs nothing once the
 ```javascript
 import {ObjectPool} from 'ricochet/ricochet-utils.mjs'
 
-const sparks = new ObjectPool(200, () => new Spark())   // 200 sparks created at once
+const sparks = new ObjectPool(200, () => new Spark(), {name: 'sparks'})  // 200 sparks created at once
 const spark = sparks.use()                               // a free spark, now in use
 spark.create(x, y)                                       // set ALL its attributes: it may have been used before
 sparks.forEach(s => {
   s.move()
-  if (s.dead) { sparks.recycle(s) }                      // allowed while walking the pool
+  if (s.dead) { sparks.recycle(s) }                      // allowed for the current object
 })
 ```
 
-## The two lists
+## One array
 
-The pool keeps the free objects in a singly linked list, and the objects in use in a doubly linked list: `use()`,
-`recycle()` and the walk are constant time per object, without arrays to shift. The pool adds two attributes to
-each object, `_next` and `_previous`: the application must neither change nor delete them.
+The pool keeps all its objects in one array: those in use first, then the free ones. `use()` takes the first free
+object, `recycle()` swaps the object with the last one in use, `clear()` only resets a counter: all constant time,
+and the walk reads a dense array, without following links from object to object. The pool adds one attribute to
+each object, `_slot` (its place in the array): the application must neither change nor delete it.
+
+## The walk
+
+`forEach`, `reduce` and `map` walk the objects in use from the last to the first. The callback may recycle the
+current object (the object that takes its place has already been walked), and may take new objects (they are not
+walked). It must not recycle another object. The order changes with the recycling: it means nothing.
 
 ## The objects
 
@@ -40,7 +47,8 @@ An object taken by `use()` keeps the values of its previous use: the application
 
 The pool creates `count` objects at once; when they are all in use, `use()` creates one more. The pool never
 shrinks. `length` (in use) and `size` (created) help to choose `count`, and to find objects never given back: an
-object that is not recycled is never collected either.
+object that is not recycled is never collected either. With a `name`, the pool warns in the console when it grows
+past `count`, then at each doubling: the warning says which `count` to give.
 
 ## Finding an object
 
