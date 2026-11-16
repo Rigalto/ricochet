@@ -22,7 +22,7 @@
  * | From | How |
  * | --- | --- |
  * | the HTML | `<option>` and `<optgroup>` elements written inside `rc-select` |
- * | `options` | a text: options separated by `|`, each `label` or `label#value` (the value is the label when it is not given) |
+ * | `options` | a text: options separated by `\|`, each `label` or `label#value` (the value is the label when it is not given) |
  * | the `options` property | an array, from JavaScript (see below) |
  * | `source` | a named source of options, declared by the application (see below); `source="name argument"` |
  *
@@ -81,6 +81,9 @@
  * again by the same event, make one request. Nothing is kept once the answer has come: the next request asks the
  * source again. The function is then called once, with the element of the first select; each select gets its own copy
  * of the options. Keeping the data between requests is the job of the application (its data layer).
+ *
+ * The sources serve `rc-combobox` too, whose suggestions come from them in the same way (`findOptionSource()` and
+ * `requestOptions()` are shared by both).
  *
  * A source given as a function is `{options: function}`. One source is built in: `item`, whose argument is the name of
  * a configuration item holding options in the format of the `options` attribute (`source="item font-list"`).
@@ -161,6 +164,57 @@ defineOptionSources({
 
 const list = (value, argument) => typeof value === 'function' ? value(argument) : value
 
+/**
+ * Finds the named source of a `source` attribute (`name argument`), for the components that take their options from
+ * a source: `rc-select`, `rc-combobox`. A source not declared is reported once in the console.
+ * @param {string} text - The attribute: the name of the source, a space, its argument.
+ * @param {string} tag - The tag of the component, for the console.
+ * @returns {{name: string, source: object, argument: string, items: string[], events: string[]}|null} The source,
+ *   its argument, and the configuration items and events after which its options must be asked again; `null` when
+ *   the attribute is empty or the source is not declared.
+ */
+export function findOptionSource (text, tag) {
+  if (text === null || text === undefined || text === '') { return null }
+  const [name, ...rest] = text.split(' ')
+  const source = sources.get(name)
+  if (source === undefined) {
+    if (!warned.has(name)) {
+      warned.add(name)
+      console.warn(`${tag}: the source '${name}' is not declared (defineOptionSources)`)
+    }
+    return null
+  }
+  const argument = rest.join(' ')
+  return {name, source, argument, items: list(source.items, argument), events: list(source.events, argument)}
+}
+
+/**
+ * Asks a source for its options. While the options of a source and an argument are being loaded, the other requests
+ * for them get the same answer.
+ * @param {{name: string, source: object, argument: string}} found - The source, as `findOptionSource()` returns it.
+ * @param {Element} element - The element of the component that asks.
+ * @returns {Promise<Array>} The options, as the source gives them.
+ */
+export function requestOptions (found, element) {
+  const {name, source, argument} = found
+  const key = `${name} ${argument}`
+  let result = pending.get(key)
+  if (result === undefined) {
+    try {
+      result = source.options(argument, element)
+    } catch (error) {
+      return Promise.reject(error)
+    }
+    if (typeof result?.then === 'function') {
+      const promise = result
+      const forget = () => { if (pending.get(key) === promise) { pending.delete(key) } }
+      pending.set(key, promise)
+      promise.then(forget, forget)
+    }
+  }
+  return Promise.resolve(result)
+}
+
 // an option as {label, value, disabled, group}
 const normalize = option => typeof option === 'string'
   ? {label: option, value: option, disabled: false, group: null}
@@ -239,23 +293,12 @@ export class RcSelect extends WComponent {
     this.sourceEvents = []
     this.unobserveItems()
     if (this.item !== undefined && this.item !== '') { this.observeItems([this.item]) }
-    this.source = null
-    if (value === null || value === '') { return }
-    const [name, ...rest] = value.split(' ')
-    const source = sources.get(name)
-    if (source === undefined) {
-      if (!warned.has(name)) {
-        warned.add(name)
-        console.warn(`rc-select: the source '${name}' is not declared (defineOptionSources)`)
-      }
-      return
-    }
-    this.source = {name, source, argument: rest.join(' ')}
-    this.sourceEvents = list(source.events, this.source.argument)
+    this.source = findOptionSource(value, 'rc-select')
+    if (this.source === null) { return }
+    this.sourceEvents = this.source.events
     if (this.sourceEvents.length > 0) { this.listen(this.sourceEvents, 'sourceRefreshed') }
-    const items = list(source.items, this.source.argument)
-    if (items.length > 0) {
-      this.observeItems(items, 'sourceRefreshed') // called at the end of the task with the current values: it loads
+    if (this.source.items.length > 0) {
+      this.observeItems(this.source.items, 'sourceRefreshed') // called at the end of the task with the current values: it loads
     } else {
       this.#load()
     }
@@ -300,26 +343,9 @@ export class RcSelect extends WComponent {
 
   #load () {
     if (this.source === null) { return }
-    const {name, source, argument} = this.source
     const request = ++this.request
     // a request of the same options in progress: this select waits for its answer, as the others
-    const key = `${name} ${argument}`
-    let result = pending.get(key)
-    if (result === undefined) {
-      try {
-        result = source.options(argument, this.element)
-      } catch (error) {
-        console.error(`rc-select: the source '${this.element.getAttribute('source')}' failed`, error)
-        return
-      }
-      if (typeof result?.then === 'function') {
-        const promise = result
-        const forget = () => { if (pending.get(key) === promise) { pending.delete(key) } }
-        pending.set(key, promise)
-        promise.then(forget, forget)
-      }
-    }
-    Promise.resolve(result).then(options => {
+    requestOptions(this.source, this.element).then(options => {
       if (request !== this.request || this.element === null) { return } // a later request, or the select is gone
       this.#show(options ?? [])
     }, error => console.error(`rc-select: the source '${this.element?.getAttribute('source')}' failed`, error))

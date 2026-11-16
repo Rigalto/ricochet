@@ -22,7 +22,7 @@ The options come from one of these, the later in the list winning:
 | From | How |
 | --- | --- |
 | the HTML | `<option>` and `<optgroup>` elements written inside `rc-select` |
-| `options` | a text: options separated by `|`, each `label` or `label#value` (the value is the label when it is not given) |
+| `options` | a text: options separated by `\|`, each `label` or `label#value` (the value is the label when it is not given) |
 | the `options` property | an array, from JavaScript (see below) |
 | `source` | a named source of options, declared by the application (see below); `source="name argument"` |
 
@@ -82,6 +82,9 @@ again by the same event, make one request. Nothing is kept once the answer has c
 source again. The function is then called once, with the element of the first select; each select gets its own copy
 of the options. Keeping the data between requests is the job of the application (its data layer).
 
+The sources serve `rc-combobox` too, whose suggestions come from them in the same way (`findOptionSource()` and
+`requestOptions()` are shared by both).
+
 A source given as a function is `{options: function}`. One source is built in: `item`, whose argument is the name of
 a configuration item holding options in the format of the `options` attribute (`source="item font-list"`).
 
@@ -96,6 +99,8 @@ browser, in the colours of the day or of the night.
 | --- | --- | --- |
 | `parseOptions` | function | Reads options written as a text: options separated by `\|`, each `label` or `label#value`. |
 | `defineOptionSources` | function | Declares named sources of options, used by the `source` attribute. A name declared again is replaced. |
+| `findOptionSource` | function | Finds the named source of a `source` attribute (`name argument`), for the components that take their options from a source: `rc-select`, `rc-combobox`. A source not declared is reported once in the console. |
+| `requestOptions` | function | Asks a source for its options. While the options of a source and an argument are being loaded, the other requests for them get the same answer. |
 | `RcSelect` | class | The component of `<rc-select>`. |
 
 ## Details
@@ -117,6 +122,32 @@ Declares named sources of options, used by the `source` attribute. A name declar
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `table` | Object<string, Function\|{options: Function, items: (string[]\|Function), events: (string[]\|Function)}> | Name → source. |
+
+### findOptionSource()
+
+Finds the named source of a `source` attribute (`name argument`), for the components that take their options from
+a source: `rc-select`, `rc-combobox`. A source not declared is reported once in the console.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `text` | string | The attribute: the name of the source, a space, its argument. |
+| `tag` | string | The tag of the component, for the console. |
+
+**Returns** `{name: string, source: object, argument: string, items: string[], events: string[]}|null` The source,
+  its argument, and the configuration items and events after which its options must be asked again; `null` when
+  the attribute is empty or the source is not declared.
+
+### requestOptions()
+
+Asks a source for its options. While the options of a source and an argument are being loaded, the other requests
+for them get the same answer.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `found` | {name: string, source: object, argument: string} | The source, as `findOptionSource()` returns it. |
+| `element` | Element | The element of the component that asks. |
+
+**Returns** `Promise<Array>` The options, as the source gives them.
 
 ### RcSelect
 

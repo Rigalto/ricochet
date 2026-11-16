@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Rigalto
 
 // tests/browser/test-ui.mjs — open tests/browser/index.html in a browser
-// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-tabs, rc-slider, rc-breadcrumb and the look of the tables.
+// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-combobox, rc-tabs, rc-slider, rc-breadcrumb and the look of the tables.
 
 import {describe, assert, captureConsole, releaseConsole} from '../kernel.mjs'
 import {WComponent} from '../../src/core/w-component.mjs'
@@ -17,6 +17,7 @@ import '../../src/ui/rc-radio.mjs'
 import {RcInput, defineChecks} from '../../src/ui/rc-input.mjs'
 import {RcTextarea} from '../../src/ui/rc-textarea.mjs'
 import {defineOptionSources, parseOptions} from '../../src/ui/rc-select.mjs'
+import {RcCombobox} from '../../src/ui/rc-combobox.mjs'
 import '../../src/ui/rc-tabs.mjs'
 import '../../src/ui/rc-slider.mjs'
 import '../../src/ui/rc-breadcrumb.mjs'
@@ -795,6 +796,113 @@ await describe('rc-select: one request for several selects', async () => {
   await tick()
   const lines = releaseConsole()
   assert('a failed request is reported, and forgotten', lines.some(l => l.includes('tuFailing')) && labels('s6') === '')
+  sandbox.innerHTML = ''
+  await tick()
+})
+
+await describe('rc-combobox', async () => {
+  const later = []
+  const asked = []
+  defineOptionSources({
+    tuGroups: {
+      options: sheet => {
+        asked.push(sheet)
+        return new Promise(resolve => later.push(() => resolve([`${sheet} Kitchen`, {label: 'Outside', value: `${sheet} Garden`}])))
+      },
+      events: ['tuGroupsChanged']
+    }
+  })
+  class TuUpper extends RcCombobox {
+    normalize (value) { return value.toUpperCase() }
+  }
+  WComponent.define('tu-upper', TuUpper)
+  config.setItem('tu-combo', 'Garden')
+  config.setItem('tu-combo-list', 'Red|Green')
+  sandbox.innerHTML = `
+    <rc-combobox id="a" options="Kitchen|Garden|Outside#Garage" data-event="tuAction" data-param='{"c": "a"}'></rc-combobox>
+    <rc-combobox id="b" data-item="tu-combo" options="Kitchen|Garden"></rc-combobox>
+    <rc-combobox id="c" commit="enter" data-event="tuAction"><option value="One"><option value="Two" label="Second"></rc-combobox>
+    <rc-combobox id="d" source="tuGroups Notes" value="old" required></rc-combobox>
+    <rc-combobox id="e" source="tuGroups Notes"></rc-combobox>
+    <rc-combobox id="f" source="item tu-combo-list" commit="input" data-event="tuAction"></rc-combobox>
+    <tu-upper id="g" data-event="tuAction"></tu-upper>
+    <rc-combobox id="h" disabled label="Group" placeholder="Group"></rc-combobox>`
+  await tick()
+  const field = id => $(`#${id}`)
+  const input = id => $(`#${id} > input`)
+  const list = id => [...$(`#${id} > datalist`).options].map(o => o.label && o.label !== o.value ? `${o.label}#${o.value}` : o.value).join()
+  const type = (id, text) => {
+    input(id).value = text
+    input(id).dispatchEvent(new Event('input', {bubbles: true}))
+  }
+  const key = (id, k) => input(id).dispatchEvent(new KeyboardEvent('keydown', {key: k, code: k, bubbles: true, cancelable: true}))
+  const leave = id => input(id).dispatchEvent(new Event('change', {bubbles: true}))
+  assert('an input tied to its own datalist', input('a').getAttribute('list') === $('#a > datalist').id &&
+    $('#a > datalist').id !== $('#b > datalist').id && document.getElementById(input('a').getAttribute('list')) === $('#a > datalist'))
+  assert('the suggestions of the attribute, with their labels', list('a') === 'Kitchen,Garden,Outside#Garage')
+  assert('the suggestions written in the HTML', list('c') === 'One,Second#Two')
+  got.length = 0
+  type('a', 'Gar')
+  assert('commit change by default: no action at each keystroke', got.length === 0)
+  type('a', 'Cellar')
+  leave('a')
+  assert('… the actions when the field is left, a value not in the list', got.length === 1 && got[0].c === 'a' && got[0].value === 'Cellar')
+  type('a', '  kitchen ')
+  leave('a')
+  assert('the value cleaned: spaces, and the spelling of the suggestion', input('a').value === 'Kitchen' && got.length === 2 && got[1].value === 'Kitchen')
+  type('a', 'wine   cellar')
+  key('a', 'Enter')
+  assert('Enter cleans and commits: inner spaces reduced', input('a').value === 'wine cellar' && got.length === 3 && got[2].value === 'wine cellar')
+  leave('a')
+  assert('… and leaving the field after does not commit again', got.length === 3)
+  assert('data-item: the field shows the item', input('b').value === 'Garden')
+  type('b', 'KITCHEN')
+  leave('b')
+  assert('a choice sets the item, cleaned', config.get('tu-combo') === 'Kitchen')
+  config.setItem('tu-combo', 'Attic')
+  await tick()
+  assert('the field follows the item, a value written is not cleaned', input('b').value === 'Attic')
+  got.length = 0
+  type('c', 'two')
+  leave('c')
+  assert('commit enter: leaving runs nothing', got.length === 0)
+  key('c', 'Enter')
+  assert('… Enter runs the actions, cleaned on the value of the suggestion', got.length === 1 && got[0].value === 'Two' && input('c').value === 'Two')
+  assert('a source that answers later: asked once for two fields', list('d') === '' && asked.length === 1 && input('d').value === 'old')
+  later.shift()()
+  await tick()
+  assert('… then its suggestions, in both fields, the value kept', list('d') === 'Notes Kitchen,Outside#Notes Garden' && list('e') === list('d') && input('d').value === 'old')
+  bus.emit('tuGroupsChanged', {})
+  assert('an event of the source asks again', asked.length === 2)
+  later.shift()()
+  await tick()
+  type('d', '')
+  assert('required: an empty field is invalid', field('d').hasAttribute('invalid') && field('d')._component.value === null)
+  type('d', 'notes garden')
+  leave('d')
+  assert('… a value makes it valid, cleaned on the suggestions of the source', !field('d').hasAttribute('invalid') && input('d').value === 'Notes Garden')
+  assert('the source item: suggestions from a configuration item', list('f') === 'Red,Green')
+  config.setItem('tu-combo-list', 'Red|Green|Blue')
+  await tick()
+  assert('… asked again when the item changes', list('f') === 'Red,Green,Blue')
+  got.length = 0
+  type('f', ' blue')
+  assert('commit input: an action at each keystroke, raw', got.length === 1 && got[0].value === ' blue')
+  leave('f')
+  assert('… then the cleaned value when the field is left', got.length === 2 && got[1].value === 'Blue' && input('f').value === 'Blue')
+  got.length = 0
+  type('g', 'abc')
+  leave('g')
+  assert('normalize() overridden by a subclass', input('g').value === 'ABC' && got.length === 1 && got[0].value === 'ABC')
+  assert('disabled, label and placeholder passed on', input('h').disabled && input('h').getAttribute('aria-label') === 'Group' && input('h').placeholder === 'Group')
+  field('h')._component.options = ['One', {label: 'Deux', value: 'Two'}]
+  assert('the options property', list('h') === 'One,Deux#Two' && field('h')._component.options[1].label === 'Deux')
+  field('h')._component.value = '  free  '
+  assert('the value property writes the value as given, with no action', input('h').value === '  free  ' && got.length === 1)
+  captureConsole()
+  sandbox.insertAdjacentHTML('beforeend', '<rc-combobox source="tuNothing x"></rc-combobox><rc-select source="tuNothing y"></rc-select>')
+  const lines = releaseConsole()
+  assert('an unknown source: reported once, for a combobox and a select', lines.filter(l => l.includes('tuNothing')).length === 1)
   sandbox.innerHTML = ''
   await tick()
 })

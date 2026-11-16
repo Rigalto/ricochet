@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Rigalto
 
 /**
- * The look shared by the fields: `rc-input`, `rc-textarea` and `rc-select`. Imported by these components; an
+ * The look shared by the fields: `rc-input`, `rc-textarea`, `rc-combobox` and `rc-select`. Imported by these components; an
  * application does not import it.
  *
  * The field stands on the surface of its block (`--rc-surface-raised`), with the border `--rc-border`; the hover
@@ -16,9 +16,10 @@
 
 import {css} from '../core/css.mjs'
 
-const HOSTS = 'rc-input, rc-textarea, rc-select'
-const FIELD = ':is(rc-input > input, rc-textarea > textarea, rc-select > select)'
-const INVALID = ':is(rc-input[invalid] > input, rc-textarea[invalid] > textarea, rc-select[invalid] > select)'
+const HOSTS = 'rc-input, rc-textarea, rc-combobox, rc-select'
+const FIELD = ':is(rc-input > input, rc-textarea > textarea, rc-combobox > input, rc-select > select)'
+const INVALID = ':is(rc-input[invalid] > input, rc-textarea[invalid] > textarea, rc-combobox[invalid] > input, ' +
+  'rc-select[invalid] > select)'
 
 css(`
 ${HOSTS} { vertical-align: middle; }

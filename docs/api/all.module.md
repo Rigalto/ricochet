@@ -21,7 +21,8 @@ Importing a component alone (`ricochet/ui/rc-select.mjs`) stays possible: it imp
 | `RcIconButton`, `RcTextButton` | [rc-icon-button](rc-icon-button.module.md), [rc-text-button](rc-text-button.module.md) |
 | `RcCheckbox`, `RcRadio`, `RcRadioGroup` | [rc-checkbox](rc-checkbox.module.md), [rc-radio](rc-radio.module.md) |
 | `RcInput`, `defineChecks`, `RcTextarea` | [rc-input](rc-input.module.md), [rc-textarea](rc-textarea.module.md) |
-| `RcSelect`, `defineOptionSources`, `parseOptions` | [rc-select](rc-select.module.md) |
+| `RcSelect`, `defineOptionSources`, `parseOptions`, `findOptionSource`, `requestOptions` | [rc-select](rc-select.module.md) |
+| `RcCombobox` | [rc-combobox](rc-combobox.module.md) |
 | `RcSlider` | [rc-slider](rc-slider.module.md) |
 | `RcTabs`, `RcTab` | [rc-tabs](rc-tabs.module.md) |
 | `RcDropdown` | [rc-dropdown](rc-dropdown.module.md) |

@@ -2,7 +2,7 @@
 
 Module `field-style` · group `ui` · source [`src/ui/field-style.mjs`](../../src/ui/field-style.mjs)
 
-The look shared by the fields: `rc-input`, `rc-textarea` and `rc-select`. Imported by these components; an
+The look shared by the fields: `rc-input`, `rc-textarea`, `rc-combobox` and `rc-select`. Imported by these components; an
 application does not import it.
 
 The field stands on the surface of its block (`--rc-surface-raised`), with the border `--rc-border`; the hover

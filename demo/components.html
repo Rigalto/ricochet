@@ -30,7 +30,7 @@
   </style>
 </head>
 <body>
-  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-tabs, rc-dropdown, rc-dialog, rc-slider, rc-breadcrumb, rc-month and rc-table</h1>
+  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-combobox, rc-select, rc-tabs, rc-dropdown, rc-dialog, rc-slider, rc-breadcrumb, rc-month and rc-table</h1>
   <div class="bar">
     <span>Theme of the page:</span>
     <rc-icon-button icon="computerclassic" data-item="ricochet-theme" data-value="system">system</rc-icon-button>
@@ -119,6 +119,13 @@
           <rc-select options="Locked" disabled></rc-select>
         </div>
         <div class="row">
+          <rc-combobox source="groups" placeholder="Group: choose or type" class="w12"
+            data-event="demoCombo" data-param='{"field": "group"}'></rc-combobox>
+          <rc-combobox options="Kitchen|Garden|Garage" commit="enter" placeholder="Room, then Enter" class="w12"
+            data-event="demoCombo" data-param='{"field": "room"}'></rc-combobox>
+          <rc-combobox value="locked" disabled class="w6"></rc-combobox>
+        </div>
+        <div class="row">
           <div class="rc-panel rc-shadow-2 rc-text-shadow" palette="module">rc-panel, rc-shadow-2, rc-text-shadow, palette="module"</div>
           <div class="rc-panel rc-shadow-inset" shade="deep">rc-panel, rc-shadow-inset, shade="deep"</div>
         </div>
@@ -196,10 +203,13 @@
     // a named check of the application, used by check="even"
     defineChecks({even: value => Number(value) % 2 === 0})
     // a source of options of the application, used by source="sheet Animals": the options of a sheet, loaded later
+    const DEMO_GROUPS = new Set(['Kitchen', 'Garden'])
     const ANIMALS = [['Cat', 'cat'], ['Dog', 'dog'], ['Horse', 'horse', 'Farm'], ['Cow', 'cow', 'Farm']]
     defineOptionSources({
       sheet: name => new Promise(resolve => setTimeout(() => resolve(
-        ANIMALS.map(([label, value, group]) => ({label: `${label} (${name})`, value, group}))), 500))
+        ANIMALS.map(([label, value, group]) => ({label: `${label} (${name})`, value, group}))), 500)),
+      // used by source="groups" of rc-combobox: the groups typed so far, asked again after demoGroupsChanged
+      groups: {options: () => [...DEMO_GROUPS].sort(), events: ['demoGroupsChanged']}
     })
 
     config.setAdapter(new MemoryAdapter({'ricochet-theme': 'system'}))
@@ -228,7 +238,7 @@
       constructor () {
         super()
         this.count = 0
-        this.listen(['demoClick', 'demoDate', 'demoMonth', 'demoCheck', 'demoRadio', 'demoInput', 'demoSelect', 'demoTab', 'demoRemount',
+        this.listen(['demoClick', 'demoDate', 'demoMonth', 'demoCheck', 'demoRadio', 'demoInput', 'demoCombo', 'demoSelect', 'demoTab', 'demoRemount',
           'demoDialog', 'demoSlider', 'demoConfirmAsk', 'demoAlertAsk', 'demoConfirm', 'overlayChanged'])
       }
 
@@ -248,6 +258,15 @@
       demoCheckDispatched ({box, value}) { this.#log(`demoCheck: ${box} = ${value}`) }
       demoRadioDispatched ({group, value}) { this.#log(`demoRadio: ${group} = ${value}`) }
       demoInputDispatched ({field, value}) { this.#log(`demoInput: ${field} = ${value}`) }
+      // a new group typed in the combobox joins the suggestions
+      demoComboDispatched ({field, value}) {
+        this.#log(`demoCombo: ${field} = ${value}`)
+        if (field === 'group' && value !== '' && !DEMO_GROUPS.has(value)) {
+          DEMO_GROUPS.add(value)
+          this.emit('demoGroupsChanged', {})
+        }
+      }
+
       demoSelectDispatched ({select, value}) { this.#log(`demoSelect: ${select} = ${value}`) }
       demoTabDispatched ({tabs, value}) { this.#log(`demoTab: ${tabs} = ${value}`) }
       demoDialogDispatched ({dialog, value}) { this.#log(`demoDialog: ${dialog} = ${value}`) }

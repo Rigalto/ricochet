@@ -21,7 +21,8 @@
  * | `RcIconButton`, `RcTextButton` | [rc-icon-button](rc-icon-button.module.md), [rc-text-button](rc-text-button.module.md) |
  * | `RcCheckbox`, `RcRadio`, `RcRadioGroup` | [rc-checkbox](rc-checkbox.module.md), [rc-radio](rc-radio.module.md) |
  * | `RcInput`, `defineChecks`, `RcTextarea` | [rc-input](rc-input.module.md), [rc-textarea](rc-textarea.module.md) |
- * | `RcSelect`, `defineOptionSources`, `parseOptions` | [rc-select](rc-select.module.md) |
+ * | `RcSelect`, `defineOptionSources`, `parseOptions`, `findOptionSource`, `requestOptions` | [rc-select](rc-select.module.md) |
+ * | `RcCombobox` | [rc-combobox](rc-combobox.module.md) |
  * | `RcSlider` | [rc-slider](rc-slider.module.md) |
  * | `RcTabs`, `RcTab` | [rc-tabs](rc-tabs.module.md) |
  * | `RcDropdown` | [rc-dropdown](rc-dropdown.module.md) |
@@ -45,7 +46,8 @@ export {RcCheckbox} from './rc-checkbox.mjs'
 export {RcRadio, RcRadioGroup} from './rc-radio.mjs'
 export {RcInput, defineChecks} from './rc-input.mjs'
 export {RcTextarea} from './rc-textarea.mjs'
-export {RcSelect, defineOptionSources, parseOptions} from './rc-select.mjs'
+export {RcSelect, defineOptionSources, parseOptions, findOptionSource, requestOptions} from './rc-select.mjs'
+export {RcCombobox} from './rc-combobox.mjs'
 export {RcSlider} from './rc-slider.mjs'
 export {RcTabs, RcTab} from './rc-tabs.mjs'
 export {RcDropdown} from './rc-dropdown.mjs'
