@@ -284,9 +284,11 @@ fine for your own applications, but it is not a safe.
 The documentation of Ricochet is generated from the `/** … */` blocks of its source files by `tools/doc.mjs`. The
 same blocks feed three readers: the tooltips of VSCode, the Markdown pages of `docs/api/` that GitHub displays, and
 your application, which can read `docs/api/index.json` and show the pages with `markdownToHtml()`. Each entry of
-the index gives the name (`n`), the kind (`k`: `c` class, `m` module), the parent class (`e`), the group (`g`), the
-source file (`s`) and the page (`p`): `<Class>.md` for a class, `<module>.module.md` for a module, so that a class
-and a module whose names differ only by case (`Scheduler`, `scheduler`) do not share a file on Windows or macOS.
+the index gives the name (`n`), the kind (`k`: `c` class, `m` module, `g` guide), the parent class (`e`), the group
+(`g`), the source file (`s`), the page (`p`), the tag of the element (`t`, for a class bound to one) and the first
+sentence of the description, as plain text (`d`). The page is `<Class>.md` for a class, `<module>.module.md` for a
+module, so that a class and a module whose names differ only by case (`Scheduler`, `scheduler`) do not share a file
+on Windows or macOS; for a guide, it is the path of the guide from `docs/api/` (`../GUIDE.md`).
 
 Your application can use the same tool for its own components. From the application folder:
 
@@ -295,7 +297,17 @@ node ricochet/tools/doc.mjs components
 ```
 
 where `components` is the folder of your sources (several folders may be given). The pages are written in
-`docs/api/` of your application.
+`docs/api/` of your application. Three options may come before the folders:
+
+| Option | Effect |
+| --- | --- |
+| `--lang fr` | The fixed texts of the pages (headings, tables, « extends »…) in French; English by default. |
+| `--documented` | Only the classes that have a `/** */` block: the others are left out, without a warning — useful while older code is being converted. |
+| `--guides docs` | The Markdown files of that folder (not its subfolders) are added to the index as guides (kind `g`, group `guides`), with their title (first heading) and their first sentence. They must be written in [Ricochet Markdown](MARKDOWN.md) to be shown by `markdownToHtml()`. |
+
+In VSCode, a build task (`Ctrl+Shift+B`) can run the tool and show its warnings in the Problems panel, with a link to
+the source line: see `.vscode/tasks.json` in Ricochet, whose `problemMatcher` reads the lines
+`warning  <file>:<line>  <text>`.
 
 A class is documented by the block right above it; a module by a block holding a `@module` tag, usually at the top
 of the file. The text of the block is [Ricochet Markdown](MARKDOWN.md). The class name, its parent class, the tag of
@@ -309,6 +321,7 @@ its element and the list of exports are read from the code, so they never go out
 | `@property {type} name - text` | A JavaScript property. |
 | `@css name - text` | A CSS class set or used by the component. |
 | `@param {type} [name=default] - text` / `@returns {type} text` | For methods and exported functions. |
+| `@yields {type} text` | For a generator: what each step produces. |
 | `@example` | Code shown as an example (the following lines). |
 | `@deprecated text`, `@see text` | Notes. |
 

@@ -6,7 +6,7 @@
     {
       "label": "Ricochet: generate documentation",
       "type": "shell",
-      "command": "node tools/doc.mjs",
+      "command": "node tools/doc.mjs --guides docs",
       "group": {"kind": "build", "isDefault": true},
       "presentation": {"reveal": "silent", "revealProblems": "onProblem"},
       "problemMatcher": {

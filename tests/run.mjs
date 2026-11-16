@@ -33,6 +33,7 @@ const REGISTRY = [
   {name: 'Spatial', file: './test-spatial.mjs'},
   {name: 'ObjectPool', file: './test-object-pool.mjs'},
   {name: 'DriveConfig', file: './test-drive-config.mjs'},
+  {name: 'DocTool', file: './test-doc-tool.mjs'},
 ]
 
 const target = process.argv[2] ?? null
