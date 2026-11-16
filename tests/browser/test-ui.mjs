@@ -899,6 +899,47 @@ await describe('rc-combobox', async () => {
   assert('the options property', list('h') === 'One,Deux#Two' && field('h')._component.options[1].label === 'Deux')
   field('h')._component.value = '  free  '
   assert('the value property writes the value as given, with no action', input('h').value === '  free  ' && got.length === 1)
+  const enter = id => input(id).dispatchEvent(new FocusEvent('focus'))
+  const quit = id => input(id).dispatchEvent(new FocusEvent('blur'))
+  sandbox.insertAdjacentHTML('beforeend', `
+    <rc-combobox id="i" options="Kitchen|Garden" value="Garden" placeholder="Group" required data-event="tuAction"></rc-combobox>
+    <rc-combobox id="j" options="Kitchen|Garden" value="Garden" keep-on-focus></rc-combobox>
+    <rc-combobox id="k" options="Kitchen|Garden" value="Garden" readonly></rc-combobox>
+    <rc-combobox id="l" options="Kitchen|Garden" value="Garden" commit="enter" data-event="tuAction"></rc-combobox>`)
+  await tick()
+  got.length = 0
+  enter('i')
+  assert('entering the field: emptied, the value in grey, still its value and valid', input('i').value === '' &&
+    input('i').placeholder === 'Garden' && field('i')._component.value === 'Garden' && !field('i').hasAttribute('invalid'))
+  quit('i')
+  assert('… left without typing: the value back, the placeholder back, no action', input('i').value === 'Garden' &&
+    input('i').placeholder === 'Group' && got.length === 0)
+  enter('i')
+  type('i', 'kitchen')
+  leave('i')
+  quit('i')
+  assert('… a value typed: cleaned and committed, the placeholder back', input('i').value === 'Kitchen' && got.length === 1 &&
+    got[0].value === 'Kitchen' && input('i').placeholder === 'Group')
+  enter('i')
+  type('i', 'x')
+  type('i', '')
+  leave('i')
+  quit('i')
+  assert('… emptied by the user: the empty value (invalid here: required, no action)', input('i').value === '' &&
+    field('i').hasAttribute('invalid') && got.length === 1)
+  field('i')._component.value = 'Garden'
+  enter('i')
+  field('i').setAttribute('value', 'Kitchen')
+  assert('… a value written meanwhile: shown at once, the placeholder back', input('i').value === 'Kitchen' && input('i').placeholder === 'Group')
+  quit('i')
+  assert('… and kept when the field is left', input('i').value === 'Kitchen')
+  enter('j')
+  enter('k')
+  assert('keep-on-focus and readonly: the field keeps its value', input('j').value === 'Garden' && input('k').value === 'Garden')
+  enter('l')
+  key('l', 'Enter')
+  assert('Enter without typing: the value back, committed by commit="enter"', input('l').value === 'Garden' && got.length === 2 && got[1].value === 'Garden')
+  quit('l')
   captureConsole()
   sandbox.insertAdjacentHTML('beforeend', '<rc-combobox source="tuNothing x"></rc-combobox><rc-select source="tuNothing y"></rc-select>')
   const lines = releaseConsole()

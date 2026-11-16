@@ -37,6 +37,15 @@ beside the value, where the browser does. The list itself cannot be styled.
 As for `rc-input`: the `value` attribute and the `value` property write the value, with no action; the property
 reads it (`null` when it is invalid). The value is not limited to the suggestions.
 
+## The whole list on entering the field
+
+The browser shows only the suggestions that match the content of the field: a field holding `Kitchen` would show
+no other one. So, when the user enters a field that holds a value, the field is emptied and the value is shown in
+grey (as the placeholder): the browser shows all the suggestions. When the user leaves the field without typing,
+the value comes back, and no action runs; a field emptied by the user, then left, has the empty value. A value
+cannot be edited letter by letter: it is typed again, or chosen in the list. With `keep-on-focus`, the field keeps
+its value when the user enters it, as an `rc-input`. A field `readonly` or `disabled` is never emptied.
+
 ## Actions
 
 As for `rc-input` (`data-item`, `data-event`, a form), but `commit` is `change` by default: the actions run when the

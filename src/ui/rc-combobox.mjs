@@ -37,6 +37,15 @@
  * As for `rc-input`: the `value` attribute and the `value` property write the value, with no action; the property
  * reads it (`null` when it is invalid). The value is not limited to the suggestions.
  *
+ * ## The whole list on entering the field
+ *
+ * The browser shows only the suggestions that match the content of the field: a field holding `Kitchen` would show
+ * no other one. So, when the user enters a field that holds a value, the field is emptied and the value is shown in
+ * grey (as the placeholder): the browser shows all the suggestions. When the user leaves the field without typing,
+ * the value comes back, and no action runs; a field emptied by the user, then left, has the empty value. A value
+ * cannot be edited letter by letter: it is typed again, or chosen in the list. With `keep-on-focus`, the field keeps
+ * its value when the user enters it, as an `rc-input`. A field `readonly` or `disabled` is never emptied.
+ *
  * ## Actions
  *
  * As for `rc-input` (`data-item`, `data-event`, a form), but `commit` is `change` by default: the actions run when the
@@ -77,11 +86,20 @@ const normalizeOption = option => {
  * @attr {string} [options] - Suggestions: `value` or `label#value`, separated by `|`.
  * @attr {string} [source] - Named source of suggestions and its argument: `name argument`.
  * @attr {string} [commit=change] - When the actions run: `change`, `enter` or `input`.
+ * @attr {boolean} [keep-on-focus] - The field keeps its value when the user enters it (the list shows only the
+ *   suggestions that match it).
  */
 export class RcCombobox extends RcInput {
   // the suggestions before the value, as for rc-select
   static observedAttributes = ['type', 'placeholder', 'maxlength', 'readonly', 'disabled', 'label',
     'required', 'min', 'max', 'pattern', 'check', 'options', 'source', 'value']
+
+  /** The value, or `null` when it is invalid; while the field is emptied on entering it, the value it held. */
+  get value () { return this.held !== null && !this.touched ? this.held : super.value }
+  set value (value) {
+    this.#release()
+    super.value = value
+  }
 
   /** The suggestions, as `{label, value}`. A new array (or text) replaces them. */
   get options () { return this.list.map(option => ({...option})) }
@@ -91,6 +109,8 @@ export class RcCombobox extends RcInput {
     // the suggestions written in the HTML, read before rc-input replaces the content
     const written = [...this.element.children].filter(child => child.localName === 'option')
       .map(option => ({label: option.label === option.value ? '' : option.label, value: option.value}))
+    this.held = null // the value held while the field is emptied on entering it
+    this.touched = false // whether the user typed since he entered the field
     super.attach()
     if (!this.element.hasAttribute('commit')) { this.commit = 'change' }
     count += 1
@@ -103,9 +123,30 @@ export class RcCombobox extends RcInput {
     this.source = null
     this.sourceEvents = []
     this.#show(written)
+    this.observeDom(this.elField, 'focus', 'comboEntered')
+    this.observeDom(this.elField, 'blur', 'comboLeft')
   }
 
   // ------------------------------------------------------------------ attributes
+
+  placeholderChanged (value) {
+    if (this.held !== null) {
+      this.placeholder = value // shown again when the field gets its value back
+    } else {
+      super.placeholderChanged(value)
+    }
+  }
+
+  valueChanged (value) {
+    this.#release()
+    super.valueChanged(value)
+  }
+
+  itemsChanged (items) {
+    const value = items[this.item]
+    if (value !== undefined && value !== null && value !== this.held) { this.#release() } // set elsewhere
+    super.itemsChanged(items)
+  }
 
   optionsChanged (value) {
     if (value !== null && !this.element.hasAttribute('source')) { this.#show(parseOptions(value)) }
@@ -148,17 +189,58 @@ export class RcCombobox extends RcInput {
 
   // ------------------------------------------------------------------ DOM events
 
+  /** The user enters the field: a field holding a value is emptied, so that the browser shows all the suggestions. */
+  comboEntered () {
+    this.touched = false
+    const value = this.elField.value
+    if (value === '' || this.element.hasAttribute('keep-on-focus') || this.elField.readOnly || this.elField.disabled) { return }
+    this.held = value
+    this.placeholder = this.elField.getAttribute('placeholder')
+    this.elField.placeholder = value
+    this.elField.value = '' // no check: the value held stays valid
+  }
+
+  /** The user leaves the field: without typing, the field gets its value back (no `change` event, no action). */
+  comboLeft () { this.#restore() }
+
+  inputTyped () {
+    this.touched = true
+    super.inputTyped()
+  }
+
   inputLeft () {
     this.#settle()
     super.inputLeft()
   }
 
   inputKeyPressed (e) {
-    if (this.isCommitKey(e)) { this.#settle() }
+    if (this.isCommitKey(e)) {
+      this.#restore() // Enter without typing: the value held, as if the field had not been emptied
+      this.#settle()
+    }
     super.inputKeyPressed(e)
   }
 
   // ------------------------------------------------------------------ internals
+
+  // the value held shown again, if the user did not type
+  #restore () {
+    if (this.held === null || this.touched) { return this.#release() }
+    const value = this.held
+    this.#release()
+    this.elField.value = value
+  }
+
+  // the field leaves the state « emptied on entering it », its placeholder back
+  #release () {
+    if (this.held === null) { return }
+    this.held = null
+    if (this.placeholder === null || this.placeholder === undefined) {
+      this.elField.removeAttribute('placeholder')
+    } else {
+      this.elField.placeholder = this.placeholder
+    }
+  }
 
   // the typed value cleaned; when it changes, it is checked again (and committed with commit="input")
   #settle () {
