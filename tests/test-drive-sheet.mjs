@@ -27,6 +27,12 @@ class FakeGoogle {
         (parent === undefined || (parent === 'root' ? f.parents.length === 0 : f.parents.includes(parent))))
       return {files: files.map(([id]) => ({id}))}
     }
+    const meta = /^\/drive\/v3\/files\/([^/]+)$/.exec(path)
+    if (meta !== null && method === 'GET') {
+      const file = this.files.get(meta[1])
+      if (file === undefined || file.deleted) { throw Object.assign(new Error('File not found'), {status: 404}) }
+      return {trashed: file.trashed === true}
+    }
     if (path === '/drive/v3/files' && method === 'POST') {
       const id = `${body.mimeType.endsWith('folder') ? 'd' : 's'}${this.#next++}`
       this.files.set(id, {...body, tabs: body.mimeType.endsWith('folder') ? undefined : {'Feuille 1': []}})
@@ -34,7 +40,8 @@ class FakeGoogle {
     }
     const sheet = /^\/v4\/spreadsheets\/([^/:]+)(.*)$/.exec(path)
     const file = this.files.get(sheet?.[1])
-    if (file === undefined || file.trashed) { throw Object.assign(new Error('Requested entity was not found.'), {status: 404}) }
+    // as Google: a spreadsheet in the trash can still be read and written through its identifier
+    if (file === undefined || file.deleted) { throw Object.assign(new Error('Requested entity was not found.'), {status: 404}) }
     const rest = sheet[2]
     if (rest === '' && method === 'GET') {
       return {sheets: Object.keys(file.tabs).map((title, index) => ({properties: {sheetId: index * 7}}))}
@@ -74,7 +81,7 @@ class FakeGoogle {
     throw new Error(`unexpected ${method} ${path}`)
   }
 
-  tab (name = 'fiches') { return [...this.files.values()].find(f => f.tabs?.[name] && !f.trashed)?.tabs[name] }
+  tab (name = 'fiches') { return [...this.files.values()].find(f => f.tabs?.[name] && !f.trashed && !f.deleted)?.tabs[name] }
 }
 
 class MemoryCache {
@@ -127,9 +134,9 @@ await describe('DriveSheet — creation and reading', async () => {
   assert('… four searches and one reading', google.calls.filter(c => c.startsWith('GET /drive')).length === 4 && google.calls.length === 5)
   google.calls.length = 0
   await other.sheet.pull()
-  assert('the spreadsheet known: one request', google.calls.length === 1)
+  assert('the spreadsheet known: checked, then read', google.calls.length === 2 && google.calls[0].startsWith('GET /drive/v3/files/'))
   const again = make({google, local: other.local})
-  assert('the local copy, at once, without Google', (await again.sheet.load()).length === 2 && google.calls.length === 1)
+  assert('the local copy, at once, without Google', (await again.sheet.load()).length === 2 && google.calls.length === 2)
 })
 
 await describe('DriveSheet — changes', async () => {
@@ -217,7 +224,24 @@ await describe('DriveSheet — deleted spreadsheet, renamed tab, failures, forge
   const rows = await sheet.pull()
   assert('a renamed tab: added again, empty; the rows of this browser are only the ones that wait', rows.length === 0 && 'fiches' in google.files.get(id).tabs)
   google.files.get(id).trashed = true
-  assert('the spreadsheet deleted: null, forgotten', await sheet.pull() === null && local.map.get(sheet.headers && "SweetHome/data/l'univers/prg-not/fiches").fileId === null)
+  assert('the spreadsheet in the trash (still readable): null, forgotten', await sheet.pull() === null &&
+    local.map.get("SweetHome/data/l'univers/prg-not/fiches").fileId === null)
+  const rows2 = await sheet.create(ROWS)
+  const [id2] = [...google.files].filter(([, f]) => f.name === 'prg-not' && !f.trashed).map(([key]) => key)
+  assert('… create(): a new spreadsheet', rows2.length === 2 && id2 !== id && google.files.size === 5)
+  google.files.get(id2).deleted = true
+  assert('the spreadsheet deleted for good: null', await sheet.pull() === null)
+  // a change waiting while the spreadsheet goes to the trash: not written there, it waits
+  const third = make({google, retryDelay: 60000})
+  await third.sheet.create(ROWS)
+  const [id3] = [...google.files].filter(([, f]) => f.name === 'prg-not' && !f.trashed && !f.deleted).map(([key]) => key)
+  google.files.get(id3).trashed = true
+  captureConsole()
+  await third.sheet.put({id: 'a7', Étiquette: 'Sept'})
+  await sleep(60)
+  const trashLines = releaseConsole()
+  assert('a change while the spreadsheet is in the trash: not written, it waits', third.sheet.pending.join() === 'a7' &&
+    !google.files.get(id3).tabs.fiches.some(line => line[0] === 'a7') && trashLines.some(l => l.includes('in the trash')))
   const second = make({google, retryDelay: 40})
   await second.sheet.create(ROWS)
   const realRequest = account.request

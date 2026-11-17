@@ -41,7 +41,8 @@
  *
  * - `load()` gives the local copy, at once, without Google: the rows of the last reading, with the changes made since.
  * - `pull()` reads the tab in Drive: its rows, with the changes made here and not yet sent, become the local copy.
- *   It gives `null` when the spreadsheet does not exist yet (`create()`). Without a connection, it fails (`GoogleError`
+ *   It gives `null` when the spreadsheet does not exist (`create()`): never created, deleted, or put in the trash by
+ *   the user (a spreadsheet in the trash is no longer used, even though Google still lets it be read). Without a connection, it fails (`GoogleError`
  *   or `Error`): the application keeps the local copy.
  * - `create(rows)` creates the folders, the spreadsheet with its tab and headers, and writes the rows.
  *
@@ -49,7 +50,8 @@
  *
  * `put(row)` (a new row, or a row replaced: same key) and `remove(key)` change the local copy at once, then the tab
  * a few seconds later (`uploadDelay`): the tab is read again, the rows changed here replace its rows, and the whole
- * tab is written in one request. A row changed in the spreadsheet and not here keeps the version of the spreadsheet;
+ * tab is written in one request (the spreadsheet is checked first: one in the trash is not written, the changes wait).
+ * A row changed in the spreadsheet and not here keeps the version of the spreadsheet;
  * the last change of a row wins. A failed sending is tried again 30 seconds later (`retryDelay`), and at the next
  * connection; the changes wait in the local copy, even when the page is closed.
  *
@@ -231,6 +233,10 @@ export class DriveSheet {
   async pull () {
     this.#listen()
     const record = await this.#read()
+    if (record.fileId !== null && !await this.#alive(record.fileId)) { // put in the trash, or deleted
+      record.fileId = null
+      await this.#save()
+    }
     const fileId = record.fileId ?? await this.#findFile()
     if (fileId === null) { return null }
     const remote = await this.#readTab(fileId)
@@ -441,6 +447,11 @@ export class DriveSheet {
     const record = this.#record
     const pending = {...record.pending}
     if (Object.keys(pending).length === 0) { return }
+    if (!await this.#alive(record.fileId)) { // the changes wait for pull() and create()
+      record.fileId = null
+      await this.#save()
+      throw new Error('the spreadsheet is in the trash, or deleted')
+    }
     const remote = await this.#readTab(record.fileId)
     if (remote === null) { throw new Error('the spreadsheet does not exist any more') }
     this.#take(remote)
@@ -501,6 +512,18 @@ export class DriveSheet {
     })
     record.height = lines.length
     record.width = headers.length
+  }
+
+  // whether the spreadsheet is still there: not deleted, not in the trash (a file in the trash can still be read and
+  // written through its identifier)
+  async #alive (fileId) {
+    try {
+      const file = await this.#account.request(`${DRIVE}/${fileId}`, {query: {fields: 'trashed'}, source: 'drive'})
+      return file?.trashed !== true
+    } catch (error) {
+      if (error.status === 404) { return false }
+      throw error
+    }
   }
 
   // the spreadsheet, in its folders, or null

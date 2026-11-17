@@ -41,7 +41,8 @@ their parent.
 
 - `load()` gives the local copy, at once, without Google: the rows of the last reading, with the changes made since.
 - `pull()` reads the tab in Drive: its rows, with the changes made here and not yet sent, become the local copy.
-  It gives `null` when the spreadsheet does not exist yet (`create()`). Without a connection, it fails (`GoogleError`
+  It gives `null` when the spreadsheet does not exist (`create()`): never created, deleted, or put in the trash by
+  the user (a spreadsheet in the trash is no longer used, even though Google still lets it be read). Without a connection, it fails (`GoogleError`
   or `Error`): the application keeps the local copy.
 - `create(rows)` creates the folders, the spreadsheet with its tab and headers, and writes the rows.
 
@@ -49,7 +50,8 @@ their parent.
 
 `put(row)` (a new row, or a row replaced: same key) and `remove(key)` change the local copy at once, then the tab
 a few seconds later (`uploadDelay`): the tab is read again, the rows changed here replace its rows, and the whole
-tab is written in one request. A row changed in the spreadsheet and not here keeps the version of the spreadsheet;
+tab is written in one request (the spreadsheet is checked first: one in the trash is not written, the changes wait).
+A row changed in the spreadsheet and not here keeps the version of the spreadsheet;
 the last change of a row wins. A failed sending is tried again 30 seconds later (`retryDelay`), and at the next
 connection; the changes wait in the local copy, even when the page is closed.
 
