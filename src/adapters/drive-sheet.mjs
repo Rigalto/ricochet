@@ -59,9 +59,12 @@
  *
  * ## The local copy
  *
- * One record per table in IndexedDB (database `ricochet-sheets`): the rows, the headers, the identifier of the
- * spreadsheet and the changes that wait. Without IndexedDB (private window…), the copy stays in memory, for the page.
- * `forget()` erases it (the spreadsheet in Drive is kept).
+ * One record per table in the store `tables` of an IndexedDB database: the rows, the headers, the identifier of the
+ * spreadsheet and the changes that wait. The database is the one of the application (option `database`: its name, as
+ * given to `IndexedDBAdapter`; `ricochet-sheets` by default), next to its items; the store is added to it when missing
+ * (`openAppDatabase`). Without IndexedDB (private window…), the copy stays in memory, for the page. `forget()` erases
+ * the copy of a table, `DriveSheet.forgetAll(database)` the copies of all the tables of the database (the spreadsheets
+ * in Drive are kept).
  *
  * ## Limits
  *
@@ -75,12 +78,13 @@
 
 import {bus} from '../core/bus.mjs'
 import {pendingWrites} from '../core/pending.mjs'
+import {openAppDatabase} from './indexeddb.mjs'
 
 const DRIVE = 'https://www.googleapis.com/drive/v3/files'
 const SHEETS = 'https://sheets.googleapis.com/v4/spreadsheets'
 const FOLDER_TYPE = 'application/vnd.google-apps.folder'
 const SHEET_TYPE = 'application/vnd.google-apps.spreadsheet'
-const DATABASE = 'ricochet-sheets'
+const DATABASE = 'ricochet-sheets' // the database of the local copies, when the application gives none
 const STORE = 'tables'
 
 // a name in a query of Drive
@@ -88,63 +92,77 @@ const quote = text => `'${text.replaceAll('\\', '\\\\').replaceAll("'", "\\'")}'
 
 // ---------------------------------------------------------------- the local copy
 
-// the local copies of the tables, in IndexedDB; in memory when IndexedDB is not available
-let opening = null
-const memory = new Map()
-let warned = false
-
-const database = () => {
-  if (opening === null) {
-    opening = new Promise((resolve, reject) => {
-      const request = globalThis.indexedDB.open(DATABASE, 1)
-      request.onupgradeneeded = () => request.result.createObjectStore(STORE)
-      request.onsuccess = () => resolve(request.result)
-      request.onerror = () => reject(request.error)
+// the local copies of the tables of a database, in its store `tables`; in memory when IndexedDB is not available
+const makeCache = database => {
+  let opening = null
+  const memory = new Map()
+  let warned = false
+  const open = () => {
+    if (opening === null) {
+      opening = openAppDatabase(database, [STORE]).then(db => {
+        // another part of the page, or another tab, adds a store: the connection is opened again at the next use
+        db.onversionchange = () => {
+          db.close()
+          opening = null
+        }
+        return db
+      }, error => {
+        opening = null
+        throw error
+      })
+    }
+    return opening
+  }
+  const run = async (mode, action) => {
+    const db = await open()
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE, mode)
+      const request = action(transaction.objectStore(STORE))
+      transaction.oncomplete = () => resolve(request.result)
+      transaction.onerror = () => reject(transaction.error)
     })
   }
-  return opening
-}
-
-const run = async (mode, action) => {
-  if (globalThis.indexedDB === undefined) { throw new Error('no IndexedDB') }
-  const opened = await database()
-  return new Promise((resolve, reject) => {
-    const transaction = opened.transaction(STORE, mode)
-    const request = action(transaction.objectStore(STORE))
-    transaction.oncomplete = () => resolve(request.result)
-    transaction.onerror = () => reject(transaction.error)
-  })
-}
-
-const fallback = error => {
-  if (!warned) {
-    warned = true
-    console.warn('DriveSheet: IndexedDB is not available, the local copies stay in memory', error.message)
+  const fallback = error => {
+    if (!warned) {
+      warned = true
+      console.warn(`DriveSheet: IndexedDB is not available (${database}), the local copies stay in memory`, error.message)
+    }
+  }
+  return {
+    async get (name) {
+      try {
+        return await run('readonly', store => store.get(name)) ?? memory.get(name) ?? null
+      } catch (error) {
+        fallback(error)
+        return memory.get(name) ?? null
+      }
+    },
+    async set (name, record) {
+      try {
+        await run('readwrite', store => store.put(record, name))
+      } catch (error) {
+        fallback(error)
+        memory.set(name, record)
+      }
+    },
+    async delete (name) {
+      memory.delete(name)
+      try { await run('readwrite', store => store.delete(name)) } catch (error) { fallback(error) }
+    },
+    async clear () {
+      memory.clear()
+      try { await run('readwrite', store => store.clear()) } catch (error) { fallback(error) }
+    }
   }
 }
 
-const sheetCache = {
-  async get (name) {
-    try {
-      return await run('readonly', store => store.get(name)) ?? memory.get(name) ?? null
-    } catch (error) {
-      fallback(error)
-      return memory.get(name) ?? null
-    }
-  },
-  async set (name, record) {
-    try {
-      await run('readwrite', store => store.put(record, name))
-    } catch (error) {
-      fallback(error)
-      memory.set(name, record)
-    }
-  },
-  async delete (name) {
-    memory.delete(name)
-    try { await run('readwrite', store => store.delete(name)) } catch (error) { fallback(error) }
-  }
+const caches = new Map() // database → its local copies
+const sheetCache = database => {
+  if (!caches.has(database)) { caches.set(database, makeCache(database)) }
+  return caches.get(database)
 }
+
+const live = new Set() // the tables of the page: forgetAll() empties them too
 
 // ---------------------------------------------------------------- the table
 
@@ -160,6 +178,7 @@ export class DriveSheet {
   #key
   #name
   #local
+  #database
   #registry
   #source
   #uploadDelay
@@ -181,15 +200,17 @@ export class DriveSheet {
    * @param {string[]} options.columns - The headers of the application, in order.
    * @param {string} options.key - The header of the column that identifies the rows (one of `columns`).
    * @param {string} [options.name] - The name of the local copy (default `<path>/<file>/<tab>`).
+   * @param {string} [options.database] - The IndexedDB database of the local copy: the one of the application, as for
+   *   `IndexedDBAdapter` (default `ricochet-sheets`).
    * @param {string} [options.source] - The name of the source in `pendingWrites` (default `sheet <file>/<tab>`).
    * @param {number} [options.uploadDelay] - The delay before the changes are sent, in ms (default 2000).
    * @param {number} [options.retryDelay] - The delay before a failed sending is tried again, in ms (default 30000).
    * @param {object} [options.local] - Where the local copy is kept: `{get(name), set(name, record), delete(name)}`
-   *   (default: IndexedDB); for the tests.
+   *   (default: the store `tables` of the database); for the tests.
    * @param {object} [options.registry] - Where the changes that wait are reported (default `pendingWrites`).
    */
-  constructor ({account, path, file, tab, columns, key, name, source, uploadDelay = 2000, retryDelay = 30000,
-    local = sheetCache, registry = pendingWrites}) {
+  constructor ({account, path, file, tab, columns, key, name, source, database = DATABASE, uploadDelay = 2000, retryDelay = 30000,
+    local = sheetCache(database), registry = pendingWrites}) {
     if (!columns.includes(key)) { throw new Error(`DriveSheet: the key '${key}' is not a column`) }
     this.#account = account
     this.#path = [...path]
@@ -202,7 +223,20 @@ export class DriveSheet {
     this.#uploadDelay = uploadDelay
     this.#retryDelay = retryDelay
     this.#local = local
+    this.#database = database
     this.#registry = registry
+    live.add(this)
+  }
+
+  /**
+   * Erases all the local copies of a database (the spreadsheets in Drive are kept), with the changes that wait: the
+   * tables of the page are emptied too. For the disconnection of the account, or to read everything again from Drive.
+   * @param {string} [database] - The database (default `ricochet-sheets`).
+   * @returns {Promise<void>}
+   */
+  static async forgetAll (database = DATABASE) {
+    for (const sheet of live) { if (sheet.#database === database) { await sheet.forget() } }
+    await sheetCache(database).clear()
   }
 
   /** The rows in memory (after `load()`, `pull()` or `create()`), in the order of the tab; `null` before. */

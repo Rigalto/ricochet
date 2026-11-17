@@ -6,6 +6,17 @@ A table in a tab of a Google spreadsheet, with a local copy.
 
 ## Methods
 
+### static async forgetAll(database = DATABASE)
+
+Erases all the local copies of a database (the spreadsheets in Drive are kept), with the changes that wait: the
+tables of the page are emptied too. For the disconnection of the account, or to read everything again from Drive.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `database` | string | The database (default `ricochet-sheets`). |
+
+**Returns** `Promise<void>` 
+
 ### get rows
 
 The rows in memory (after `load()`, `pull()` or `create()`), in the order of the tab; `null` before.

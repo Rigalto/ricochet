@@ -262,3 +262,24 @@ await describe('DriveSheet — deleted spreadsheet, renamed tab, failures, forge
   try { make({google, columns: ['Étiquette']}) } catch (e) { error = e }
   assert('a key that is not a column: refused', error?.message.includes("the key 'id'"))
 })
+
+await describe('DriveSheet — forgetAll', async () => {
+  const google = new FakeGoogle()
+  const local = new MemoryCache()
+  const first = make({google, local})
+  const second = new DriveSheet({account: first.account, path: ['App'], file: 'other', tab: 'rows', columns: ['id'], key: 'id', local,
+    registry: new PendingWrites(), uploadDelay: 60000})
+  const elsewhere = new DriveSheet({account: first.account, path: ['App'], file: 'kept', tab: 'rows', columns: ['id'], key: 'id',
+    database: 'another-app', local: new MemoryCache(), registry: new PendingWrites(), uploadDelay: 60000})
+  await first.sheet.create(ROWS)
+  await second.create([{id: 'x'}])
+  await elsewhere.create([{id: 'y'}])
+  await first.sheet.put({id: 'a5', Étiquette: 'Cinq'})
+  captureConsole() // without IndexedDB, in Node: a warning
+  await DriveSheet.forgetAll()
+  releaseConsole()
+  assert('the tables of the database emptied, their changes that wait dropped', first.sheet.rows.length === 0 &&
+    first.sheet.pending.length === 0 && second.rows.length === 0 && local.map.size === 0)
+  assert('… the tables of another database kept', elsewhere.rows.length === 1)
+  assert('… the spreadsheets in Drive kept', google.tab().length === 3)
+})

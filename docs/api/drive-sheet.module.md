@@ -59,9 +59,12 @@ What waits is reported to `pendingWrites` (source `sheet <file>/<tab>` by defaul
 
 ## The local copy
 
-One record per table in IndexedDB (database `ricochet-sheets`): the rows, the headers, the identifier of the
-spreadsheet and the changes that wait. Without IndexedDB (private window…), the copy stays in memory, for the page.
-`forget()` erases it (the spreadsheet in Drive is kept).
+One record per table in the store `tables` of an IndexedDB database: the rows, the headers, the identifier of the
+spreadsheet and the changes that wait. The database is the one of the application (option `database`: its name, as
+given to `IndexedDBAdapter`; `ricochet-sheets` by default), next to its items; the store is added to it when missing
+(`openAppDatabase`). Without IndexedDB (private window…), the copy stays in memory, for the page. `forget()` erases
+the copy of a table, `DriveSheet.forgetAll(database)` the copies of all the tables of the database (the spreadsheets
+in Drive are kept).
 
 ## Limits
 

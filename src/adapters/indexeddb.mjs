@@ -15,8 +15,15 @@
  * ## Database
  *
  * Each application gives its own name: the applications served from the same site (a GitHub Pages account, for
- * instance) share the same databases, and two applications with the same name would share their items. The database
- * has one table of items, the name of the item as key and its value as value.
+ * instance) share the same databases, and two applications with the same name would share their items. The items are
+ * in the store `items` of the database, the name of the item as key and its value as value.
+ *
+ * The database of the application holds the other local data of Ricochet too: the copies of the tables kept in Google
+ * spreadsheets (store `tables`, see `DriveSheet`). Each part asks for its stores with `openAppDatabase(name, stores)`:
+ * a missing store is created by moving the database to its next version, once, without losing the others. No version
+ * number is kept anywhere. A page still running an older code at that moment closes its connection (`versionchange`);
+ * if that older code asked for a fixed version, it can no longer open the database, and keeps its items in memory
+ * until the page is reloaded.
  *
  * The default values are used for the items that are not stored yet; they are not written to the database until the
  * application changes them.
@@ -31,8 +38,57 @@
  */
 
 const STORE = 'items'
-const VERSION = 1
 const SAVE_DELAY = 100
+const ATTEMPTS = 5 // two parts of the page may add stores at the same time: the database is opened again
+
+// opens a database, at its current version (undefined) or at a given one, creating the missing stores
+const openAt = (name, stores, version) => new Promise((resolve, reject) => {
+  let request
+  try {
+    request = version === undefined ? indexedDB.open(name) : indexedDB.open(name, version)
+  } catch (error) {
+    reject(error)
+    return
+  }
+  request.onupgradeneeded = () => {
+    for (const store of stores) { if (!request.result.objectStoreNames.contains(store)) { request.result.createObjectStore(store) } }
+  }
+  request.onsuccess = () => {
+    // by default, the connection lets a newer version go (the caller sets its own handler, to open again): otherwise an
+    // upgrade asked meanwhile would wait for it
+    request.result.onversionchange = () => request.result.close()
+    resolve(request.result)
+  }
+  request.onerror = () => reject(request.error ?? new Error('refused'))
+  // request.onblocked: another page keeps the database open at the former version; the request waits for it to close
+})
+
+/**
+ * Opens the local database of an application with the stores it needs: a store that is missing is created, the
+ * database moving to its next version (the other stores and their records are kept). A database that does not exist
+ * yet is created with these stores. The connection is the caller's: it is closed on `versionchange` (another part of
+ * the page, or another page, adds a store); the caller replaces `onversionchange` to know it, and opens the database
+ * again when it needs it.
+ * @param {string} name - The name of the database: one per application.
+ * @param {string[]} stores - The names of the stores needed.
+ * @returns {Promise<IDBDatabase>} The open database; rejected when IndexedDB is not available, or refused.
+ */
+export async function openAppDatabase (name, stores) {
+  if (typeof indexedDB === 'undefined') { throw new Error('IndexedDB is not available') }
+  for (let attempt = 1; ; attempt++) {
+    const db = await openAt(name, stores)
+    if (stores.every(store => db.objectStoreNames.contains(store))) { return db }
+    const version = db.version + 1
+    db.close()
+    try {
+      const upgraded = await openAt(name, stores, version)
+      if (stores.every(store => upgraded.objectStoreNames.contains(store))) { return upgraded }
+      upgraded.close() // upgraded meanwhile by another part, for other stores: once more
+    } catch (error) {
+      if (error?.name !== 'VersionError' || attempt >= ATTEMPTS) { throw error }
+    }
+  }
+}
 
 /**
  * Storage adapter for `config`, in the local database of the browser.
@@ -134,23 +190,9 @@ export class IndexedDBAdapter {
         this.#memory = this.#memory ?? {}
         resolve(null)
       }
-      if (typeof indexedDB === 'undefined') {
-        fallback('IndexedDB is not available')
-        return
-      }
-      let request
-      try {
-        request = indexedDB.open(this.#name, VERSION)
-      } catch (error) {
-        fallback(error.message)
-        return
-      }
-      request.onupgradeneeded = () => {
-        if (!request.result.objectStoreNames.contains(STORE)) { request.result.createObjectStore(STORE) }
-      }
-      request.onsuccess = () => {
-        const db = request.result
-        // another tab opens a newer version: this one lets it go, and opens again at the next call
+      openAppDatabase(this.#name, [STORE]).then(db => {
+        // another part of the page, or another tab, adds a store: this connection lets it go, and opens again at the
+        // next call
         db.onversionchange = () => {
           db.close()
           this.#db = null
@@ -158,8 +200,7 @@ export class IndexedDBAdapter {
         }
         this.#opened = db
         resolve(db)
-      }
-      request.onerror = () => fallback(request.error?.message ?? 'refused')
+      }, error => fallback(error?.message ?? 'refused'))
     })
     return this.#db
   }

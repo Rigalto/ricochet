@@ -21,7 +21,7 @@
  * | `universeBrickResolver` | [universe-brick](universe-brick.module.md) |
  * | `config`, `itemStore`, `setItemStore` | [config](config.module.md), [items](items.module.md) |
  * | `MemoryAdapter` | [memory](memory.module.md) |
- * | `IndexedDBAdapter` | [indexeddb](indexeddb.module.md) |
+ * | `IndexedDBAdapter`, `openAppDatabase` | [indexeddb](indexeddb.module.md) |
  * | `secrets` | [secrets](secrets.module.md) |
  * | `session` | [session](session.module.md) |
  * | `keyboard` | [keyboard](keyboard.module.md) |
@@ -49,7 +49,7 @@ export {universeBrickResolver} from './routing/universe-brick.mjs'
 export {config} from './core/config.mjs'
 export {itemStore, setItemStore} from './core/items.mjs'
 export {MemoryAdapter} from './adapters/memory.mjs'
-export {IndexedDBAdapter} from './adapters/indexeddb.mjs'
+export {IndexedDBAdapter, openAppDatabase} from './adapters/indexeddb.mjs'
 export {secrets} from './core/secrets.mjs'
 export {session} from './core/session.mjs'
 export {keyboard} from './core/keyboard.mjs'

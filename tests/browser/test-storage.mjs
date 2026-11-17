@@ -83,30 +83,68 @@ await describe('session', async () => {
   assert('removed', sessionStorage.getItem('ricochet-session-test-history') === null && session.get('test-history', 0) === 0)
 })
 
-await describe('DriveSheet — the local copy in IndexedDB', async () => {
+await describe('openAppDatabase — the stores of an application', async () => {
+  const {openAppDatabase} = await import('../../src/adapters/indexeddb.mjs')
+  const remove = name => new Promise(resolve => { const request = indexedDB.deleteDatabase(name); request.onsuccess = request.onerror = request.onblocked = resolve })
+  await remove('ricochet-test-stores')
+  let db = await openAppDatabase('ricochet-test-stores', ['a', 'b'])
+  assert('a new database, with its stores', db.version === 1 && [...db.objectStoreNames].join() === 'a,b')
+  db.close()
+  db = await openAppDatabase('ricochet-test-stores', ['a'])
+  assert('stores already there: the same version', db.version === 1)
+  db.close()
+  db = await openAppDatabase('ricochet-test-stores', ['c'])
+  assert('a missing store: the next version, the others kept', db.version === 2 && [...db.objectStoreNames].join() === 'a,b,c')
+  db.close()
+  // two parts of the page add their stores at the same time
+  const [x, y] = await Promise.all([openAppDatabase('ricochet-test-stores', ['d']), openAppDatabase('ricochet-test-stores', ['e'])])
+  x.onversionchange = () => x.close()
+  y.onversionchange = () => y.close()
+  db = await openAppDatabase('ricochet-test-stores', ['a'])
+  assert('two stores added at the same time: both there', [...db.objectStoreNames].join() === 'a,b,c,d,e')
+  db.close()
+  x.close()
+  y.close()
+  await remove('ricochet-test-stores')
+})
+
+await describe('DriveSheet — the local copy in the database of the application', async () => {
   const {DriveSheet} = await import('../../src/adapters/drive-sheet.mjs')
   const {PendingWrites} = await import('../../src/core/pending.mjs')
+  const remove = name => new Promise(resolve => { const request = indexedDB.deleteDatabase(name); request.onsuccess = request.onerror = request.onblocked = resolve })
+  await remove('ricochet-test-app')
+  // the items of the application, before its tables
+  const items = new IndexedDBAdapter('ricochet-test-app')
+  await items.save([{item: 'colour', value: 'blue'}])
   // a spreadsheet that exists, with two rows; offline afterwards
   const account = {
     connected: true,
     request: async (url, {method = 'GET'} = {}) => {
+      if (url.includes('/drive/v3/files/')) { return {trashed: false} }
       if (url.includes('/drive/v3/files')) { return {files: [{id: 'x1'}]} }
       if (method === 'GET') { return {values: [['id', 'Label'], ['a1', 'One'], ['a2', 'Two']]} }
       return {}
     }
   }
-  const options = {account, path: ['App'], file: 'test', tab: 'rows', columns: ['id', 'Label'], key: 'id', name: 'ricochet-test-sheet',
-    registry: new PendingWrites(), uploadDelay: 60000}
+  const options = {account, path: ['App'], file: 'test', tab: 'rows', columns: ['id', 'Label'], key: 'id', name: 'notes',
+    database: 'ricochet-test-app', registry: new PendingWrites(), uploadDelay: 60000}
   const first = new DriveSheet(options)
-  await first.forget()
   assert('nothing yet on this browser', await first.load() === null)
   await first.pull()
+  const stores = await new Promise(resolve => { const r = indexedDB.open('ricochet-test-app'); r.onsuccess = () => { resolve([...r.result.objectStoreNames].join() + ' v' + r.result.version); r.result.close() } })
+  assert('the store of the tables added to the database of the application, next to its items', stores === 'items,tables v2')
+  assert('… the items kept, and the adapter of the items still working', (await items.load()).colour === 'blue' &&
+    await items.save([{item: 'size', value: '3'}]) === undefined && (await items.load()).size === '3')
   account.connected = false
   await first.put({id: 'a3', Label: 'Three'})
   const second = new DriveSheet(options)
   const rows = await second.load()
   assert('another page: the rows and the change that waits, from IndexedDB', rows?.map(r => r.Label).join() === 'One,Two,Three' && second.pending.join() === 'a3')
-  await second.forget()
+  await DriveSheet.forgetAll('ricochet-test-app')
+  assert('forgetAll: the tables of the page emptied', first.rows.length === 0 && second.rows.length === 0 && second.pending.length === 0)
   const third = new DriveSheet(options)
-  assert('forget: erased from IndexedDB', await third.load() === null)
+  assert('… and the database: nothing more on this browser', await third.load() === null)
+  assert('… the items kept', (await items.load()).colour === 'blue')
+  await items.close()
+  await remove('ricochet-test-app')
 })
