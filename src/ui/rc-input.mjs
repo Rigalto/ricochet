@@ -72,7 +72,8 @@
  *
  * ## Extending the field
  *
- * A subclass changes the behaviour with these methods, and is defined with its own tag:
+ * A subclass changes the behaviour with these methods, and is defined with its own tag; it keeps the look of the
+ * fields (the element gets the class `rc-field`):
  *
  * - `transform(value)`: called at each keystroke; returns the value to put in the field (a shortcut typed by the user
  *   replaced by its value, for instance).
@@ -164,6 +165,7 @@ export class RcInput extends WComponent {
   set value (value) { this.#set(`${value ?? ''}`) }
 
   attach () {
+    this.element.classList.add('rc-field') // the look of the fields, for a subclass under its own tag too
     /** The field: an `<input>`, or what `createField()` returns. */
     this.elField = this.createField()
     this.element.replaceChildren(this.elField)

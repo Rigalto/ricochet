@@ -594,6 +594,8 @@ await describe('rc-input', async () => {
   assert('a subclass: transform', input('h').value === '2026' && field('h')._component.valid)
   type('h', '1999')
   assert('a subclass: validate', field('h').hasAttribute('invalid'))
+  assert('a subclass keeps the look of the fields', field('h').classList.contains('rc-field') &&
+    getComputedStyle(input('h')).borderRadius === '6px')
   assert('the field stands on the surface of its block', getComputedStyle(input('a')).backgroundColor !== getComputedStyle(sandbox).backgroundColor)
   sandbox.innerHTML = ''
   await tick()

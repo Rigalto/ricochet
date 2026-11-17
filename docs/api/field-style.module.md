@@ -2,8 +2,9 @@
 
 Module `field-style` · group `ui` · source [`src/ui/field-style.mjs`](../../src/ui/field-style.mjs)
 
-The look shared by the fields: `rc-input`, `rc-textarea`, `rc-combobox` and `rc-select`. Imported by these components; an
-application does not import it.
+The look shared by the fields: `rc-input`, `rc-textarea`, `rc-combobox` and `rc-select`, and the fields of an
+application that extend `rc-input` under their own tag (their element has the class `rc-field`, added by `rc-input`).
+Imported by these components; an application does not import it.
 
 The field stands on the surface of its block (`--rc-surface-raised`), with the border `--rc-border`; the hover
 mixes `--rc-accent` into the border; the focus shows `--rc-focus`; an invalid field (attribute `invalid`) shows

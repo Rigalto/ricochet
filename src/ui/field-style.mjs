@@ -2,8 +2,9 @@
 // Copyright (c) 2026 Rigalto
 
 /**
- * The look shared by the fields: `rc-input`, `rc-textarea`, `rc-combobox` and `rc-select`. Imported by these components; an
- * application does not import it.
+ * The look shared by the fields: `rc-input`, `rc-textarea`, `rc-combobox` and `rc-select`, and the fields of an
+ * application that extend `rc-input` under their own tag (their element has the class `rc-field`, added by `rc-input`).
+ * Imported by these components; an application does not import it.
  *
  * The field stands on the surface of its block (`--rc-surface-raised`), with the border `--rc-border`; the hover
  * mixes `--rc-accent` into the border; the focus shows `--rc-focus`; an invalid field (attribute `invalid`) shows
@@ -16,10 +17,11 @@
 
 import {css} from '../core/css.mjs'
 
-const HOSTS = 'rc-input, rc-textarea, rc-combobox, rc-select'
-const FIELD = ':is(rc-input > input, rc-textarea > textarea, rc-combobox > input, rc-select > select)'
+const HOSTS = 'rc-input, rc-textarea, rc-combobox, rc-select, .rc-field'
+const FIELD = ':is(rc-input > input, rc-textarea > textarea, rc-combobox > input, rc-select > select, ' +
+  '.rc-field > :is(input, textarea))'
 const INVALID = ':is(rc-input[invalid] > input, rc-textarea[invalid] > textarea, rc-combobox[invalid] > input, ' +
-  'rc-select[invalid] > select)'
+  'rc-select[invalid] > select, .rc-field[invalid] > :is(input, textarea))'
 
 css(`
 ${HOSTS} { vertical-align: middle; }
