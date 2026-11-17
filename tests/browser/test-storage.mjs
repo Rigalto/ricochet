@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Rigalto
 
-// tests/browser/test-storage.mjs — the IndexedDB storage adapter, with the real database of the browser
+// tests/browser/test-storage.mjs — the IndexedDB storage adapter and the local copy of DriveSheet, with the real database of the browser
 
 import {describe, assert} from '../kernel.mjs'
 import {IndexedDBAdapter} from '../../src/adapters/indexeddb.mjs'
@@ -81,4 +81,32 @@ await describe('session', async () => {
     session.get('test-history')[1].path === '#b')
   session.remove('test-history')
   assert('removed', sessionStorage.getItem('ricochet-session-test-history') === null && session.get('test-history', 0) === 0)
+})
+
+await describe('DriveSheet — the local copy in IndexedDB', async () => {
+  const {DriveSheet} = await import('../../src/adapters/drive-sheet.mjs')
+  const {PendingWrites} = await import('../../src/core/pending.mjs')
+  // a spreadsheet that exists, with two rows; offline afterwards
+  const account = {
+    connected: true,
+    request: async (url, {method = 'GET'} = {}) => {
+      if (url.includes('/drive/v3/files')) { return {files: [{id: 'x1'}]} }
+      if (method === 'GET') { return {values: [['id', 'Label'], ['a1', 'One'], ['a2', 'Two']]} }
+      return {}
+    }
+  }
+  const options = {account, path: ['App'], file: 'test', tab: 'rows', columns: ['id', 'Label'], key: 'id', name: 'ricochet-test-sheet',
+    registry: new PendingWrites(), uploadDelay: 60000}
+  const first = new DriveSheet(options)
+  await first.forget()
+  assert('nothing yet on this browser', await first.load() === null)
+  await first.pull()
+  account.connected = false
+  await first.put({id: 'a3', Label: 'Three'})
+  const second = new DriveSheet(options)
+  const rows = await second.load()
+  assert('another page: the rows and the change that waits, from IndexedDB', rows?.map(r => r.Label).join() === 'One,Two,Three' && second.pending.join() === 'a3')
+  await second.forget()
+  const third = new DriveSheet(options)
+  assert('forget: erased from IndexedDB', await third.load() === null)
 })

@@ -33,6 +33,7 @@ const REGISTRY = [
   {name: 'Spatial', file: './test-spatial.mjs'},
   {name: 'ObjectPool', file: './test-object-pool.mjs'},
   {name: 'DriveConfig', file: './test-drive-config.mjs'},
+  {name: 'DriveSheet', file: './test-drive-sheet.mjs'},
   {name: 'DocTool', file: './test-doc-tool.mjs'},
 ]
 

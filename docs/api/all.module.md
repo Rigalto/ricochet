@@ -1,6 +1,6 @@
 # all
 
-Module `all` · group `entry` · source [`src/utils/all.mjs`](../../src/utils/all.mjs)
+Module `all` · group `entry` · source [`src/ui/all.mjs`](../../src/ui/all.mjs)
 
 Every component of the interface, the theme and the icon set, from one import. An application that uses the
 components imports this module once, at startup: every `rc-*` tag is then defined before the interface is mounted,

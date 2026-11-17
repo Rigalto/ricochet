@@ -297,9 +297,9 @@ palettes and themes, the UI components `rc-*`, unit and browser tests.
 2. **Storage in Google Drive.** Done: the connection to the Google account of the user, without any server, and the
    requests to the APIs of Google with its token (`ricochet/adapters/google.mjs`,
    [demo/google.html](demo/google.html)); the configuration items in Drive, with a local copy in IndexedDB
-   (`ricochet/adapters/drive-config.mjs`). To come: a store of data
-   records (`data`, `data-field`), with IndexedDB as a cache and the changes made elsewhere taken back; adapters for
-   spreadsheets and Google Tasks.
+   (`ricochet/adapters/drive-config.mjs`); the tables kept in Google spreadsheets, with a local copy in IndexedDB
+   (`ricochet/adapters/drive-sheet.mjs`). To come: a store of data records (`data`, `data-field`), with the changes
+   made elsewhere taken back; an adapter for Google Tasks.
 
 The demos and the documentation are gathered on the home page,
 [rigalto.github.io/ricochet](https://rigalto.github.io/ricochet/).
