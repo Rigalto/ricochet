@@ -30,7 +30,7 @@
   </style>
 </head>
 <body>
-  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-combobox, rc-select, rc-tabs, rc-dropdown, rc-dialog, rc-slider, rc-breadcrumb, rc-month and rc-table</h1>
+  <h1>Ricochet — rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-combobox, rc-select, rc-image, rc-tabs, rc-dropdown, rc-dialog, rc-slider, rc-breadcrumb, rc-month and rc-table</h1>
   <div class="bar">
     <span>Theme of the page:</span>
     <rc-icon-button icon="computerclassic" data-item="ricochet-theme" data-value="system">system</rc-icon-button>
@@ -61,7 +61,9 @@
   <script type="module">
     // the kernel, and every component of the interface: the two entry points of Ricochet
     import {WComponent, WController, config, MemoryAdapter} from '../src/ricochet.mjs'
-    import {defineChecks, defineOptionSources, showAlert, showConfirm} from '../src/ui/all.mjs'
+    import {defineChecks, defineOptionSources, defineImageSources, showAlert, showConfirm} from '../src/ui/all.mjs'
+    import {markdownToHtml} from '../src/utils/markdown.mjs'
+    import {escapeHtml} from '../src/utils/dom.mjs'
 
     const block = (palette, shade) => `
       <div class="block" palette="${palette}" shade="${shade}">
@@ -124,6 +126,11 @@
           <rc-combobox options="Kitchen|Garden|Garage" commit="enter" placeholder="Room, then Enter" class="w12"
             data-event="demoCombo" data-param='{"field": "room"}'></rc-combobox>
           <rc-combobox value="locked" disabled class="w6"></rc-combobox>
+        </div>
+        <div class="row">
+          <rc-image source="demo" ref="Drive" alt="Drawn image" width="96" height="64"></rc-image>
+          <rc-image source="demo" ref="missing" alt="A missing image: its alt text"></rc-image>
+          <div>${MARKDOWN}</div>
         </div>
         <div class="row">
           <div class="rc-panel rc-shadow-2 rc-text-shadow" palette="module">rc-panel, rc-shadow-2, rc-text-shadow, palette="module"</div>
@@ -189,6 +196,25 @@
         <h2>scheme="${scheme}"</h2>
         ${block('header', 'light')}${block('view', 'light')}${block('view', 'deep')}${block('module', 'medium')}
       </section>`
+    // used by rc-image source="demo": an image drawn in a canvas, given as a Blob after a delay (as a file of Drive)
+    defineImageSources({
+      demo: ref => ref === 'missing' ? null : new Promise(resolve => setTimeout(() => {
+        const canvas = document.createElement('canvas')
+        Object.assign(canvas, {width: 96, height: 64})
+        const context = canvas.getContext('2d')
+        context.fillStyle = `hsl(${[...ref].reduce((sum, c) => sum + c.charCodeAt(0), 0) % 360} 60% 55%)`
+        context.fillRect(0, 0, 96, 64)
+        context.fillStyle = 'white'
+        context.font = 'bold 15px sans-serif'
+        context.fillText(ref, 8, 38)
+        canvas.toBlob(resolve)
+      }, 800))
+    })
+    // a Markdown text whose relative images become rc-image elements (the image option of markdownToHtml)
+    const MARKDOWN = markdownToHtml('Markdown: ![Plan|60](Plan) and ![Map|60](Map)', {
+      image: (src, alt, width) => src.includes(':') ? undefined :
+        `<rc-image source="demo" ref="${escapeHtml(src)}" alt="${escapeHtml(alt)}" width="${width ?? ''}"></rc-image>`
+    })
     const elSchemes = document.getElementById('schemes')
     elSchemes.innerHTML = column('day') + column('night')
 

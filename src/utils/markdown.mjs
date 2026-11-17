@@ -14,6 +14,7 @@
  *
  * element.innerHTML = markdownToHtml(text, {
  *   link: (href, html) => href.startsWith('#') ? `<a data-path="${href}">${html}</a>` : undefined,
+ *   image: (src, alt) => src.includes(':') ? undefined : `<rc-image source="files" ref="${escapeHtml(src)}" alt="${escapeHtml(alt)}"></rc-image>`,
  * })
  * ```
  *
@@ -49,11 +50,14 @@ const swatch = color => `<code>${color}</code><span class="rc-md-color" style="d
   `height: .8em; margin-left: .25em; border: 1px solid currentColor; border-radius: 50%; vertical-align: middle; ` +
   `background-color: ${color}"></span>`
 
-const image = (label, url) => {
-  const width = IMAGE_WIDTH.exec(label)
-  const alt = escapeHtml(unescapeMarkdown(width === null ? label : label.slice(0, width.index)))
-  const size = width === null ? '' : ` width="${width[1]}${width[2] === '%' ? '%' : ''}"`
-  return `<img src="${escapeHtml(url)}" alt="${alt}"${size}>`
+// an image: the hook `image` of the options, or an <img>
+const image = (label, url, options) => {
+  const match = IMAGE_WIDTH.exec(label)
+  const alt = unescapeMarkdown(match === null ? label : label.slice(0, match.index))
+  const width = match === null ? undefined : `${match[1]}${match[2] === '%' ? '%' : ''}`
+  const custom = options.image?.(url, alt, width)
+  if (custom !== undefined) { return custom }
+  return `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}"${width === undefined ? '' : ` width="${width}"`}>`
 }
 
 const inline = (text, options) => {
@@ -87,7 +91,7 @@ const inline = (text, options) => {
       if (!isSafeUrl(url)) {
         html += escapeHtml(m[0])
       } else if (bang === '!') {
-        html += image(label, url)
+        html += image(label, url, options)
       } else {
         const content = inline(label, options)
         const custom = options.link?.(url, content, unescapeMarkdown(label))
@@ -143,6 +147,10 @@ const alignment = cell => {
  * @param {object} [options] - Optional hooks.
  * @param {Function} [options.link] - Called as `link(href, html, text)` for every link. Return a string to replace the
  *   default `<a>` element, or `undefined` to keep it. `html` is the converted link text, `text` the plain one.
+ * @param {Function} [options.image] - Called as `image(src, alt, width)` for every image. Return a string to replace
+ *   the default `<img>` element, or `undefined` to keep it. `alt` is the plain text of the image; `width` is the
+ *   width written after `|` (`'100'`, `'50%'`), `undefined` when there is none. The values are not escaped: the hook
+ *   escapes what it writes in HTML. An image whose address has an unsafe scheme is never given to the hook.
  * @param {Function} [options.task] - Called as `task(done)` for every task list item. Returns the HTML of the box.
  *   Default: a disabled checkbox.
  * @returns {string} The HTML.

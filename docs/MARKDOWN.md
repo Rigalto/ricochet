@@ -83,6 +83,12 @@ A link whose target starts with `#` is an **application link**: `[Recipes](#cook
 show it as an ordinary link. The application decides what it means through the `link` option of `markdownToHtml()`
 (see `src/utils/markdown.mjs`), for instance to navigate to a universe, a brick or a card.
 
+## Application images
+
+An image whose address is a relative path, `![Plan|300](plan.png)`, is shown by other Markdown readers relative to
+the file. The application can decide where it comes from through the `image` option of `markdownToHtml()`, for
+instance to load it from Google Drive with an `rc-image` component.
+
 ## Differences from the former SweetHome syntax
 
 | Former syntax | Restricted Markdown |

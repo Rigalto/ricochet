@@ -17,6 +17,7 @@
  * | --- | --- |
  * | `theme`, `setTheme`, `THEME_ITEM`, `definedPalettes` | [theme](theme.module.md) |
  * | `RcIcon`, `iconPath` | [rc-icon](rc-icon.module.md) |
+ * | `RcImage`, `defineImageSources`, `forgetImages` | [rc-image](rc-image.module.md) |
  * | `iconset`, `iconcategory`, `iconsetList`, `iconsetCount`, `iconPrivate` | [iconset](iconset.module.md) |
  * | `RcIconButton`, `RcTextButton` | [rc-icon-button](rc-icon-button.module.md), [rc-text-button](rc-text-button.module.md) |
  * | `RcCheckbox`, `RcRadio`, `RcRadioGroup` | [rc-checkbox](rc-checkbox.module.md), [rc-radio](rc-radio.module.md) |
@@ -39,6 +40,7 @@
 
 export {theme, setTheme, THEME_ITEM, definedPalettes} from './theme.mjs'
 export {RcIcon, iconPath} from './rc-icon.mjs'
+export {RcImage, defineImageSources, forgetImages} from './rc-image.mjs'
 export {iconset, iconcategory, iconsetList, iconsetCount, iconPrivate} from '../icons/iconset.mjs'
 export {RcIconButton} from './rc-icon-button.mjs'
 export {RcTextButton} from './rc-text-button.mjs'

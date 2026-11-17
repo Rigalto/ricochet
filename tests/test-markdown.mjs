@@ -82,6 +82,23 @@ describe('Markdown — image width', () => {
   assert('link text untouched', md('[a|100](#x)') === p('<a href="#x">a|100</a>'))
 })
 
+describe('Markdown — image hook', () => {
+  const calls = []
+  const hook = (src, alt, width) => { calls.push([src, alt, width]); return src.startsWith('http') ? undefined : `<x>${src}</x>` }
+  assert('the hook replaces the image', md('![a](p.png)', {image: hook}) === p('<x>p.png</x>'))
+  assert('undefined keeps the <img>', md('![a](https://e.org/i.png)', {image: hook}) === p('<img src="https://e.org/i.png" alt="a">'))
+  calls.length = 0
+  md('![a \\*b\\* & c|50%](d/p.png) ![e](f.png)', {image: hook})
+  assert('the hook gets the plain alt, unescaped, and the width', calls[0][0] === 'd/p.png' && calls[0][1] === 'a *b* & c' && calls[0][2] === '50%')
+  assert('no width: undefined', calls[1][1] === 'e' && calls[1][2] === undefined)
+  calls.length = 0
+  md('![a|100px](p.png)', {image: hook})
+  assert('a width in px: the number', calls[0][2] === '100')
+  calls.length = 0
+  assert('an unsafe scheme: never given to the hook', md('![a](javascript:x)', {image: hook}) === p('![a](javascript:x)') && calls.length === 0)
+  assert('the link hook is not called for an image', md('![a](p.png)', {link: () => 'L'}) === p('<img src="p.png" alt="a">'))
+})
+
 describe('Markdown — formulas', () => {
   assert('kept as written', md('$$\\{x_1 * y\\}$$') === p('$$\\{x_1 * y\\}$$'))
   assert('escaped HTML inside', md('$$a<b$$') === p('$$a&lt;b$$'))

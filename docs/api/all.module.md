@@ -1,6 +1,6 @@
 # all
 
-Module `all` · group `entry` · source [`src/ui/all.mjs`](../../src/ui/all.mjs)
+Module `all` · group `entry` · source [`src/utils/all.mjs`](../../src/utils/all.mjs)
 
 Every component of the interface, the theme and the icon set, from one import. An application that uses the
 components imports this module once, at startup: every `rc-*` tag is then defined before the interface is mounted,
@@ -17,6 +17,7 @@ Importing a component alone (`ricochet/ui/rc-select.mjs`) stays possible: it imp
 | --- | --- |
 | `theme`, `setTheme`, `THEME_ITEM`, `definedPalettes` | [theme](theme.module.md) |
 | `RcIcon`, `iconPath` | [rc-icon](rc-icon.module.md) |
+| `RcImage`, `defineImageSources`, `forgetImages` | [rc-image](rc-image.module.md) |
 | `iconset`, `iconcategory`, `iconsetList`, `iconsetCount`, `iconPrivate` | [iconset](iconset.module.md) |
 | `RcIconButton`, `RcTextButton` | [rc-icon-button](rc-icon-button.module.md), [rc-text-button](rc-text-button.module.md) |
 | `RcCheckbox`, `RcRadio`, `RcRadioGroup` | [rc-checkbox](rc-checkbox.module.md), [rc-radio](rc-radio.module.md) |

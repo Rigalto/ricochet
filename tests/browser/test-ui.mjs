@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Rigalto
 
 // tests/browser/test-ui.mjs — open tests/browser/index.html in a browser
-// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-combobox, rc-tabs, rc-slider, rc-breadcrumb and the look of the tables.
+// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-combobox, rc-image, rc-tabs, rc-slider, rc-breadcrumb and the look of the tables.
 
 import {describe, assert, captureConsole, releaseConsole} from '../kernel.mjs'
 import {WComponent} from '../../src/core/w-component.mjs'
@@ -18,6 +18,8 @@ import {RcInput, defineChecks} from '../../src/ui/rc-input.mjs'
 import {RcTextarea} from '../../src/ui/rc-textarea.mjs'
 import {defineOptionSources, parseOptions} from '../../src/ui/rc-select.mjs'
 import {RcCombobox} from '../../src/ui/rc-combobox.mjs'
+import {defineImageSources, forgetImages} from '../../src/ui/rc-image.mjs'
+import {markdownToHtml} from '../../src/utils/markdown.mjs'
 import '../../src/ui/rc-tabs.mjs'
 import '../../src/ui/rc-slider.mjs'
 import '../../src/ui/rc-breadcrumb.mjs'
@@ -946,6 +948,91 @@ await describe('rc-combobox', async () => {
   assert('an unknown source: reported once, for a combobox and a select', lines.filter(l => l.includes('tuNothing')).length === 1)
   sandbox.innerHTML = ''
   await tick()
+})
+
+await describe('rc-image', async () => {
+  const created = []
+  const revoked = []
+  const create = URL.createObjectURL
+  const revoke = URL.revokeObjectURL
+  URL.createObjectURL = blob => { const url = create(blob); created.push(url); return url }
+  URL.revokeObjectURL = url => { revoked.push(url); revoke(url) }
+  const PIXEL = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='), c => c.charCodeAt(0))
+  const loads = []
+  const later = []
+  defineImageSources({
+    tuBlob: {load: (ref, element) => { loads.push(ref); return new Promise(resolve => later.push(() => resolve(new Blob([PIXEL], {type: 'image/png'})))) }},
+    tuNow: ref => { loads.push(ref); return new Blob([PIXEL], {type: 'image/png'}) },
+    tuUrl: ref => `data:image/png;base64,${ref}`,
+    tuNone: () => null,
+    tuFail: () => { throw new Error('tu') }
+  })
+  const flush = async () => { while (later.length > 0) { later.shift()() } await tick() }
+  sandbox.innerHTML = `
+    <rc-image id="a" source="tuBlob" ref="kitchen.png" alt="Kitchen" width="300" height="200"></rc-image>
+    <rc-image id="b" source="tuBlob" ref="kitchen.png"></rc-image>
+    <rc-image id="c" source="tuUrl" ref="iVBORw0KGgo=" width="50%"></rc-image>
+    <rc-image id="d" source="tuNone" ref="x" alt="No *image*"></rc-image>`
+  await tick()
+  assert('loading: the box, the requested size', $('#a').hasAttribute('loading') && !$('#a img') &&
+    $('#a').style.getPropertyValue('--rc-image-width') === '300px' && $('#a').style.getPropertyValue('--rc-image-height') === '200px')
+  assert('one request for two elements of the same image', loads.length === 1 && loads[0] === 'kitchen.png')
+  await flush()
+  const src = $('#a img')?.getAttribute('src') ?? ''
+  assert('a Blob: shown through a local address', src.startsWith('blob:') && created.includes(src) && !$('#a').hasAttribute('loading'))
+  assert('… shared by both elements', $('#b img').getAttribute('src') === src)
+  assert('alt and size on the image', $('#a img').alt === 'Kitchen' && $('#a img').getAttribute('width') === '300' && $('#a img').getAttribute('height') === '200')
+  assert('a string: the address itself', $('#c img').getAttribute('src') === 'data:image/png;base64,iVBORw0KGgo=')
+  assert('a percentage: the width of the element', $('#c').style.width === '50%' && $('#c img').style.width === '100%')
+  assert('null: failed, the alt text', $('#d').hasAttribute('failed') && $('#d span').textContent === 'No *image*' && !$('#d img'))
+  $('#d').setAttribute('alt', 'Missing')
+  assert('… the alt text follows its attribute', $('#d span').textContent === 'Missing')
+  captureConsole()
+  sandbox.insertAdjacentHTML('beforeend', `<rc-image id="e" source="tuFail" ref="x" alt="E"></rc-image>
+    <rc-image id="f" source="tuNothing" ref="x"></rc-image><rc-image id="g" source="tuNothing" ref="y"></rc-image>`)
+  await tick()
+  await tick()
+  const lines = releaseConsole()
+  assert('an error of the source: failed, reported', $('#e').hasAttribute('failed') && lines.some(l => l.includes("'tuFail' failed for 'x'")))
+  assert('an unknown source: failed, reported once', $('#f').hasAttribute('failed') && lines.filter(l => l.includes('tuNothing')).length === 1)
+  loads.length = 0
+  $('#b').setAttribute('ref', 'garden.png')
+  await tick()
+  assert('another ref: asked, the former image still shown by the other element', loads.join() === 'garden.png' && $('#a img').getAttribute('src') === src)
+  await flush()
+  const garden = $('#b img').getAttribute('src')
+  loads.length = 0
+  forgetImages('tuBlob', 'kitchen.png')
+  await tick()
+  assert('forgetImages: the address freed, the element asks again', revoked.includes(src) && loads.join() === 'kitchen.png' && !revoked.includes(garden))
+  await flush()
+  assert('… and shows the new image', $('#a img').getAttribute('src') !== src && $('#a img').getAttribute('src').startsWith('blob:'))
+  revoked.length = 0
+  sandbox.innerHTML = ''
+  await tick()
+  assert('elements gone: the addresses kept a while', revoked.length === 0)
+  loads.length = 0
+  sandbox.innerHTML = '<rc-image id="h" source="tuBlob" ref="garden.png"></rc-image>'
+  await tick()
+  assert('… an image shown again is not asked again', loads.length === 0 && $('#h img').getAttribute('src') === garden)
+  sandbox.innerHTML = Array.from({length: 33}, (_, i) => `<rc-image source="tuNow" ref="r${i}"></rc-image>`).join('')
+  await tick()
+  await tick()
+  sandbox.innerHTML = ''
+  await tick()
+  // unused: kitchen, the data: address, garden, then the 33 new ones: the 4 oldest are dropped, 3 of them Blobs
+  assert('beyond 32 unused images: the oldest freed', revoked.length === 3 && revoked.includes(garden))
+  sandbox.innerHTML = markdownToHtml('Plan: ![The plan|120](plan.png) and ![web](https://example.org/w.png)', {
+    image: (src, alt, width) => /^[a-z]+:/i.test(src) ? undefined : `<rc-image source="tuNow" ref="${src}" alt="${alt}" width="${width ?? ''}"></rc-image>`
+  })
+  await tick()
+  await tick()
+  assert('Markdown: a relative image becomes an rc-image, the others stay <img>', $('rc-image img')?.getAttribute('src').startsWith('blob:') &&
+    $('rc-image img').getAttribute('width') === '120' && $('rc-image').getAttribute('alt') === 'The plan' && $('p > img').getAttribute('src') === 'https://example.org/w.png')
+  sandbox.innerHTML = ''
+  await tick()
+  URL.createObjectURL = create
+  URL.revokeObjectURL = revoke
 })
 
 await describe('rc-tabs', async () => {
