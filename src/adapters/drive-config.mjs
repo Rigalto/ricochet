@@ -45,6 +45,9 @@
  *   connection.
  * - **Not connected, or token expired**: the changes wait in the local copy, and are copied into Drive at the next
  *   connection.
+ * - **Announced**: each reading of Drive (the first one of the page, and `pull()`) ends with `driveConfigPulled`,
+ *   once the store has the items of Drive (`ok: true`), or when Drive cannot be reached (`ok: false`). The application
+ *   that reads other data from Drive waits for it: its data are read with the settings of the user.
  * - **No permanent synchronization**: after the start, the changes made elsewhere are not taken back (until `pull()`,
  *   the « refresh » of the application); two tabs may keep different settings.
  *
@@ -61,6 +64,8 @@
  * @module drive-config
  * @category adapters
  * @listens googleConnected - The account is connected: the first reading of Drive, or the changes that wait.
+ * @fires {{ok: boolean}} driveConfigPulled - Drive was read (the first time in the page, or `pull()`), the store has its
+ *   items; `ok: false`: Drive could not be reached (tried again later).
  */
 
 import {bus} from '../core/bus.mjs'
@@ -216,14 +221,17 @@ export class DriveConfigAdapter {
     }
     clearTimeout(this.#timer)
     this.#timer = null
+    const reading = !this.#pulled // this synchronization reads Drive: announced when it ends
     this.#running = this.#synchronize()
       .then(() => {
         this.#failed = false
+        if (reading) { bus.emit('driveConfigPulled', {ok: true}) }
       })
       .catch(error => {
         this.#failed = true
         console.warn('DriveConfigAdapter: Drive cannot be reached, the changes wait', error.message)
         this.#later(this.#retryDelay)
+        if (reading) { bus.emit('driveConfigPulled', {ok: false}) }
       })
       .finally(() => {
         this.#running = null

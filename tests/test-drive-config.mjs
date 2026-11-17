@@ -196,3 +196,30 @@ await describe('DriveConfig — pull()', async () => {
   await adapter.pull()
   assert('pull: the changes of Drive come in again', store.get('theme') === 'night')
 })
+
+await describe('DriveConfig — driveConfigPulled', async () => {
+  const drive = new FakeDrive()
+  const {store, adapter} = make({drive})
+  const events = []
+  const listener = ({ok}) => events.push(`${ok}:${store.get('theme')}`)
+  bus.on('driveConfigPulled', listener)
+  await store.load()
+  await adapter.sync()
+  assert('the first reading of Drive announced', events.join() === 'true:system')
+  store.setItem('theme', 'day')
+  await store.save()
+  await adapter.sync()
+  assert('… not the sendings after it', events.length === 1)
+  const file = [...drive.files.values()].find(f => f.name === 'configuration.json')
+  file.content = JSON.stringify({theme: 'night'})
+  await adapter.pull()
+  assert('pull(): announced, once the store has the items of Drive', events.join() === 'true:system,true:night')
+  const request = drive.request.bind(drive)
+  drive.request = async () => { throw new Error('offline') }
+  captureConsole()
+  await adapter.pull()
+  releaseConsole()
+  assert('Drive unreachable: announced, ok false', events.at(-1) === 'false:night')
+  drive.request = request
+  bus.off('driveConfigPulled', listener)
+})

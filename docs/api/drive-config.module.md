@@ -45,6 +45,9 @@ Drive.
   connection.
 - **Not connected, or token expired**: the changes wait in the local copy, and are copied into Drive at the next
   connection.
+- **Announced**: each reading of Drive (the first one of the page, and `pull()`) ends with `driveConfigPulled`,
+  once the store has the items of Drive (`ok: true`), or when Drive cannot be reached (`ok: false`). The application
+  that reads other data from Drive waits for it: its data are read with the settings of the user.
 - **No permanent synchronization**: after the start, the changes made elsewhere are not taken back (until `pull()`,
   the « refresh » of the application); two tabs may keep different settings.
 
@@ -60,9 +63,10 @@ computer, the settings of the user must not stay). The store is then loaded agai
 
 ## Interface
 
-| Kind | Name | Direction | Description |
-| --- | --- | --- | --- |
-| event | `googleConnected` | in | The account is connected: the first reading of Drive, or the changes that wait. |
+| Kind | Name | Direction | Payload | Description |
+| --- | --- | --- | --- | --- |
+| event | `googleConnected` | in |  | The account is connected: the first reading of Drive, or the changes that wait. |
+| event | `driveConfigPulled` | out | `{ok: boolean}` | Drive was read (the first time in the page, or `pull()`), the store has its items; `ok: false`: Drive could not be reached (tried again later). |
 
 ## Exports
 
