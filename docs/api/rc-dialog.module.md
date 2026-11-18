@@ -30,6 +30,7 @@ the application. Removing `open` closes it, with the value `''`.
 | a click on an element with `data-close`, after the actions of that element | the value of `data-close` |
 | `Escape` | `cancel` |
 | a click outside the window, with `closedby="any"` | `cancel` |
+| none of these, with `closedby="none"`: only the application closes the window (removing `open`) | `''` |
 | `Enter`, when the focus is on no button nor field | the element with `default` is clicked |
 
 When it closes, the dialog runs its actions with the value: `data-event` emits the event with `value` added to the
@@ -51,6 +52,28 @@ showConfirm({title: 'Delete', message: 'The card will be deleted.', ok: 'Delete'
 // the event cardDelete is emitted with {id: 42, value: 'ok'} or {id: 42, value: 'cancel'}
 ```
 
+## Progress
+
+`showProgress()` shows a window that waits for a work (files sent, a long computation): a message and a bar,
+without buttons; the user cannot close it, nor use the page meanwhile (a button clicked twice, a form left). The
+application changes the message and the bar as the work goes, and closes the window at the end, success or failure:
+
+```js
+import {showProgress} from 'ricochet/ui/rc-dialog.mjs'
+
+const progress = showProgress({title: 'Sending', message: 'The files are sent to Google Drive.'})
+try {
+  for (const [index, file] of files.entries()) {
+    progress.update({message: `${file.name}…`, done: index, total: files.length})
+    await send(file)
+  }
+} finally {
+  progress.close()
+}
+```
+
+An alert or a confirmation shown meanwhile comes above it.
+
 ## Keyboard and look
 
 While the window is open, it alone receives the keys (see the `keyboard` module), and `Tab` stays inside it. The
@@ -64,6 +87,7 @@ window stands on `--rc-surface-raised`, with the shadow `--rc-elevation-3`; it k
 | `RcDialog` | class | The component of `<rc-dialog>`. |
 | `showAlert` | function | Shows a message, with one button. |
 | `showConfirm` | function | Asks a confirmation, with two buttons; the answer is an event. |
+| `showProgress` | function | Shows a window that waits for a work: a message and a bar, no buttons; neither `Escape` nor a click closes it, the application does (`close()`), at the end of the work, success or failure. One window at a time: a second call takes the window over. |
 
 ## Details
 
@@ -97,3 +121,20 @@ Asks a confirmation, with two buttons; the answer is an event.
 | `options.cancel` | string | `Cancel` | Label of the button that cancels. |
 | `options.event` | string |  | Event emitted when the window closes, with `value`: `ok` or `cancel`. |
 | `options.param` | object |  | Payload of the event. |
+
+### showProgress()
+
+Shows a window that waits for a work: a message and a bar, no buttons; neither `Escape` nor a click closes it, the
+application does (`close()`), at the end of the work, success or failure. One window at a time: a second call
+takes the window over.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `options` | object | The window. |
+| `options.title` | string | Title of the window. |
+| `options.message` | string | The message, as text. |
+| `options.done` | number | The steps done: with `total`, the bar shows them; without, the bar moves without end. |
+| `options.total` | number | The number of steps. |
+
+**Returns** `{update: function(object): void, close: function(): void}` `update({message, done, total})` changes
+  the message (when given) and the bar; `close()` closes the window.

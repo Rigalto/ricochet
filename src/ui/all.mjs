@@ -29,7 +29,7 @@
  * | `RcDropdown` | [rc-dropdown](rc-dropdown.module.md) |
  * | `RcBreadcrumb`, `RcCrumb` | [rc-breadcrumb](rc-breadcrumb.module.md) |
  * | `RcMonth` | [rc-month](rc-month.module.md) |
- * | `RcDialog`, `showAlert`, `showConfirm` | [rc-dialog](rc-dialog.module.md) |
+ * | `RcDialog`, `showAlert`, `showConfirm`, `showProgress` | [rc-dialog](rc-dialog.module.md) |
  * | `RcFloatingBar`, `RcFloatingGroup`, `RcFloatingButton` | [rc-floating](rc-floating.module.md) |
  *
  * The module also brings the look of the tables, the class `rc-table` (see [table-style](table-style.module.md)).
@@ -55,6 +55,6 @@ export {RcTabs, RcTab} from './rc-tabs.mjs'
 export {RcDropdown} from './rc-dropdown.mjs'
 export {RcBreadcrumb, RcCrumb} from './rc-breadcrumb.mjs'
 export {RcMonth} from './rc-month.mjs'
-export {RcDialog, showAlert, showConfirm} from './rc-dialog.mjs'
+export {RcDialog, showAlert, showConfirm, showProgress} from './rc-dialog.mjs'
 export {RcFloatingBar, RcFloatingGroup, RcFloatingButton} from './rc-floating.mjs'
 import './table-style.mjs'

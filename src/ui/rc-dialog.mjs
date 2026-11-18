@@ -30,6 +30,7 @@
  * | a click on an element with `data-close`, after the actions of that element | the value of `data-close` |
  * | `Escape` | `cancel` |
  * | a click outside the window, with `closedby="any"` | `cancel` |
+ * | none of these, with `closedby="none"`: only the application closes the window (removing `open`) | `''` |
  * | `Enter`, when the focus is on no button nor field | the element with `default` is clicked |
  *
  * When it closes, the dialog runs its actions with the value: `data-event` emits the event with `value` added to the
@@ -50,6 +51,28 @@
  * showConfirm({title: 'Delete', message: 'The card will be deleted.', ok: 'Delete', event: 'cardDelete', param: {id: 42}})
  * // the event cardDelete is emitted with {id: 42, value: 'ok'} or {id: 42, value: 'cancel'}
  * ```
+ *
+ * ## Progress
+ *
+ * `showProgress()` shows a window that waits for a work (files sent, a long computation): a message and a bar,
+ * without buttons; the user cannot close it, nor use the page meanwhile (a button clicked twice, a form left). The
+ * application changes the message and the bar as the work goes, and closes the window at the end, success or failure:
+ *
+ * ```js
+ * import {showProgress} from 'ricochet/ui/rc-dialog.mjs'
+ *
+ * const progress = showProgress({title: 'Sending', message: 'The files are sent to Google Drive.'})
+ * try {
+ *   for (const [index, file] of files.entries()) {
+ *     progress.update({message: `${file.name}…`, done: index, total: files.length})
+ *     await send(file)
+ *   }
+ * } finally {
+ *   progress.close()
+ * }
+ * ```
+ *
+ * An alert or a confirmation shown meanwhile comes above it.
  *
  * ## Keyboard and look
  *
@@ -90,6 +113,8 @@ rc-dialog > dialog > header:empty { display: none; }
 rc-dialog > dialog > div { padding: .75rem 1rem; }
 rc-dialog > dialog > div > p:first-child { margin-top: 0; }
 rc-dialog > dialog footer { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+rc-dialog#rc-progress > dialog { min-width: min(calc(100vw - 16px), 24rem); }
+rc-dialog#rc-progress progress { display: block; width: 100%; margin-top: .5rem; accent-color: var(--rc-accent); }
 `, {layer: 'ricochet'})
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -101,6 +126,7 @@ let count = 0
  * @attr {string} [label] - Title of the window.
  * @attr {string} [closedby] - `any`: a click outside the window closes it too, as `Escape` (the name and the value of
  *   the attribute of the native `<dialog>`); for a window of choices, not for a form that would lose its content.
+ *   `none`: neither `Escape` nor a click closes it, only the application (a window that waits for a work).
  * @attr {string} [data-item] - Configuration item set to the value when the window closes.
  * @attr {string} [data-*] - Other actions run when the window closes (see the `actions` module).
  */
@@ -141,7 +167,7 @@ export class RcDialog extends WComponent {
 
   dialogCancelled (e) {
     e.preventDefault()
-    this.#close('cancel')
+    if (this.element.getAttribute('closedby') !== 'none') { this.#close('cancel') }
   }
 
   /**
@@ -151,7 +177,7 @@ export class RcDialog extends WComponent {
   dialogKeyPressed ({id, key}) {
     if (id !== this.element.id) { return }
     if (key === 'Escape') {
-      this.#close('cancel')
+      if (this.element.getAttribute('closedby') !== 'none') { this.#close('cancel') }
     } else {
       const chosen = this.elDialog.querySelector('[default]')
       if (chosen !== null) { (chosen.querySelector('button') ?? chosen).click() }
@@ -257,3 +283,54 @@ export const showAlert = options => showMessage({...options, cancel: null})
  * @param {object} [options.param] - Payload of the event.
  */
 export const showConfirm = options => showMessage({cancel: 'Cancel', ...options})
+
+// ------------------------------------------------------------------ progress
+
+let progressShared = null
+
+// the window of showProgress(), created at the first call
+const progressDialog = () => {
+  if (progressShared === null || !progressShared.isConnected) {
+    progressShared = document.createElement('rc-dialog')
+    progressShared.id = 'rc-progress'
+    progressShared.setAttribute('closedby', 'none')
+    progressShared.innerHTML = '<p></p><progress></progress>'
+    document.body.append(progressShared)
+  }
+  return progressShared
+}
+
+/**
+ * Shows a window that waits for a work: a message and a bar, no buttons; neither `Escape` nor a click closes it, the
+ * application does (`close()`), at the end of the work, success or failure. One window at a time: a second call
+ * takes the window over.
+ * @param {object} [options] - The window.
+ * @param {string} [options.title] - Title of the window.
+ * @param {string} [options.message] - The message, as text.
+ * @param {number} [options.done] - The steps done: with `total`, the bar shows them; without, the bar moves
+ *   without end.
+ * @param {number} [options.total] - The number of steps.
+ * @returns {{update: function(object): void, close: function(): void}} `update({message, done, total})` changes
+ *   the message (when given) and the bar; `close()` closes the window.
+ */
+export const showProgress = ({title = '', message = '', done, total} = {}) => {
+  const element = progressDialog()
+  const text = element.querySelector('p')
+  const bar = element.querySelector('progress')
+  const update = ({message, done, total} = {}) => {
+    if (message !== undefined) { text.textContent = message }
+    if (Number.isFinite(total) && total > 0 && Number.isFinite(done)) {
+      bar.max = total
+      bar.value = Math.min(Math.max(done, 0), total)
+    } else {
+      bar.removeAttribute('value') // a bar without value moves without end
+    }
+  }
+  element.setAttribute('label', title)
+  update({message, done, total})
+  element.setAttribute('open', '')
+  return {
+    update,
+    close: () => { if (progressShared === element) { element.removeAttribute('open') } }
+  }
+}

@@ -9,7 +9,7 @@ import {WComponent} from '../../src/core/w-component.mjs'
 import {bus} from '../../src/core/bus.mjs'
 import {keyboard} from '../../src/core/keyboard.mjs'
 import {RcDropdown} from '../../src/ui/rc-dropdown.mjs'
-import {showAlert, showConfirm} from '../../src/ui/rc-dialog.mjs'
+import {showAlert, showConfirm, showProgress} from '../../src/ui/rc-dialog.mjs'
 import '../../src/ui/rc-checkbox.mjs'
 import '../../src/ui/rc-floating.mjs'
 
@@ -263,6 +263,30 @@ await describe('rc-dialog', async () => {
   key('Escape')
   assert('… no event when none is given', got.length === 1 && !shared.querySelector('dialog').open && keyboard.layers === 0)
   shared.remove()
+  await tick()
+  const progress = showProgress({title: 'Sending', message: 'The files are sent.'})
+  const progressWindow = $('#rc-progress')
+  const bar = () => progressWindow.querySelector('progress')
+  assert('showProgress: a progressWindow with the message, a bar without end, no buttons', progressWindow.querySelector('dialog').open &&
+    progressWindow.querySelector('header').textContent === 'Sending' && progressWindow.querySelector('p').textContent === 'The files are sent.' &&
+    !bar().hasAttribute('value') && progressWindow.querySelector('rc-text-button, button') === null)
+  key('Escape')
+  outside(progressWindow.querySelector('dialog'), 2, 2)
+  assert('… neither Escape nor a click closes it (closedby="none")', progressWindow.querySelector('dialog').open && keyboard.layers === 1)
+  progress.update({message: 'plan.png', done: 1, total: 3})
+  assert('update: the message, the bar', progressWindow.querySelector('p').textContent === 'plan.png' && bar().value === 1 && bar().max === 3)
+  progress.update({done: 5, total: 3})
+  assert('… the bar kept within its steps, the message kept', bar().value === 3 && progressWindow.querySelector('p').textContent === 'plan.png')
+  progress.update({})
+  assert('… without steps, a bar without end again', !bar().hasAttribute('value'))
+  showAlert({message: 'Failed.'})
+  assert('an alert meanwhile comes above it', $('#rc-message dialog').open && progressWindow.querySelector('dialog').open && keyboard.layers === 2)
+  key('Escape')
+  assert('… and closes, the progressWindow of progress stays', !$('#rc-message dialog').open && progressWindow.querySelector('dialog').open)
+  progress.close()
+  assert('close: the progressWindow closed, the keyboard given back', !progressWindow.querySelector('dialog').open && keyboard.layers === 0)
+  $('#rc-message').remove()
+  progressWindow.remove()
   await tick()
 })
 
