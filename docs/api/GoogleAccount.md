@@ -97,6 +97,6 @@ Sends a request to an API of Google, with the token, and logs it.
 | `options.body` | * | An object or an array is sent as JSON; a string, a `Blob` or a `FormData` as it is. |
 | `options.headers` | Object<string, string> | More headers. |
 | `options.source` | string | The source in the log of the requests (default `google`). |
-| `options.answer` | string | How the answer is read: `json` (default; `null` for an empty answer), `text`, `blob`. |
+| `options.answer` | string | How the answer is read: `json` (default; `null` for an empty answer), `text`, `blob`, or `response` (the `Response` itself, unread: its headers, for instance). |
 
 **Returns** `Promise<*>` The answer.

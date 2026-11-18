@@ -95,6 +95,8 @@ await describe('Google — requests', async () => {
   const empty = await account.request('https://www.googleapis.com/upload', {method: 'PATCH', body: {title: 'x'}})
   assert('an object sent as JSON; an empty answer: null', empty === null && calls[0].init.body === '{"title":"x"}' &&
     calls[0].init.headers['Content-Type'] === 'application/json' && $global.logs.ajax[0].body === '{"title":"x"}')
+  const response = await account.request('https://www.googleapis.com/upload', {method: 'POST', answer: 'response'})
+  assert('answer: response gives the response itself, unread', response.status === 204 && typeof response.text === 'function')
   let error = null
   try { await account.request('https://www.googleapis.com/fail') } catch (e) { error = e }
   assert('an error: GoogleError with the status and the message of Google', error instanceof GoogleError && error.status === 403 &&

@@ -272,7 +272,7 @@ export class GoogleAccount {
    * @param {Object<string, string>} [options.headers] - More headers.
    * @param {string} [options.source] - The source in the log of the requests (default `google`).
    * @param {string} [options.answer] - How the answer is read: `json` (default; `null` for an empty answer), `text`,
-   *   `blob`.
+   *   `blob`, or `response` (the `Response` itself, unread: its headers, for instance).
    * @returns {Promise<*>} The answer.
    */
   async request (url, {method = 'GET', query = null, body, headers = {}, source = 'google', answer = 'json'} = {}, retried = false) {
@@ -304,6 +304,7 @@ export class GoogleAccount {
     }
     if (answer === 'text') { return response.text() }
     if (answer === 'blob') { return response.blob() }
+    if (answer === 'response') { return response }
     const text = await response.text()
     return text === '' ? null : JSON.parse(text)
   }

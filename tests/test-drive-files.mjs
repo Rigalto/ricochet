@@ -1,0 +1,172 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Rigalto
+
+// tests/test-drive-files.mjs — node tests/run.mjs DriveFiles
+// The files of an application in folders of Drive (adapters/drive-files.mjs), with a fake Drive and a fake account:
+// the folders found or created, the lists kept, the sending (one request, or two for a large file), the replacement,
+// the copy, the reading, the source of images, forget().
+
+import {describe, assert} from './kernel.mjs'
+import {DriveFiles} from '../src/adapters/drive-files.mjs'
+import {pendingWrites} from '../src/core/pending.mjs'
+import {bus} from '../src/core/bus.mjs'
+
+const FOLDER = 'application/vnd.google-apps.folder'
+
+// Drive: folders and files, the requests of DriveFiles
+class FakeDrive {
+  files = new Map() // id → {name, mimeType, parents, content, trashed}
+  calls = []
+  #next = 1
+
+  add (file) {
+    const id = `${file.mimeType === FOLDER ? 'd' : 'f'}${this.#next++}`
+    this.files.set(id, {parents: [], trashed: false, ...file})
+    return id
+  }
+
+  async request (url, {method = 'GET', query = {}, body, headers = {}, answer = 'json'} = {}) {
+    const path = url.replace(/^https:\/\/[^/]+/, '')
+    this.calls.push(`${method} ${path}${query.uploadType ? ` ${query.uploadType}` : ''}${query.alt ? ` ${query.alt}` : ''}`)
+    if (path === '/drive/v3/files' && method === 'GET') {
+      const q = query.q
+      const inParent = /'([^']+)' in parents/.exec(q)?.[1]
+      const name = /name = '((?:[^'\\]|\\.)*)'/.exec(q)?.[1]?.replaceAll("\\'", "'")
+      const wantsFolder = q.includes(`mimeType = '${FOLDER}'`)
+      const found = [...this.files].filter(([, f]) => !f.trashed && (name === undefined || f.name === name) &&
+        (wantsFolder ? f.mimeType === FOLDER : f.mimeType !== FOLDER) && (inParent === undefined || f.parents.includes(inParent)))
+      return {files: found.map(([id, f]) => ({id, name: f.name, mimeType: f.mimeType, size: String(f.content?.length ?? 0)}))}
+    }
+    if (path === '/drive/v3/files' && method === 'POST') { return {id: this.add({...body})} }
+    const copy = /^\/drive\/v3\/files\/([^/]+)\/copy$/.exec(path)
+    if (copy !== null) {
+      const source = this.files.get(copy[1])
+      const id = this.add({...source, ...body})
+      return {id, name: body.name, mimeType: source.mimeType, size: String(source.content.length)}
+    }
+    const media = /^\/drive\/v3\/files\/([^/]+)$/.exec(path)
+    if (media !== null && query.alt === 'media') { return new Blob([this.files.get(media[1]).content]) }
+    if (path === '/upload/drive/v3/files' && query.uploadType === 'multipart') {
+      const text = await body.text()
+      const boundary = /boundary=(.+)$/.exec(headers['Content-Type'])[1]
+      const [meta, content] = text.split(`--${boundary}`).slice(1, 3).map(part => part.split('\r\n\r\n').slice(1).join('\r\n\r\n').replace(/\r\n$/, ''))
+      const metadata = JSON.parse(meta)
+      const id = this.add({...metadata, content})
+      return {id, name: metadata.name, mimeType: metadata.mimeType, size: String(content.length)}
+    }
+    if (query.uploadType === 'resumable') {
+      this.lastResumable = {method, body, headers}
+      const target = /\/upload\/drive\/v3\/files\/?(.*)$/.exec(path)[1]
+      const location = `https://upload.example/session/${target || 'new'}/${encodeURIComponent(JSON.stringify(body))}`
+      return answer === 'response' ? {status: 200, headers: {get: header => header === 'Location' ? location : null}} : null
+    }
+    if (path.startsWith('/session/') && method === 'PUT') {
+      const [, target, meta] = /^\/session\/([^/]+)\/(.*)$/.exec(path)
+      const content = await body.text()
+      if (target === 'new') {
+        const metadata = JSON.parse(decodeURIComponent(meta))
+        const id = this.add({...metadata, content})
+        return {id, name: metadata.name, mimeType: metadata.mimeType, size: String(content.length)}
+      }
+      const file = this.files.get(target)
+      file.content = content
+      return {id: target, name: file.name, mimeType: file.mimeType, size: String(content.length)}
+    }
+    const replace = /^\/upload\/drive\/v3\/files\/([^/]+)$/.exec(path)
+    if (replace !== null && query.uploadType === 'media') {
+      const file = this.files.get(replace[1])
+      file.content = await body.text()
+      file.mimeType = headers['Content-Type']
+      return {id: replace[1], name: file.name, mimeType: file.mimeType, size: String(file.content.length)}
+    }
+    throw new Error(`unexpected ${method} ${path}`)
+  }
+
+  // the file at a path of names
+  at (...names) {
+    let parent = null
+    let found = null
+    for (const name of names) {
+      found = [...this.files].find(([, f]) => f.name === name && !f.trashed && (parent === null || f.parents.includes(parent)))
+      if (found === undefined) { return null }
+      parent = found[0]
+    }
+    return found[1]
+  }
+}
+
+const reports = []
+bus.on('pendingChanged', ({sources}) => { if (sources['drive files'] !== undefined) { reports.push(sources['drive files'].count) } })
+
+await describe('DriveFiles — folders and lists', async () => {
+  const drive = new FakeDrive()
+  const files = new DriveFiles({account: drive, root: ['App', 'data']})
+  assert('a missing folder: null, nothing created', await files.folder('notes/n1') === null && drive.files.size === 0)
+  assert('the list of a missing folder: empty', (await files.list('notes/n1')).length === 0)
+  assert('find in a missing folder: null', await files.find('notes/n1', 'a.png') === null)
+  const app = drive.add({name: 'App', mimeType: FOLDER})
+  const data = drive.add({name: 'data', mimeType: FOLDER, parents: [app]})
+  const notes = drive.add({name: 'notes', mimeType: FOLDER, parents: [data]})
+  const n1 = drive.add({name: 'n1', mimeType: FOLDER, parents: [notes]})
+  drive.add({name: 'b.pdf', mimeType: 'application/pdf', parents: [n1], content: 'pdf'})
+  drive.add({name: 'a.png', mimeType: 'image/png', parents: [n1], content: 'png'})
+  drive.add({name: 'old.png', mimeType: 'image/png', parents: [n1], content: 'x', trashed: true})
+  drive.add({name: 'sub', mimeType: FOLDER, parents: [n1]})
+  files.forget()
+  const list = await files.list('notes/n1')
+  assert('the files of a folder, sorted by name, without its folders nor the trash',
+    list.map(f => f.name).join() === 'a.png,b.pdf' && list[0].mimeType === 'image/png' && list[0].size === 3)
+  drive.calls.length = 0
+  const found = await files.find('notes/n1', 'b.pdf')
+  assert('find: from the list kept, no request', found.name === 'b.pdf' && drive.calls.length === 0)
+  assert('the identifier of a folder', await files.folder('notes/n1') === n1 && await files.folder('') === data)
+  files.forget()
+  await files.find('notes/n1', 'b.pdf')
+  assert('forget(): Drive is read again', drive.calls.length === 5)
+})
+
+await describe('DriveFiles — sending, replacing, copying, reading', async () => {
+  const drive = new FakeDrive()
+  const files = new DriveFiles({account: drive, root: ['App', 'data']})
+  reports.length = 0
+  const file = await files.upload('notes/n2', new File(['hello'], 'hello.txt', {type: 'text/plain'}))
+  assert('upload: the missing folders created', drive.at('App', 'data', 'notes', 'n2') !== null)
+  assert('… the file in one request (multipart), with its name and type', drive.at('App', 'data', 'notes', 'n2', 'hello.txt')?.content === 'hello' &&
+    file.name === 'hello.txt' && file.mimeType === 'text/plain' && file.size === 5 && drive.calls.filter(c => c.includes('multipart')).length === 1)
+  assert('… counted in pendingWrites while it is sent', reports.join() === '1,0')
+  drive.calls.length = 0
+  assert('… then found without request', (await files.find('notes/n2', 'hello.txt')).id === file.id && drive.calls.length === 0)
+  const again = await files.upload('notes/n2', new Blob(['bonjour'], {type: 'text/plain'}), {name: 'hello.txt'})
+  assert('the same name: the content replaced, the identifier kept', again.id === file.id &&
+    drive.at('App', 'data', 'notes', 'n2', 'hello.txt').content === 'bonjour' && drive.calls.at(-1) === `PATCH /upload/drive/v3/files/${file.id} media`)
+  const big = 'x'.repeat(5 * 1024 * 1024 + 1)
+  const large = await files.upload('notes/n2', new Blob([big], {type: 'model/stl'}), {name: 'part.stl'})
+  assert('a large file: two requests (resumable), its size announced', drive.calls.slice(-2).join() ===
+    'POST /upload/drive/v3/files resumable,PUT /session/new/' + encodeURIComponent(JSON.stringify({name: 'part.stl', mimeType: 'model/stl', parents: [await files.folder('notes/n2')]})) &&
+    drive.lastResumable.headers['X-Upload-Content-Length'] === String(big.length) && large.size === big.length)
+  await files.upload('notes/n2', new Blob([big + 'y'], {type: 'model/stl'}), {name: 'part.stl'})
+  assert('… replaced in two requests too', drive.lastResumable.method === 'PATCH' && drive.at('App', 'data', 'notes', 'n2', 'part.stl').content.length === big.length + 1)
+  let error = null
+  try { await files.upload('notes/n2', new Blob(['x'])) } catch (e) { error = e }
+  assert('a Blob without name: refused', error?.message.includes('invalid file name'))
+  const copy = await files.copy(file, 'notes/n3')
+  assert('copy: into a new folder, with its name', drive.at('App', 'data', 'notes', 'n3', 'hello.txt')?.content === 'bonjour' && copy.name === 'hello.txt')
+  drive.calls.length = 0
+  const kept = await files.copy(file, 'notes/n3')
+  assert('… a file of the same name there is kept', kept.id === copy.id && drive.calls.length === 0)
+  const blob = await files.read(file)
+  assert('read: the content', await blob.text() === 'bonjour' && drive.calls.at(-1) === `GET /drive/v3/files/${file.id} media`)
+  assert('the address in the viewer of Drive', files.viewerUrl(file) === `https://drive.google.com/file/d/${file.id}/view`)
+})
+
+await describe('DriveFiles — folders sent at the same time, source of images', async () => {
+  const drive = new FakeDrive()
+  const files = new DriveFiles({account: drive, root: ['App']})
+  await Promise.all(['a.png', 'b.png', 'c.png'].map(name => files.upload('cards/c1', new File(['img'], name, {type: 'image/png'}))))
+  const folders = [...drive.files.values()].filter(f => f.mimeType === FOLDER)
+  assert('three files sent together: each folder created once', folders.map(f => f.name).join() === 'App,cards,c1')
+  const source = files.imageSource()
+  const image = await source.load('cards/c1/b.png')
+  assert('the source of images: the content of the file', await image.text() === 'img')
+  assert('… a missing file: null', await source.load('cards/c1/none.png') === null && await source.load('cards/none/a.png') === null)
+})
