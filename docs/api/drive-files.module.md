@@ -28,7 +28,8 @@ creates the missing ones.
 
 A name is unique in a folder: `upload()` replaces the content of a file of the same name (it keeps its identifier,
 so that its links in Drive still work). The application asks the user before, if needed (`find()`). A file put in
-the trash by the user is no longer seen.
+the trash is no longer seen: by the user in Drive, or by `remove()` (a file) and `trash()` (a folder and all it
+holds, the files of the user included); Drive keeps them in its trash for 30 days.
 
 ## Memory
 

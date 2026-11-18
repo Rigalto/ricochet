@@ -23,6 +23,8 @@ element.innerHTML = markdownToHtml(text, {
 | Name | Kind | Description |
 | --- | --- | --- |
 | `markdownToHtml` | function | Converts a Ricochet Markdown text to HTML. |
+| `markdownToText` | function | The text that a reader sees of a Markdown text, without its marks: for counting words, indexing for a search, or a short preview. The text of a link is kept, not its address; the alternative text of an image (without its width), not its address; the content of a code; the lines of a table, cells separated by spaces. Icons (`:name:`), colors (`` `#C04F21` ``), formulas (`$$…$$`), separators and the markers of headings, quotes, lists and tasks are removed. One line of text per line of the source, the empty ones dropped. |
+| `markdownTargets` | function | The addresses of the links and the images of a Markdown text, in their order, without duplicates: for checking or rewriting the links of a text. An escaped bracket (`\[`) does not start a link. |
 
 ## Details
 
@@ -39,3 +41,33 @@ Converts a Ricochet Markdown text to HTML.
 | `options.task` | Function | Called as `task(done)` for every task list item. Returns the HTML of the box. Default: a disabled checkbox. |
 
 **Returns** `string` The HTML.
+
+### markdownToText()
+
+The text that a reader sees of a Markdown text, without its marks: for counting words, indexing for a search, or a
+short preview. The text of a link is kept, not its address; the alternative text of an image (without its width),
+not its address; the content of a code; the lines of a table, cells separated by spaces. Icons (`:name:`), colors
+(`` `#C04F21` ``), formulas (`$$…$$`), separators and the markers of headings, quotes, lists and tasks are
+removed. One line of text per line of the source, the empty ones dropped.
+
+```javascript
+markdownToText('# Plan\n\nThe **new** [kitchen](#prg/not) :save: ![Plan|50%](plan.png)')
+// 'Plan\nThe new kitchen Plan'
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `source` | string | The Markdown text. |
+
+**Returns** `string` The text.
+
+### markdownTargets()
+
+The addresses of the links and the images of a Markdown text, in their order, without duplicates: for checking or
+rewriting the links of a text. An escaped bracket (`\[`) does not start a link.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `source` | string | The Markdown text. |
+
+**Returns** `string[]` The addresses (`#path`, `https://…`, `plan.png`…).

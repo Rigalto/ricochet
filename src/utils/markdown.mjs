@@ -357,3 +357,65 @@ export const markdownToHtml = (source, options = {}) => {
   closeAll()
   return html.join('\n')
 }
+
+// an escaped character (\*, \[ …) moved out of the way of the patterns, then put back
+const hideEscapes = text => text.replace(/\\([\\`*_{}[\]()#+\-.!|:=$~>])/g, (all, c) => String.fromCharCode(0xE000 + c.charCodeAt(0)))
+const showEscapes = text => text.replace(/[-]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xE000))
+
+/**
+ * The text that a reader sees of a Markdown text, without its marks: for counting words, indexing for a search, or a
+ * short preview. The text of a link is kept, not its address; the alternative text of an image (without its width),
+ * not its address; the content of a code; the lines of a table, cells separated by spaces. Icons (`:name:`), colors
+ * (`` `#C04F21` ``), formulas (`$$…$$`), separators and the markers of headings, quotes, lists and tasks are
+ * removed. One line of text per line of the source, the empty ones dropped.
+ *
+ * ```javascript
+ * markdownToText('# Plan\n\nThe **new** [kitchen](#prg/not) :save: ![Plan|50%](plan.png)')
+ * // 'Plan\nThe new kitchen Plan'
+ * ```
+ *
+ * @param {string} source - The Markdown text.
+ * @returns {string} The text.
+ */
+export const markdownToText = source => {
+  let text = hideEscapes(String(source ?? '').replace(/\r\n?/g, '\n'))
+  text = text.replace(/\$\$[\s\S]*?\$\$/g, ' ') // formulas, even over several lines
+  const lines = []
+  for (let line of text.split('\n')) {
+    if (/^\s*```/.test(line)) { continue } // the fences of a code block (its lines are kept)
+    if (/^\s*(?:-{3,}|\*{3,})\s*$/.test(line)) { continue } // separator
+    if (/^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(line)) { continue } // alignment line of a table
+    line = line
+      .replace(/^\s*(?:>\s?)+/, '') // quote
+      .replace(/^\s*#{1,6}\s+/, '') // heading
+      .replace(/^\s*(?:[-*]|\d+\.)\s+(?:\[[ xX]\]\s+)?/, '') // list item, task
+      .replace(/!\[([^\]]*)\]\([^)\s]*\)/g, (all, alt) => alt.replace(/\|\s*\d+(?:px|%)?\s*$/, '')) // image
+      .replace(/\[([^\]]*)\]\([^)\s]*\)/g, '$1') // link
+      .replace(/`#(?:[0-9a-fA-F]{3}){1,2}`/g, ' ') // color
+      .replace(/`([^`]*)`/g, '$1') // code
+      .replace(/(^|[^\w:]):[a-z]+:(?![\w:])/g, '$1') // icon
+      // marks, by pairs (C++11, i++, a==b stay)
+      .replace(/\*\*(?=\S)(.+?)(?<=\S)\*\*/g, '$1')
+      .replace(/~~(?=\S)(.+?)(?<=\S)~~/g, '$1')
+      .replace(/(?<![\w=])==(?=\S)(.+?)(?<=\S)==(?![\w=])/g, '$1')
+      .replace(/(?<![\w+])\+\+(?=\S)(.+?)(?<=\S)\+\+(?![\w+])/g, '$1')
+      .replace(/(?<![\w*])\*(?=\S)(.+?)(?<=\S)\*(?![\w*])/g, '$1') // italic
+      .replace(/\|/g, ' ') // cells
+      .replace(/\\$/, '') // hard line break
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (line !== '') { lines.push(showEscapes(line)) }
+  }
+  return lines.join('\n')
+}
+
+/**
+ * The addresses of the links and the images of a Markdown text, in their order, without duplicates: for checking or
+ * rewriting the links of a text. An escaped bracket (`\[`) does not start a link.
+ * @param {string} source - The Markdown text.
+ * @returns {string[]} The addresses (`#path`, `https://…`, `plan.png`…).
+ */
+export const markdownTargets = source => {
+  const text = hideEscapes(String(source ?? '')).replace(/\$\$[\s\S]*?\$\$/g, ' ')
+  return [...new Set([...text.matchAll(/!?\[[^\]]*\]\(([^)\s]+)\)/g)].map(match => showEscapes(match[1])))]
+}

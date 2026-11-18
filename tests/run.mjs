@@ -24,6 +24,7 @@ const REGISTRY = [
   {name: 'SvgPath', file: './test-svg-path.mjs'},
   {name: 'Utils', file: './test-utils.mjs'},
   {name: 'Markdown', file: './test-markdown.mjs'},
+  {name: 'Search', file: './test-search.mjs'},
   {name: 'Debug', file: './test-debug.mjs'},
   {name: 'Requests', file: './test-requests.mjs'},
   {name: 'Google', file: './test-google.mjs'},

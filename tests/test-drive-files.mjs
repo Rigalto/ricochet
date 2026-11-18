@@ -13,6 +13,14 @@ import {bus} from '../src/core/bus.mjs'
 
 const FOLDER = 'application/vnd.google-apps.folder'
 
+// a File: Node before 20 has none (a Blob with a name is enough for DriveFiles)
+const TestFile = globalThis.File ?? class extends Blob {
+  constructor (parts, name, options) {
+    super(parts, options)
+    this.name = name
+  }
+}
+
 // Drive: folders and files, the requests of DriveFiles
 class FakeDrive {
   files = new Map() // id → {name, mimeType, parents, content, trashed}
@@ -33,7 +41,7 @@ class FakeDrive {
       const inParent = /'([^']+)' in parents/.exec(q)?.[1]
       const name = /name = '((?:[^'\\]|\\.)*)'/.exec(q)?.[1]?.replaceAll("\\'", "'")
       const wantsFolder = q.includes(`mimeType = '${FOLDER}'`)
-      const found = [...this.files].filter(([, f]) => !f.trashed && (name === undefined || f.name === name) &&
+      const found = [...this.files].filter(([id, f]) => !this.inTrash(id) && (name === undefined || f.name === name) &&
         (wantsFolder ? f.mimeType === FOLDER : f.mimeType !== FOLDER) && (inParent === undefined || f.parents.includes(inParent)))
       return {files: found.map(([id, f]) => ({id, name: f.name, mimeType: f.mimeType, size: String(f.content?.length ?? 0)}))}
     }
@@ -46,6 +54,10 @@ class FakeDrive {
     }
     const media = /^\/drive\/v3\/files\/([^/]+)$/.exec(path)
     if (media !== null && query.alt === 'media') { return new Blob([this.files.get(media[1]).content]) }
+    if (media !== null && method === 'PATCH') {
+      Object.assign(this.files.get(media[1]), body)
+      return {id: media[1]}
+    }
     if (path === '/upload/drive/v3/files' && query.uploadType === 'multipart') {
       const text = await body.text()
       const boundary = /boundary=(.+)$/.exec(headers['Content-Type'])[1]
@@ -80,6 +92,12 @@ class FakeDrive {
       return {id: replace[1], name: file.name, mimeType: file.mimeType, size: String(file.content.length)}
     }
     throw new Error(`unexpected ${method} ${path}`)
+  }
+
+  // in the trash: the file, or one of its folders (Drive puts the content of a folder in the trash with it)
+  inTrash (id) {
+    const file = this.files.get(id)
+    return file.trashed || file.parents.some(parent => this.inTrash(parent))
   }
 
   // the file at a path of names
@@ -129,7 +147,7 @@ await describe('DriveFiles — sending, replacing, copying, reading', async () =
   const drive = new FakeDrive()
   const files = new DriveFiles({account: drive, root: ['App', 'data']})
   reports.length = 0
-  const file = await files.upload('notes/n2', new File(['hello'], 'hello.txt', {type: 'text/plain'}))
+  const file = await files.upload('notes/n2', new TestFile(['hello'], 'hello.txt', {type: 'text/plain'}))
   assert('upload: the missing folders created', drive.at('App', 'data', 'notes', 'n2') !== null)
   assert('… the file in one request (multipart), with its name and type', drive.at('App', 'data', 'notes', 'n2', 'hello.txt')?.content === 'hello' &&
     file.name === 'hello.txt' && file.mimeType === 'text/plain' && file.size === 5 && drive.calls.filter(c => c.includes('multipart')).length === 1)
@@ -162,11 +180,33 @@ await describe('DriveFiles — sending, replacing, copying, reading', async () =
 await describe('DriveFiles — folders sent at the same time, source of images', async () => {
   const drive = new FakeDrive()
   const files = new DriveFiles({account: drive, root: ['App']})
-  await Promise.all(['a.png', 'b.png', 'c.png'].map(name => files.upload('cards/c1', new File(['img'], name, {type: 'image/png'}))))
+  await Promise.all(['a.png', 'b.png', 'c.png'].map(name => files.upload('cards/c1', new TestFile(['img'], name, {type: 'image/png'}))))
   const folders = [...drive.files.values()].filter(f => f.mimeType === FOLDER)
   assert('three files sent together: each folder created once', folders.map(f => f.name).join() === 'App,cards,c1')
   const source = files.imageSource()
   const image = await source.load('cards/c1/b.png')
   assert('the source of images: the content of the file', await image.text() === 'img')
   assert('… a missing file: null', await source.load('cards/c1/none.png') === null && await source.load('cards/none/a.png') === null)
+})
+
+await describe('DriveFiles — the trash', async () => {
+  const drive = new FakeDrive()
+  const files = new DriveFiles({account: drive, root: ['App', 'data']})
+  const a = await files.upload('notes/n5', new TestFile(['a'], 'a.txt'))
+  await files.upload('notes/n5', new TestFile(['b'], 'b.txt'))
+  await files.upload('notes/n5/sub', new TestFile(['c'], 'c.txt'))
+  await files.remove(a)
+  assert('remove: the file in the trash, no longer listed', drive.at('App', 'data', 'notes', 'n5', 'a.txt') === null &&
+    [...drive.files.values()].find(f => f.name === 'a.txt').trashed === true && (await files.list('notes/n5')).map(f => f.name).join() === 'b.txt')
+  files.forget()
+  assert('… nor read again from Drive', (await files.list('notes/n5')).map(f => f.name).join() === 'b.txt')
+  assert('trash: the folder in the trash', await files.trash('notes/n5') === true && [...drive.files.values()].find(f => f.name === 'n5').trashed === true)
+  assert('… its files and folders forgotten', await files.find('notes/n5', 'b.txt') === null && (await files.list('notes/n5/sub')).length === 0 &&
+    await files.folder('notes/n5') === null)
+  assert('a missing folder: nothing to do', await files.trash('notes/none') === false)
+  let error = null
+  try { await files.trash('') } catch (e) { error = e }
+  assert('the root cannot be put in the trash', error?.message.includes('root'))
+  const again = await files.upload('notes/n5', new TestFile(['new'], 'b.txt'))
+  assert('a new folder of the same name afterwards', again.name === 'b.txt' && drive.at('App', 'data', 'notes', 'n5', 'b.txt')?.content === 'new')
 })

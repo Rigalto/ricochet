@@ -89,6 +89,12 @@ An image whose address is a relative path, `![Plan|300](plan.png)`, is shown by 
 the file. The application can decide where it comes from through the `image` option of `markdownToHtml()`, for
 instance to load it from Google Drive with an `rc-image` component.
 
+## Plain text and targets
+
+`markdownToText()` gives the text a reader sees, without marks, addresses, icons, colors nor formulas: for counting
+words, indexing a text for a search (`searchTerms()`, `utils/search.mjs`) or a short preview. `markdownTargets()`
+gives the addresses of the links and images of a text, for checking or rewriting them.
+
 ## Differences from the former SweetHome syntax
 
 | Former syntax | Restricted Markdown |

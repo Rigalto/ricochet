@@ -28,7 +28,8 @@
  *
  * A name is unique in a folder: `upload()` replaces the content of a file of the same name (it keeps its identifier,
  * so that its links in Drive still work). The application asks the user before, if needed (`find()`). A file put in
- * the trash by the user is no longer seen.
+ * the trash is no longer seen: by the user in Drive, or by `remove()` (a file) and `trash()` (a folder and all it
+ * holds, the files of the user included); Drive keeps them in its trash for 30 days.
  *
  * ## Memory
  *
@@ -184,6 +185,46 @@ export class DriveFiles {
     } finally {
       this.#count(-1)
     }
+  }
+
+  /**
+   * Puts a file in the trash of Drive (the user can take it back for 30 days).
+   * @param {{id: string, name: string}} file - The file (as given by `list()`, `find()`, `upload()`).
+   * @returns {Promise<void>}
+   */
+  async remove (file) {
+    await this.#account.request(`${DRIVE}/${encodeURIComponent(file.id)}`, {
+      method: 'PATCH', query: {fields: 'id'}, body: {trashed: true}, source: this.#source
+    })
+    for (const promise of this.#lists.values()) {
+      const files = await promise.catch(() => null)
+      if (files?.get(file.name)?.id === file.id) { files.delete(file.name) }
+    }
+  }
+
+  /**
+   * Puts a folder in the trash of Drive, with all it holds (the user can take it back for 30 days); a missing folder
+   * is nothing to do.
+   * @param {string} path - The folder, under the root (not the root itself).
+   * @returns {Promise<boolean>} `true` if the folder was put in the trash, `false` if it does not exist.
+   */
+  async trash (path) {
+    if (names(path).length === 0) { throw new Error('DriveFiles: the root cannot be put in the trash') }
+    const folder = await this.folder(path)
+    if (folder === null) { return false }
+    await this.#account.request(`${DRIVE}/${encodeURIComponent(folder)}`, {
+      method: 'PATCH', query: {fields: 'id'}, body: {trashed: true}, source: this.#source
+    })
+    // forgotten: the folder and the folders under it
+    const key = [...this.#root, ...names(path)].join('/')
+    for (const [kept, promise] of this.#folders) {
+      if (kept === key || kept.startsWith(`${key}/`)) {
+        this.#folders.delete(kept)
+        const id = await promise.catch(() => null)
+        if (id !== null) { this.#lists.delete(id) }
+      }
+    }
+    return true
   }
 
   /**

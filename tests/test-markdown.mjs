@@ -5,7 +5,7 @@
 // The conversion of Ricochet Markdown to HTML (src/utils/markdown.mjs), as described in docs/MARKDOWN.md.
 
 import {describe, assert} from './kernel.mjs'
-import {markdownToHtml} from '../src/utils/markdown.mjs'
+import {markdownToHtml, markdownToText, markdownTargets} from '../src/utils/markdown.mjs'
 
 const md = (text, options) => markdownToHtml(text, options)
 const p = html => `<p>${html}</p>`
@@ -107,4 +107,20 @@ describe('Markdown — formulas', () => {
   assert('formula over several lines', md('$$\n- a\n# b\n\n$$') === p('$$\n- a\n# b\n\n$$'))
   assert('then Markdown again', md('$$\nx\n$$\n- a') === `${p('$$\nx\n$$')}\n<ul>\n<li>a\n</li></ul>`)
   assert('escaped dollars', md('\\$\\$a\\$\\$') === p('$$a$$'))
+})
+
+describe('Markdown — text and targets', () => {
+  const text = markdownToText('# Plan\n\nThe **new** [kitchen](#prg/not) :save: ![Plan|50%](plan.png)')
+  assert('the visible text: no marks, link text, image alternative, no icon', text === 'Plan\nThe new kitchen Plan')
+  assert('lists, tasks, quotes, headings', markdownToText('- a\n  - b\n1. c\n- [x] d\n> e\n#### f') === 'a\nb\nc\nd\ne\nf')
+  assert('italic, struck, highlighted, underlined, code', markdownToText('*a* ~~b~~ ==c== ++d++ `e`') === 'a b c d e')
+  assert('C++, i++, a==b, 10:30:00 stay', markdownToText('C++11 i++ a==b 10:30:00') === 'C++11 i++ a==b 10:30:00')
+  assert('a table: cells separated by spaces, no alignment line', markdownToText('| a | b |\n| --- | :---: |\n| c | d |') === 'a b\nc d')
+  assert('a code block: its lines, not its fences', markdownToText('```js\nconst x = 1\n```') === 'const x = 1')
+  assert('separators, formulas, colors removed', markdownToText('a\n\n---\n\n$$x^2$$ b `#C04F21` c\n$$\ny\n$$') === 'a\nb c')
+  assert('escaped characters kept as written', markdownToText('\\*not italic\\* \\[no link\\](x)') === '*not italic* [no link](x)')
+  assert('a hard line break', markdownToText('a\\\nb') === 'a\nb')
+  assert('the targets of links and images, once each, in order',
+    markdownTargets('[a](#card/x) ![b|50](b.png) [c](https://c.fr) [a again](#card/x)').join() === '#card/x,b.png,https://c.fr')
+  assert('… not an escaped bracket, nor in a formula', markdownTargets('\\[a](x) $$[b](y)$$ [c](z)').join() === 'z')
 })

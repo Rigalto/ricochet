@@ -32,7 +32,7 @@
  * | `displayMode`, `chooseDisplayMode` | [display](display.module.md) |
  * | `$global`, `quietEvents`, `addDebugSwitches`, `trace`, `addLog`, `countLeak`, `leakSnapshot`, `leakChanges` | [global](global.module.md), [debug](debug.module.md) |
  * | `escapeHtml`, `unescapeHtml`, `setSanitizer`, `sanitizeHtml`, `createElementFromHTML`, `createSvgElementFromHTML`, `loadScript`, `readClipboard`, `writeClipboard`, `svgToWidthHeight` | [dom](dom.module.md) |
- * | `markdownToHtml` | [markdown](markdown.module.md) |
+ * | `markdownToHtml`, `markdownToText`, `markdownTargets` | [markdown](markdown.module.md) |
  *
  * The bus itself (`core/bus.mjs`) is not exported: components use `listen()` and `emit()`. The utilities (dates,
  * numbers, random numbers…) have their own entry point, [ricochet-utils](ricochet-utils.module.md).
@@ -65,4 +65,4 @@ export {logRequest, maskSecrets} from './core/requests.mjs'
 export {pendingWrites, PendingWrites} from './core/pending.mjs'
 export {displayMode, chooseDisplayMode} from './core/display.mjs'
 export {escapeHtml, unescapeHtml, setSanitizer, sanitizeHtml, createElementFromHTML, createSvgElementFromHTML, loadScript, readClipboard, writeClipboard, svgToWidthHeight} from './utils/dom.mjs'
-export {markdownToHtml} from './utils/markdown.mjs'
+export {markdownToHtml, markdownToText, markdownTargets} from './utils/markdown.mjs'

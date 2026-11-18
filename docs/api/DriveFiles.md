@@ -78,6 +78,27 @@ Copies a file into a folder, created when missing; a file of the same name there
 **Returns** `Promise<{id: string, name: string, mimeType: string, size: number}>` The copy (or the file already
   there).
 
+### async remove(file)
+
+Puts a file in the trash of Drive (the user can take it back for 30 days).
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `file` | {id: string, name: string} | The file (as given by `list()`, `find()`, `upload()`). |
+
+**Returns** `Promise<void>` 
+
+### async trash(path)
+
+Puts a folder in the trash of Drive, with all it holds (the user can take it back for 30 days); a missing folder
+is nothing to do.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `path` | string | The folder, under the root (not the root itself). |
+
+**Returns** `Promise<boolean>` `true` if the folder was put in the trash, `false` if it does not exist.
+
 ### read(file)
 
 The content of a file.

@@ -273,7 +273,8 @@ The events that Ricochet emits and listens to, and the `rc` prefix reserved for 
 - **Utilities** for the DOM and the clipboard, and a hook for the sanitizer of your choice (`utils/dom.mjs`).
 - **Optional utilities** ([`ricochet-utils.mjs`](docs/api/ricochet-utils.module.md)), apart from the kernel, named
   after the libraries developers know (lodash, Three.js `MathUtils`, date-fns): calendar dates in ISO format
-  (`addMonths`, `dateDifference`, `parseDate`, `formatDate` with `Intl`), texts (`deburr`, `foldCase`, `countWords`),
+  (`addMonths`, `dateDifference`, `parseDate`, `formatDate` with `Intl`), texts (`deburr`, `foldCase`, `countWords`), a simple full-text search (`searchTerms`, `SearchIndex`, French and English stop
+  words),
   numbers (`clamp`, `lerp`, `damp`, `mapLinear`), a seeded random generator (`Random`, sfc32), Perlin and value noise,
   complex numbers, hashes (`djb2`, `sha256`), short unique identifiers kept in a configuration item, and `debounce` /
   `throttle`, which emit events through the scheduled tasks and the microtasks of the kernel; the paths of SVG icons

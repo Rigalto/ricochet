@@ -11,6 +11,9 @@ import {requestGpu, resetGpu, gpuBuffer, configureCanvas} from '../src/utils/gpu
 globalThis.GPUBufferUsage = {MAP_READ: 1, MAP_WRITE: 2, COPY_SRC: 4, COPY_DST: 8, INDEX: 16, VERTEX: 32, UNIFORM: 64, STORAGE: 128}
 
 // a fake browser: `adapter` (false: none), `refuse` (number of refused devices)
+// Node before 21 has no navigator
+if (globalThis.navigator === undefined) { Object.defineProperty(globalThis, 'navigator', {value: {}, configurable: true}) }
+
 const fakeGpu = ({adapter = true, refuse = 0} = {}) => {
   const calls = {adapter: 0, device: 0, buffers: [], writes: []}
   let lose = null
