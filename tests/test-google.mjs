@@ -172,6 +172,68 @@ await describe('Google — another tab, more scopes', async () => {
   assert('granted', account.hasScopes([GOOGLE_TASKS]))
 })
 
+// the library of the picker: records the builder, the test answers with the callback
+const fakePicker = () => {
+  const lib = {built: null}
+  lib.ViewId = {DOCS: 'all'}
+  lib.Response = {ACTION: 'action', DOCUMENTS: 'docs'}
+  lib.Action = {PICKED: 'picked', CANCEL: 'cancel', LOADED: 'loaded'}
+  lib.Document = {ID: 'id', NAME: 'name', MIME_TYPE: 'mimeType'}
+  lib.Feature = {MULTISELECT_ENABLED: 'multi'}
+  lib.DocsView = class {
+    constructor (id) { this.id = id; this.calls = [] }
+    setIncludeFolders (v) { this.calls.push(`folders:${v}`); return this }
+    setSelectFolderEnabled (v) { this.calls.push(`selectFolder:${v}`); return this }
+    setMimeTypes (v) { this.calls.push(`types:${v}`); return this }
+  }
+  lib.PickerBuilder = class {
+    constructor () { this.calls = []; this.views = [] }
+    addView (v) { this.views.push(v); return this }
+    setOAuthToken (t) { this.calls.push(`token:${t}`); return this }
+    setCallback (f) { this.callback = f; return this }
+    setAppId (v) { this.calls.push(`app:${v}`); return this }
+    setDeveloperKey (v) { this.calls.push(`key:${v}`); return this }
+    setTitle (v) { this.calls.push(`title:${v}`); return this }
+    enableFeature (v) { this.calls.push(`feature:${v}`); return this }
+    build () {
+      lib.built = this
+      const builder = this
+      return {visible: false, disposed: false, setVisible (v) { this.visible = v; builder.instance = this }, dispose () { this.disposed = true }}
+    }
+  }
+  return lib
+}
+
+await describe('Google — file picker', async () => {
+  const picker = fakePicker()
+  // its own storage: signing out the other accounts does not touch it
+  const pickOauth = fakeOauth()
+  const picking = new GoogleAccount({secretStore: new SecretStore({storage: new FakeStorage()}), oauth: pickOauth, picker, now: () => now})
+  await picking.configure({clientId: '992009675220-abc.apps.googleusercontent.com', scopes: [GOOGLE_DRIVE_FILE]})
+  picking.signIn()
+  pickOauth.give('tok-p')
+  await tick()
+  assert('(connected)', picking.state === 'connected')
+  let result = picking.pick({multiple: true, title: 'Fichiers', apiKey: 'KEY', mimeTypes: ['image/png', 'image/jpeg']})
+  await tick()
+  const built = picker.built
+  assert('the picker built with the token, the project number, the key, the title, several files', built.calls.join() ===
+    'token:tok-p,app:992009675220,key:KEY,title:Fichiers,feature:multi' && built.instance.visible === true)
+  assert('… one view: the files of the Drive, folders to browse but not to choose, the types asked', built.views.length === 1 &&
+    built.views[0].id === 'all' && built.views[0].calls.join() === 'folders:true,selectFolder:false,types:image/png,image/jpeg')
+  built.callback({action: 'loaded'})
+  built.callback({action: 'picked', docs: [{id: 'f1', name: 'plan.png', mimeType: 'image/png', sizeBytes: '2048', url: 'u'}, {id: 'f2', name: 'doc'}]})
+  const files = await result
+  assert('chosen: the files, as id, name, type and size', JSON.stringify(files) ===
+    '[{"id":"f1","name":"plan.png","mimeType":"image/png","size":2048},{"id":"f2","name":"doc","mimeType":"","size":0}]')
+  assert('… the picker disposed', built.instance.disposed === true)
+  result = picking.pick()
+  await tick()
+  assert('by default: one file, no key, no title', picker.built.calls.join() === 'token:tok-p,app:992009675220' && picker.built.views[0].calls.join() === 'folders:true,selectFolder:false')
+  picker.built.callback({action: 'cancel'})
+  assert('closed: no file', (await result).length === 0)
+})
+
 await describe('Google — signing out', async () => {
   events()
   account.signOut({revoke: true})

@@ -16,8 +16,9 @@
  * ```
  *
  * The module is not exported by `ricochet.mjs`: an application that does not use Google does not load it, and the
- * library of Google (Google Identity Services, from `accounts.google.com`, the only script that Ricochet loads from
- * another site) is loaded by `configure()` only.
+ * library of Google (Google Identity Services, from `accounts.google.com`) is loaded by `configure()` only; the file
+ * picker (from `apis.google.com`) by the first `pick()` only. They are the only scripts that Ricochet loads from
+ * another site.
  *
  * ## The client identifier
  *
@@ -69,6 +70,21 @@
  * signed out, it fails. A `401` answer marks the token as expired, then the request waits and is sent again once.
  * Another error fails with a `GoogleError` (`status`, `message` of Google).
  *
+ * ## The file picker
+ *
+ * With the scope `drive.file`, the application sees only the files it created, and those the user opens with it:
+ * `pick(options)` opens the file picker of Google (Google Picker), where the user chooses files of the Drive, and
+ * gives them (`{id, name, mimeType, size}`, none when the user closes the picker); the application can then read
+ * them, copy them (`DriveFiles.copy`)… The library of the picker (the API loader of `apis.google.com`, then its
+ * module `picker`) is loaded at the first call only. The picker is given the token and the number of the Cloud
+ * project (the first part of the client identifier: Google grants the chosen files to this project). Google advises
+ * an API key too (`apiKey`, public: to restrict to the sites of the application in the console, `docs.google.com`
+ * included, where the picker is served); without it, the picker works for the files of the user.
+ *
+ * ```javascript
+ * const files = await googleAccount.pick({multiple: true, title: 'Files to attach'})
+ * ```
+ *
  * @module google
  * @fires googleConnected - A token is received.
  * @fires googleExpired - The token is expired.
@@ -83,6 +99,7 @@ import {logRequest} from '../core/requests.mjs'
 import {loadScript} from '../utils/dom.mjs'
 
 const LIBRARY = 'https://accounts.google.com/gsi/client'
+const PICKER_LOADER = 'https://apis.google.com/js/api.js' // gapi, which loads the module `picker`
 const USERINFO = 'https://www.googleapis.com/oauth2/v3/userinfo'
 const SECRET = 'google-account'
 const CHECK = 'rcGoogleCheck' // the scheduled check of the expiry (internal event)
@@ -120,6 +137,7 @@ export class GoogleAccount {
   #store
   #oauth = null // google.accounts.oauth2, once loaded
   #given
+  #picker // google.picker, once loaded (or given)
   #now
   #client = null
   #clientId = ''
@@ -132,13 +150,15 @@ export class GoogleAccount {
   #waiters = [] // the requests waiting for a token: {resolve, reject}
 
   /**
-   * @param {{secretStore: object, oauth: object, now: Function}} [options] - `secretStore`: where the account is kept
-   *   (default `secrets`); `oauth`: the object `google.accounts.oauth2` (default: the library of Google, loaded by
-   *   `configure()`); `now`: the clock in milliseconds (default `Date.now`).
+   * @param {{secretStore: object, oauth: object, picker: object, now: Function}} [options] - `secretStore`: where the
+   *   account is kept (default `secrets`); `oauth`: the object `google.accounts.oauth2` (default: the library of
+   *   Google, loaded by `configure()`); `picker`: the object `google.picker` (default: loaded by the first `pick()`);
+   *   `now`: the clock in milliseconds (default `Date.now`).
    */
-  constructor ({secretStore = secrets, oauth = null, now = () => Date.now()} = {}) {
+  constructor ({secretStore = secrets, oauth = null, picker = null, now = () => Date.now()} = {}) {
     this.#store = secretStore
     this.#given = oauth
+    this.#picker = picker
     this.#now = now
   }
 
@@ -309,7 +329,71 @@ export class GoogleAccount {
     return text === '' ? null : JSON.parse(text)
   }
 
+  /**
+   * Opens the file picker of Google: the user chooses files of the Drive (not folders), which the application can then
+   * use with the scope `drive.file`. Waits for a token, like the requests (signed out: fails).
+   * @param {object} [options] - Options.
+   * @param {boolean} [options.multiple] - Several files can be chosen (default `false`).
+   * @param {string} [options.title] - The title of the picker.
+   * @param {string[]} [options.mimeTypes] - The types of files shown (default: all).
+   * @param {string} [options.apiKey] - An API key (public, restricted to the sites of the application), advised by
+   *   Google.
+   * @returns {Promise<{id: string, name: string, mimeType: string, size: number}[]>} The files chosen; none when the
+   *   picker is closed.
+   */
+  async pick ({multiple = false, title = '', mimeTypes = [], apiKey = ''} = {}) {
+    const token = await this.token()
+    const picker = await this.#pickerLibrary()
+    return new Promise((resolve, reject) => {
+      let instance = null
+      const done = files => {
+        instance?.dispose?.()
+        resolve(files)
+      }
+      try {
+        const view = new picker.DocsView(picker.ViewId.DOCS).setIncludeFolders(true).setSelectFolderEnabled(false)
+        if (mimeTypes.length > 0) { view.setMimeTypes(mimeTypes.join(',')) }
+        const builder = new picker.PickerBuilder().addView(view).setOAuthToken(token).setCallback(data => {
+          const action = data?.[picker.Response.ACTION]
+          if (action === picker.Action.PICKED) {
+            done((data[picker.Response.DOCUMENTS] ?? []).map(doc => ({
+              id: String(doc[picker.Document.ID]),
+              name: String(doc[picker.Document.NAME] ?? ''),
+              mimeType: String(doc[picker.Document.MIME_TYPE] ?? ''),
+              size: Number(doc.sizeBytes ?? 0) || 0
+            })))
+          } else if (action === picker.Action.CANCEL) {
+            done([])
+          }
+        })
+        const project = this.#clientId.match(/^(\d+)-/)?.[1]
+        if (project !== undefined) { builder.setAppId(project) }
+        if (apiKey !== '') { builder.setDeveloperKey(apiKey) }
+        if (title !== '') { builder.setTitle(title) }
+        if (multiple) { builder.enableFeature(picker.Feature.MULTISELECT_ENABLED) }
+        instance = builder.build()
+        instance.setVisible(true)
+      } catch (error) {
+        reject(error)
+      }
+    })
+  }
+
   // ---------------------------------------------------------------- inside
+
+  // google.picker: given, or loaded once (the API loader, then its module `picker`)
+  async #pickerLibrary () {
+    if (this.#picker !== null) { return this.#picker }
+    if (globalThis.google?.picker === undefined) {
+      await loadScript(PICKER_LOADER)
+      await new Promise((resolve, reject) => globalThis.gapi.load('picker', {
+        callback: resolve,
+        onerror: () => reject(new GoogleError('picker', 'The file picker of Google could not be loaded'))
+      }))
+    }
+    this.#picker = globalThis.google.picker
+    return this.#picker
+  }
 
   // a token from Google
   #received (response) {

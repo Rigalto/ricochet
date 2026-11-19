@@ -300,7 +300,8 @@ palettes and themes, the UI components `rc-*`, unit and browser tests.
    [demo/google.html](demo/google.html)); the configuration items in Drive, with a local copy in IndexedDB
    (`ricochet/adapters/drive-config.mjs`); the tables kept in Google spreadsheets, with a local copy in IndexedDB
    (`ricochet/adapters/drive-sheet.mjs`); the files of the application in folders of Drive, sent, read, copied, and
-   shown as images (`ricochet/adapters/drive-files.mjs`). To come: a store of data records (`data`, `data-field`), with the changes
+   shown as images (`ricochet/adapters/drive-files.mjs`); the file picker of Google, for the files of the user not
+   created by the application (`googleAccount.pick()`). To come: a store of data records (`data`, `data-field`), with the changes
    made elsewhere taken back; an adapter for Google Tasks.
 
 The demos and the documentation are gathered on the home page,

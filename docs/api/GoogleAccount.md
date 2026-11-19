@@ -100,3 +100,19 @@ Sends a request to an API of Google, with the token, and logs it.
 | `options.answer` | string | How the answer is read: `json` (default; `null` for an empty answer), `text`, `blob`, or `response` (the `Response` itself, unread: its headers, for instance). |
 
 **Returns** `Promise<*>` The answer.
+
+### async pick({multiple = false, title = '', mimeTypes = [], apiKey = ''} = {})
+
+Opens the file picker of Google: the user chooses files of the Drive (not folders), which the application can then
+use with the scope `drive.file`. Waits for a token, like the requests (signed out: fails).
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `options` | object | Options. |
+| `options.multiple` | boolean | Several files can be chosen (default `false`). |
+| `options.title` | string | The title of the picker. |
+| `options.mimeTypes` | string[] | The types of files shown (default: all). |
+| `options.apiKey` | string | An API key (public, restricted to the sites of the application), advised by Google. |
+
+**Returns** `Promise<{id: string, name: string, mimeType: string, size: number}[]>` The files chosen; none when the
+  picker is closed.

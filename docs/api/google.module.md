@@ -16,8 +16,9 @@ const files = await googleAccount.request('https://www.googleapis.com/drive/v3/f
 ```
 
 The module is not exported by `ricochet.mjs`: an application that does not use Google does not load it, and the
-library of Google (Google Identity Services, from `accounts.google.com`, the only script that Ricochet loads from
-another site) is loaded by `configure()` only.
+library of Google (Google Identity Services, from `accounts.google.com`) is loaded by `configure()` only; the file
+picker (from `apis.google.com`) by the first `pick()` only. They are the only scripts that Ricochet loads from
+another site.
 
 ## The client identifier
 
@@ -68,6 +69,21 @@ user out of Google: on a shared computer, the user must also sign out of Google.
 the answer read as JSON (or as text, or as a `Blob`). Without a token (expired), it waits for the reconnection;
 signed out, it fails. A `401` answer marks the token as expired, then the request waits and is sent again once.
 Another error fails with a `GoogleError` (`status`, `message` of Google).
+
+## The file picker
+
+With the scope `drive.file`, the application sees only the files it created, and those the user opens with it:
+`pick(options)` opens the file picker of Google (Google Picker), where the user chooses files of the Drive, and
+gives them (`{id, name, mimeType, size}`, none when the user closes the picker); the application can then read
+them, copy them (`DriveFiles.copy`)… The library of the picker (the API loader of `apis.google.com`, then its
+module `picker`) is loaded at the first call only. The picker is given the token and the number of the Cloud
+project (the first part of the client identifier: Google grants the chosen files to this project). Google advises
+an API key too (`apiKey`, public: to restrict to the sites of the application in the console, `docs.google.com`
+included, where the picker is served); without it, the picker works for the files of the user.
+
+```javascript
+const files = await googleAccount.pick({multiple: true, title: 'Files to attach'})
+```
 
 ## Interface
 
