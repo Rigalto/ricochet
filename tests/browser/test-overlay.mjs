@@ -8,6 +8,7 @@ import {describe, assert} from '../kernel.mjs'
 import {WComponent} from '../../src/core/w-component.mjs'
 import {bus} from '../../src/core/bus.mjs'
 import {keyboard} from '../../src/core/keyboard.mjs'
+import {defineTable} from '../../src/core/fields.mjs'
 import {RcDropdown} from '../../src/ui/rc-dropdown.mjs'
 import {showAlert, showConfirm, showProgress} from '../../src/ui/rc-dialog.mjs'
 import '../../src/ui/rc-checkbox.mjs'
@@ -197,6 +198,29 @@ await describe('rc-dropdown', async () => {
   sandbox.innerHTML = ''
   await tick()
   assert('no window left open', keyboard.layers === 0)
+})
+
+await describe('Keyboard and rc-dialog — data-field', async () => {
+  const note = {done: 'no', answer: ''}
+  defineTable('ovNotes', {get: (id, field) => note[field], set: (id, field, value) => { note[field] = value }})
+  const owner = {}
+  keyboard.setViewKeys([{key: 'd', action: {field: 'ovNotes/n1/done', value: 'yes'}}], owner)
+  key('d', document.body)
+  await tick()
+  assert('a key declared with {field, value}: the field changed', note.done === 'yes')
+  keyboard.release(owner)
+  sandbox.innerHTML = `
+    <rc-dialog id="fdlg" label="Answer" data-field="ovNotes/n1/answer">
+      <footer><rc-text-button id="fok" data-close="ok">OK</rc-text-button></footer>
+    </rc-dialog>`
+  await tick()
+  $('#fdlg').setAttribute('open', '')
+  $('#fok button').click()
+  await tick()
+  assert('rc-dialog: the field receives the value of the closing', note.answer === 'ok')
+  defineTable('ovNotes', null)
+  sandbox.innerHTML = ''
+  await tick()
 })
 
 await describe('rc-dialog', async () => {

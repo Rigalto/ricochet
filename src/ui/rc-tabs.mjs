@@ -38,6 +38,7 @@
  * | Use | How |
  * | --- | --- |
  * | A configuration item | `data-item="name"` on `rc-tabs`: the tab shown is kept in the item, and follows it. |
+ * | A field of a record | `data-field="table/record/field"`: as an item; the table declared by the application (`defineTable` of the `fields` module) checks and keeps the value, and the component follows the changes of the field (event `fieldsChanged`). |
  * | An event | `data-event="name"` on `rc-tabs`, with `data-param`: emitted with `value` added to the payload. |
  *
  * ## Look
@@ -115,6 +116,7 @@ export class RcTab extends WComponent {
  * The component of `<rc-tabs>`.
  * @attr {string} [value] - Value of the tab shown.
  * @attr {string} [data-item] - Configuration item that keeps the tab shown.
+ * @attr {string} [data-field] - Field of a record (`table/record/field`, see the `fields` module) that keeps the tab shown.
  * @attr {string} [data-*] - Other actions run when the user shows a tab (see the `actions` module).
  */
 export class RcTabs extends WComponent {
@@ -143,6 +145,8 @@ export class RcTabs extends WComponent {
     this.mutationObserver.observe(this.element, {childList: true, subtree: true, attributes: true, attributeFilter: ['value', 'label', 'icon', 'title', 'disabled']})
     this.item = this.element.dataset.item
     if (this.item !== undefined && this.item !== '') { this.observeItems([this.item]) }
+    this.field = this.element.dataset.field
+    if (this.field !== undefined && this.field !== '') { this.observeField(this.field) }
     this.#build()
   }
 
@@ -150,9 +154,17 @@ export class RcTabs extends WComponent {
 
   valueChanged () { this.#select() }
 
-  itemsChanged (items) {
-    const value = items[this.item]
-    if (value === undefined || value === null) { return } // not set yet: the tab shown stays
+  itemsChanged (items) { this.keptChanged(items[this.item]) }
+
+  fieldChanged (value) { this.keptChanged(value) }
+
+  /**
+   * The value kept in the item (`data-item`) or the field (`data-field`) changed: its tab is shown. Not set yet: the
+   * tab shown stays.
+   * @param {string|undefined|null} value - The value kept.
+   */
+  keptChanged (value) {
+    if (value === undefined || value === null) { return }
     this.element.setAttribute('value', value)
   }
 

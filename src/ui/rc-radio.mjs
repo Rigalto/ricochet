@@ -31,6 +31,7 @@
  * | Use | How |
  * | --- | --- |
  * | A configuration item | `data-item="name"` on the group: the radios show the item, and a click sets it. Nothing else is needed: when the item changes elsewhere, the radios follow. An item not yet set leaves the initial value. |
+ * | A field of a record | `data-field="table/record/field"`: as an item; the table declared by the application (`defineTable` of the `fields` module) checks and keeps the value, and the component follows the changes of the field (event `fieldsChanged`). |
  * | An event | `data-event="name"` on the group, with `data-param` for the payload: a click emits the event with `value` added to the payload. |
  * | A form | no action: the group is read with `value` (or its `value` attribute) when the form is validated. |
  *
@@ -113,6 +114,7 @@ export class RcRadio extends RcIconButton {
  * @attr {boolean} [vertical] - The radios are one under the other.
  * @attr {boolean} [disabled] - Every radio of the group is disabled.
  * @attr {string} [data-item] - Configuration item shown and set by the group.
+ * @attr {string} [data-field] - Field of a record (`table/record/field`, see the `fields` module) shown and set by the group.
  * @attr {string} [data-*] - Other actions run when a radio is selected by a click (see the `actions` module).
  */
 export class RcRadioGroup extends WComponent {
@@ -130,6 +132,8 @@ export class RcRadioGroup extends WComponent {
     this.observeDom(this.element, 'keydown', 'keyPressed')
     this.item = this.element.dataset.item
     if (this.item !== undefined && this.item !== '') { this.observeItems([this.item]) }
+    this.field = this.element.dataset.field
+    if (this.field !== undefined && this.field !== '') { this.observeField(this.field) }
   }
 
   valueChanged (value) {
@@ -145,9 +149,17 @@ export class RcRadioGroup extends WComponent {
     }
   }
 
-  itemsChanged (items) {
-    const value = items[this.item]
-    if (value === undefined || value === null) { return } // not set yet: the initial value stays
+  itemsChanged (items) { this.keptChanged(items[this.item]) }
+
+  fieldChanged (value) { this.keptChanged(value) }
+
+  /**
+   * The value kept in the item (`data-item`) or the field (`data-field`) changed: the radios show it. Not set yet:
+   * the initial value stays.
+   * @param {string|undefined|null} value - The value kept.
+   */
+  keptChanged (value) {
+    if (value === undefined || value === null) { return }
     this.value = value
   }
 

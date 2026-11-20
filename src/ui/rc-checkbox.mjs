@@ -23,6 +23,7 @@
  * | Use | How |
  * | --- | --- |
  * | A configuration item | `data-item="name"`: the box shows the item, and a click sets it to `yes` or `no`. Nothing else is needed: when the item changes elsewhere, the box follows. An item not yet set leaves the initial state. |
+ * | A field of a record | `data-field="table/record/field"`: as an item; the table declared by the application (`defineTable` of the `fields` module) checks and keeps the value, and the component follows the changes of the field (event `fieldsChanged`). |
  * | An event | `data-event="name"`, with `data-param` for the payload: a click emits the event with `value` added to the payload. |
  * | A form | no action: the box is read with `value` (or the `checked` attribute) when the form is validated. |
  *
@@ -46,6 +47,7 @@
  * @attr {string} [title] - Tooltip; names the checkbox when it has no label.
  * @attr {boolean} [disabled] - The state cannot be changed, and the actions do not run.
  * @attr {string} [data-item] - Configuration item shown and set by the box (`yes` or `no`).
+ * @attr {string} [data-field] - Field of a record (`table/record/field`, see the `fields` module) shown and set by the box (`yes` or `no`).
  * @attr {string} [data-*] - Other actions run by a click (see the `actions` module).
  */
 
@@ -74,6 +76,8 @@ export class RcCheckbox extends RcIconButton {
     this.observeDom(this.element, 'click', 'clicked')
     this.item = this.element.dataset.item
     if (this.item !== undefined && this.item !== '') { this.observeItems([this.item]) }
+    this.field = this.element.dataset.field
+    if (this.field !== undefined && this.field !== '') { this.observeField(this.field) }
   }
 
   checkedChanged (checked) {
@@ -83,9 +87,17 @@ export class RcCheckbox extends RcIconButton {
     this.element.dataset.value = value
   }
 
-  itemsChanged (items) {
-    const value = items[this.item]
-    if (value === undefined || value === null) { return } // not set yet: the initial state stays
+  itemsChanged (items) { this.keptChanged(items[this.item]) }
+
+  fieldChanged (value) { this.keptChanged(value) }
+
+  /**
+   * The value kept in the item (`data-item`) or the field (`data-field`) changed: the box shows it. Not set yet: the
+   * initial state stays.
+   * @param {string|undefined|null} value - `yes` or `no`.
+   */
+  keptChanged (value) {
+    if (value === undefined || value === null) { return }
     this.value = value
   }
 

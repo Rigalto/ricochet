@@ -45,6 +45,7 @@
  * - `event` and `param`: emits the event, with `param` plus `key`, `code` (the physical key, as matched by `code`,
  *   with its modifiers), `shift`, `ctrl` and `alt` as payload;
  * - `item` and `value`: sets a configuration item;
+ * - `field` and `value`: changes a field of a record (`table/record/field`, see the `fields` module);
  * - `click`: an element to click.
  *
  * The default action of the browser is prevented for every handled key, and always for `Space`, the arrows, `Tab`
@@ -67,6 +68,7 @@
 
 import {bus} from './bus.mjs'
 import {itemStore} from './items.mjs'
+import {setField} from './fields.mjs'
 
 const PREVENTED_CODES = new Set(['Space', 'AltLeft', 'AltRight', 'ArrowUp', 'ArrowDown', 'Digit4', 'Tab'])
 // keys left to the browser on a focused control: they move the focus or press it
@@ -189,11 +191,12 @@ export class KeyboardController {
     return handled
   }
 
-  #action (e, key, code, {event, param, item, value, click}) {
+  #action (e, key, code, {event, param, item, field, value, click}) {
     e.stopPropagation()
     e.preventDefault()
     if (event !== undefined) { bus.emit(event, {...param, key, code, shift: e.shiftKey, ctrl: e.ctrlKey, alt: e.altKey}) }
     if ((item !== undefined) && (value !== undefined)) { itemStore().setItem(item, value) }
+    if ((field !== undefined) && (value !== undefined)) { setField(field, value) }
     if (click !== undefined) { click.click() }
   }
 

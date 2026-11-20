@@ -163,6 +163,21 @@ Changes several configuration items. See `WController.setItems()`.
 | --- | --- | --- |
 | `items` | Array<{item: string, value: string}> | The items and their new values. |
 
+### observeField(address, handlerName = 'fieldChanged')
+
+Observes a field of a record (see the `fields` module): the method is called at the end of the current task with
+its value (after the attributes of a component being mounted), then whenever the event `fieldsChanged` concerns
+it, with its value read again. A value still unknown (table not declared, data not loaded) does not call it.
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `address` | string |  | `table/record/field`. |
+| `handlerName` | string | `fieldChanged` | Method name. |
+
+### unobserveFields()
+
+Stops every observation of fields made by the instance.
+
 ### static setItemIfValue(item, expected, value)
 
 Changes a configuration item only if its current value is `expected`.

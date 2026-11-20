@@ -10,6 +10,7 @@ The component of `<rc-tabs>`.
 | --- | --- | --- | --- | --- |
 | attribute | `value` | in | `string` | Value of the tab shown. |
 | attribute | `data-item` | in | `string` | Configuration item that keeps the tab shown. |
+| attribute | `data-field` | in | `string` | Field of a record (`table/record/field`, see the `fields` module) that keeps the tab shown. |
 | attribute | `data-*` | in | `string` | Other actions run when the user shows a tab (see the `actions` module). |
 
 ## Methods
@@ -17,6 +18,15 @@ The component of `<rc-tabs>`.
 ### get value
 
 The value of the tab shown, `''` if there is no tab.
+
+### keptChanged(value)
+
+The value kept in the item (`data-item`) or the field (`data-field`) changed: its tab is shown. Not set yet: the
+tab shown stays.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `value` | string\|undefined\|null | The value kept. |
 
 ### acceptsClick()
 

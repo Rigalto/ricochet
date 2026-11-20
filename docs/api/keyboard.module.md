@@ -45,6 +45,7 @@ Each layer receives an array of `{key, action}` or `{code, action}` objects (or 
 - `event` and `param`: emits the event, with `param` plus `key`, `code` (the physical key, as matched by `code`,
   with its modifiers), `shift`, `ctrl` and `alt` as payload;
 - `item` and `value`: sets a configuration item;
+- `field` and `value`: changes a field of a record (`table/record/field`, see the `fields` module);
 - `click`: an element to click.
 
 The default action of the browser is prevented for every handled key, and always for `Space`, the arrows, `Tab`

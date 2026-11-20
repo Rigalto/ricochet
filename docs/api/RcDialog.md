@@ -12,6 +12,7 @@ The component of `<rc-dialog>`.
 | attribute | `label` | in | `string` | Title of the window. |
 | attribute | `closedby` | in | `string` | `any`: a click outside the window closes it too, as `Escape` (the name and the value of the attribute of the native `<dialog>`); for a window of choices, not for a form that would lose its content. `none`: neither `Escape` nor a click closes it, only the application (a window that waits for a work). |
 | attribute | `data-item` | in | `string` | Configuration item set to the value when the window closes. |
+| attribute | `data-field` | in | `string` | Field of a record (`table/record/field`, see the `fields` module) set to the value when the window closes. |
 | attribute | `data-*` | in | `string` | Other actions run when the window closes (see the `actions` module). |
 
 ## Methods

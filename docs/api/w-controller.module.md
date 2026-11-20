@@ -13,6 +13,7 @@ detached — stops them all. Subscribing twice in the same way has no effect.
 | --- | --- | --- |
 | event of the bus | `listen(name)` | `<name>Dispatched(payload)` |
 | configuration items | `observeItems([items])` | `itemsChanged(items)` |
+| field of a record | `observeField(address)` | `fieldChanged(value)` |
 | window event | `observeWindowEvents(type, method)` | — |
 | DOM event | `observeDom(target, type, method)` | — |
 | interval (deprecated: use `schedule()`) | `setInterval(method, ms)` | — |

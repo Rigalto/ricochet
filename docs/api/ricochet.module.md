@@ -20,6 +20,7 @@ application imports once, at startup, when it uses them. Each module stays impor
 | `router` | [router](router.module.md) |
 | `universeBrickResolver` | [universe-brick](universe-brick.module.md) |
 | `config`, `itemStore`, `setItemStore` | [config](config.module.md), [items](items.module.md) |
+| `defineTable`, `getField`, `setField`, `fieldsChanged`, `matchField`, `splitField`, `FIELDS_CHANGED` | [fields](fields.module.md) |
 | `MemoryAdapter` | [memory](memory.module.md) |
 | `IndexedDBAdapter`, `openAppDatabase` | [indexeddb](indexeddb.module.md) |
 | `secrets` | [secrets](secrets.module.md) |

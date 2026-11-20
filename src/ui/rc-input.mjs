@@ -23,6 +23,7 @@
  * | Use | How |
  * | --- | --- |
  * | A configuration item | `data-item="name"`: the field shows the item, and sets it. When the item changes elsewhere, the field follows. |
+ * | A field of a record | `data-field="table/record/field"`: as an item; the table declared by the application (`defineTable` of the `fields` module) checks and keeps the value, and the component follows the changes of the field (event `fieldsChanged`). |
  * | An event | `data-event="name"`, with `data-param` for the payload: the event is emitted with `value` added to the payload. |
  * | A form | no action: the field is read with `value` and `valid` when the form is validated. |
  *
@@ -150,6 +151,7 @@ const passes = (check, value, element) => {
  * @attr {boolean} [readonly] - The field can be selected, not changed.
  * @attr {string} [label] - Name of the field for screen readers; the visible label is outside the field.
  * @attr {string} [data-item] - Configuration item shown and set by the field.
+ * @attr {string} [data-field] - Field of a record (`table/record/field`, see the `fields` module) shown and set by the field.
  * @attr {string} [data-*] - Other actions run with a valid value (see the `actions` module).
  */
 export class RcInput extends WComponent {
@@ -181,6 +183,8 @@ export class RcInput extends WComponent {
     this.observeDom(this.elField, 'keydown', 'inputKeyPressed')
     this.item = this.element.dataset.item
     if (this.item !== undefined && this.item !== '') { this.observeItems([this.item]) }
+    this.field = this.element.dataset.field
+    if (this.field !== undefined && this.field !== '') { this.observeField(this.field) }
   }
 
   // ------------------------------------------------------------------ attributes
@@ -231,10 +235,18 @@ export class RcInput extends WComponent {
 
   valueChanged (value) { this.#set(value ?? '') }
 
-  itemsChanged (items) {
-    const value = items[this.item]
-    if (value === undefined || value === null) { return } // not set yet: the initial value stays
-    if (value !== this.elField.value) { this.#set(value) } // the item just set by the field: the caret stays
+  itemsChanged (items) { this.keptChanged(items[this.item]) }
+
+  fieldChanged (value) { this.keptChanged(value) }
+
+  /**
+   * The value kept in the item (`data-item`) or the field (`data-field`) changed: the field shows it. Not set yet:
+   * the initial value stays; the value just written by the field: the caret stays.
+   * @param {string|undefined|null} value - The value kept.
+   */
+  keptChanged (value) {
+    if (value === undefined || value === null) { return }
+    if (value !== this.elField.value) { this.#set(value) }
   }
 
   // ------------------------------------------------------------------ to extend

@@ -13,6 +13,7 @@
  * | --- | --- | --- |
  * | event of the bus | `listen(name)` | `<name>Dispatched(payload)` |
  * | configuration items | `observeItems([items])` | `itemsChanged(items)` |
+ * | field of a record | `observeField(address)` | `fieldChanged(value)` |
  * | window event | `observeWindowEvents(type, method)` | — |
  * | DOM event | `observeDom(target, type, method)` | — |
  * | interval (deprecated: use `schedule()`) | `setInterval(method, ms)` | — |
@@ -27,6 +28,7 @@
 import {bus} from './bus.mjs'
 import {$global} from './global.mjs'
 import {itemStore} from './items.mjs'
+import {FIELDS_CHANGED, getField, matchField} from './fields.mjs'
 import {keyboard} from './keyboard.mjs'
 import {microtasker} from './microtasker.mjs'
 import {scheduler} from './scheduler.mjs'
@@ -65,6 +67,7 @@ export class WController {
   #bound = new Map() // method name → method bound to the instance, bound once
   #listeners = new Map() // `${event}|${method}` → {event, listener}
   #items = new Map() // `${method}|${items}` → observation id in the item store
+  #fields = new Map() // `${method}|${address}` → listener of fieldsChanged
   #windowEvents = new Map() // `${type}|${method}` → {type, fn}
   #domEvents = [] // {target, type, name, fn, options}
   #intervals = new Map() // method name → {fn, delay, token, due}
@@ -348,6 +351,40 @@ export class WController {
    */
   setItems (items) { WController.setItems(items) }
 
+  // ------------------------------------------------------------------ fields of records
+
+  /**
+   * Observes a field of a record (see the `fields` module): the method is called at the end of the current task with
+   * its value (after the attributes of a component being mounted), then whenever the event `fieldsChanged` concerns
+   * it, with its value read again. A value still unknown (table not declared, data not loaded) does not call it.
+   * @param {string} address - `table/record/field`.
+   * @param {string} [handlerName=fieldChanged] - Method name.
+   */
+  observeField (address, handlerName = 'fieldChanged') {
+    const key = `${handlerName}|${address}`
+    if (this.#fields.has(key)) { return }
+    const fn = this.#requireMethod('observeField', handlerName, `the field '${address}'`)
+    if (fn === null) { return }
+    const recall = () => {
+      const value = getField(address)
+      if (value !== undefined) { fn(value) }
+    }
+    const listener = change => { if (matchField(address, change)) { recall() } }
+    bus.on(FIELDS_CHANGED, listener)
+    this.#fields.set(key, listener)
+    leaks.eventHandlers += 1
+    queueMicrotask(() => { if (this.#fields.get(key) === listener) { recall() } })
+  }
+
+  /** Stops every observation of fields made by the instance. */
+  unobserveFields () {
+    for (const listener of this.#fields.values()) {
+      bus.off(FIELDS_CHANGED, listener)
+      leaks.eventHandlers -= 1
+    }
+    this.#fields.clear()
+  }
+
   /**
    * Changes a configuration item only if its current value is `expected`.
    * @param {string} item - Item name.
@@ -512,6 +549,7 @@ export class WController {
     this.unobserveAllWindowEvents()
     this.unobserveAllDom()
     this.unobserveItems()
+    this.unobserveFields()
     this.clearAllIntervals()
     this.unsetAnimationFrame()
     microtasker.cancelOwner(this)

@@ -20,6 +20,7 @@
  * | `router` | [router](router.module.md) |
  * | `universeBrickResolver` | [universe-brick](universe-brick.module.md) |
  * | `config`, `itemStore`, `setItemStore` | [config](config.module.md), [items](items.module.md) |
+ * | `defineTable`, `getField`, `setField`, `fieldsChanged`, `matchField`, `splitField`, `FIELDS_CHANGED` | [fields](fields.module.md) |
  * | `MemoryAdapter` | [memory](memory.module.md) |
  * | `IndexedDBAdapter`, `openAppDatabase` | [indexeddb](indexeddb.module.md) |
  * | `secrets` | [secrets](secrets.module.md) |
@@ -48,6 +49,7 @@ export {router} from './core/router.mjs'
 export {universeBrickResolver} from './routing/universe-brick.mjs'
 export {config} from './core/config.mjs'
 export {itemStore, setItemStore} from './core/items.mjs'
+export {defineTable, getField, setField, fieldsChanged, matchField, splitField, FIELDS_CHANGED} from './core/fields.mjs'
 export {MemoryAdapter} from './adapters/memory.mjs'
 export {IndexedDBAdapter, openAppDatabase} from './adapters/indexeddb.mjs'
 export {secrets} from './core/secrets.mjs'

@@ -45,6 +45,7 @@
  * | Use | How |
  * | --- | --- |
  * | A configuration item | `data-item="name"`: the select shows the item, and sets it. When the item changes elsewhere, the select follows. |
+ * | A field of a record | `data-field="table/record/field"`: as an item; the table declared by the application (`defineTable` of the `fields` module) checks and keeps the value, and the component follows the changes of the field (event `fieldsChanged`). |
  * | An event | `data-event="name"`, with `data-param` for the payload: the event is emitted with `value` added to the payload. |
  * | A form | no action: the select is read with `value` and `valid`. |
  *
@@ -230,6 +231,7 @@ const normalize = option => typeof option === 'string'
  * @attr {boolean} [disabled] - The select cannot be changed.
  * @attr {string} [label] - Name of the select for screen readers; the visible label is outside.
  * @attr {string} [data-item] - Configuration item shown and set by the select.
+ * @attr {string} [data-field] - Field of a record (`table/record/field`, see the `fields` module) shown and set by the select.
  * @attr {string} [data-*] - Other actions run when the user chooses an option (see the `actions` module).
  */
 export class RcSelect extends WComponent {
@@ -258,6 +260,8 @@ export class RcSelect extends WComponent {
     this.observeDom(this.elField, 'change', 'selectChanged')
     this.item = this.element.dataset.item
     if (this.item !== undefined && this.item !== '') { this.observeItems([this.item]) }
+    this.field = this.element.dataset.field
+    if (this.field !== undefined && this.field !== '') { this.observeField(this.field) }
     this.#render()
   }
 
@@ -306,9 +310,17 @@ export class RcSelect extends WComponent {
 
   valueChanged (value) { this.#want(value) }
 
-  itemsChanged (items) {
-    const value = items[this.item]
-    if (value === undefined || value === null) { return } // not set yet: the value stays
+  itemsChanged (items) { this.keptChanged(items[this.item]) }
+
+  fieldChanged (value) { this.keptChanged(value) }
+
+  /**
+   * The value kept in the item (`data-item`) or the field (`data-field`) changed: the select shows it. Not set yet:
+   * the value stays.
+   * @param {string|undefined|null} value - The value kept.
+   */
+  keptChanged (value) {
+    if (value === undefined || value === null) { return }
     this.#want(value)
   }
 

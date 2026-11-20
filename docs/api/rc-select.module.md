@@ -45,6 +45,7 @@ value is chosen as soon as it is there. When it is not in the list, no option is
 | Use | How |
 | --- | --- |
 | A configuration item | `data-item="name"`: the select shows the item, and sets it. When the item changes elsewhere, the select follows. |
+| A field of a record | `data-field="table/record/field"`: as an item; the table declared by the application (`defineTable` of the `fields` module) checks and keeps the value, and the component follows the changes of the field (event `fieldsChanged`). |
 | An event | `data-event="name"`, with `data-param` for the payload: the event is emitted with `value` added to the payload. |
 | A form | no action: the select is read with `value` and `valid`. |
 

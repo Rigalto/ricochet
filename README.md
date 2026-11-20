@@ -68,7 +68,7 @@ What sets it apart:
 - **Shared state that persists by itself.** Configuration items are a reactive key/value store *and* an automatic
   save. Setting an item notifies every observer and schedules its persistence.
 - **Behaviour declared in HTML.** A button needs no JavaScript to set an item, fire an event, navigate, copy text or
-  open a dialog: `data-item`, `data-event`, `data-path`, `data-url`, `data-paste`, `data-dialog` are handled by one
+  open a dialog: `data-item`, `data-field`, `data-event`, `data-path`, `data-url`, `data-paste`, `data-dialog` are handled by one
   click listener on the document (see [docs/api/actions.module.md](docs/api/actions.module.md)). A double click has
   its own event, `data-dblclick`, and the click is never delayed to tell them apart.
 - **Centralised, layered keyboard handling.** Open windows (dropdowns, dialogs, alerts, the one on top first) ›
@@ -301,8 +301,10 @@ palettes and themes, the UI components `rc-*`, unit and browser tests.
    (`ricochet/adapters/drive-config.mjs`); the tables kept in Google spreadsheets, with a local copy in IndexedDB
    (`ricochet/adapters/drive-sheet.mjs`); the files of the application in folders of Drive, sent, read, copied, and
    shown as images (`ricochet/adapters/drive-files.mjs`); the file picker of Google, for the files of the user not
-   created by the application (`googleAccount.pick()`). To come: a store of data records (`data`, `data-field`), with the changes
-   made elsewhere taken back; an adapter for Google Tasks.
+   created by the application (`googleAccount.pick()`); the fields of the records of the application, shown and changed
+   by the components with `data-field="table/record/field"`, as an item with `data-item` (`ricochet/core/fields.mjs`:
+   the application declares its tables). To come: a store of data records (`data`), with the changes made elsewhere
+   taken back; an adapter for Google Tasks.
 
 The demos and the documentation are gathered on the home page,
 [rigalto.github.io/ricochet](https://rigalto.github.io/ricochet/).

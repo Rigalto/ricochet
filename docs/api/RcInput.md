@@ -22,6 +22,7 @@ The component of `<rc-input>`.
 | attribute | `readonly` | in | `boolean` | The field can be selected, not changed. |
 | attribute | `label` | in | `string` | Name of the field for screen readers; the visible label is outside the field. |
 | attribute | `data-item` | in | `string` | Configuration item shown and set by the field. |
+| attribute | `data-field` | in | `string` | Field of a record (`table/record/field`, see the `fields` module) shown and set by the field. |
 | attribute | `data-*` | in | `string` | Other actions run with a valid value (see the `actions` module). |
 
 ## Methods
@@ -33,6 +34,15 @@ The value, or `null` when it is invalid.
 ### checkAttributeChanged()
 
 An attribute read by a named check changed: the value is checked again.
+
+### keptChanged(value)
+
+The value kept in the item (`data-item`) or the field (`data-field`) changed: the field shows it. Not set yet:
+the initial value stays; the value just written by the field: the caret stays.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `value` | string\|undefined\|null | The value kept. |
 
 ### createField()
 

@@ -16,6 +16,7 @@ The component of `<rc-select>`.
 | attribute | `disabled` | in | `boolean` | The select cannot be changed. |
 | attribute | `label` | in | `string` | Name of the select for screen readers; the visible label is outside. |
 | attribute | `data-item` | in | `string` | Configuration item shown and set by the select. |
+| attribute | `data-field` | in | `string` | Field of a record (`table/record/field`, see the `fields` module) shown and set by the select. |
 | attribute | `data-*` | in | `string` | Other actions run when the user chooses an option (see the `actions` module). |
 
 ## Methods
@@ -27,6 +28,15 @@ The value: `''` when no option is chosen.
 ### get options
 
 The options, as `{label, value, disabled, group}`. A new array (or text) replaces them.
+
+### keptChanged(value)
+
+The value kept in the item (`data-item`) or the field (`data-field`) changed: the select shows it. Not set yet:
+the value stays.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `value` | string\|undefined\|null | The value kept. |
 
 ### sourceRefreshed()
 

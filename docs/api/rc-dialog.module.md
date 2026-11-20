@@ -34,7 +34,8 @@ the application. Removing `open` closes it, with the value `''`.
 | `Enter`, when the focus is on no button nor field | the element with `default` is clicked |
 
 When it closes, the dialog runs its actions with the value: `data-event` emits the event with `value` added to the
-payload, `data-item` sets the item. The `value` property of the component is the value of the last closing.
+payload, `data-item` sets the item, `data-field` changes the field. The `value` property of the component is the
+value of the last closing.
 
 ## Content
 

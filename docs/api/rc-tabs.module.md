@@ -38,6 +38,7 @@ already shown runs nothing.
 | Use | How |
 | --- | --- |
 | A configuration item | `data-item="name"` on `rc-tabs`: the tab shown is kept in the item, and follows it. |
+| A field of a record | `data-field="table/record/field"`: as an item; the table declared by the application (`defineTable` of the `fields` module) checks and keeps the value, and the component follows the changes of the field (event `fieldsChanged`). |
 | An event | `data-event="name"` on `rc-tabs`, with `data-param`: emitted with `value` added to the payload. |
 
 ## Look

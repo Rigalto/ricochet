@@ -34,7 +34,8 @@
  * | `Enter`, when the focus is on no button nor field | the element with `default` is clicked |
  *
  * When it closes, the dialog runs its actions with the value: `data-event` emits the event with `value` added to the
- * payload, `data-item` sets the item. The `value` property of the component is the value of the last closing.
+ * payload, `data-item` sets the item, `data-field` changes the field. The `value` property of the component is the
+ * value of the last closing.
  *
  * ## Content
  *
@@ -128,6 +129,7 @@ let count = 0
  *   the attribute of the native `<dialog>`); for a window of choices, not for a form that would lose its content.
  *   `none`: neither `Escape` nor a click closes it, only the application (a window that waits for a work).
  * @attr {string} [data-item] - Configuration item set to the value when the window closes.
+ * @attr {string} [data-field] - Field of a record (`table/record/field`, see the `fields` module) set to the value when the window closes.
  * @attr {string} [data-*] - Other actions run when the window closes (see the `actions` module).
  */
 export class RcDialog extends WComponent {

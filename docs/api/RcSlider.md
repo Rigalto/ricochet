@@ -18,6 +18,7 @@ The component of `<rc-slider>`.
 | attribute | `disabled` | in | `boolean` | The slider cannot be moved. |
 | attribute | `label` | in | `string` | Name of the slider for screen readers; the visible label is outside. |
 | attribute | `data-item` | in | `string` | Configuration item shown and set by the slider. |
+| attribute | `data-field` | in | `string` | Field of a record (`table/record/field`, see the `fields` module) shown and set by the slider. |
 | attribute | `data-*` | in | `string` | Other actions run when the user moves the slider (see the `actions` module). |
 
 ## Methods
@@ -25,3 +26,12 @@ The component of `<rc-slider>`.
 ### get value
 
 The value, as a string.
+
+### keptChanged(value)
+
+The value kept in the item (`data-item`) or the field (`data-field`) changed: the slider shows it. Not set yet:
+the value stays.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `value` | string\|undefined\|null | The value kept. |

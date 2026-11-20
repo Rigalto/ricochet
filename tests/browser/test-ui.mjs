@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Rigalto
 
 // tests/browser/test-ui.mjs — open tests/browser/index.html in a browser
-// Actions declared in HTML (delegation), rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-combobox, rc-image, rc-tabs, rc-slider, rc-breadcrumb and the look of the tables.
+// Actions declared in HTML (delegation), data-field on every field component, rc-icon, rc-icon-button, rc-text-button, rc-checkbox, rc-radio, rc-input, rc-textarea, rc-select, rc-combobox, rc-image, rc-tabs, rc-slider, rc-breadcrumb and the look of the tables.
 
 import {describe, assert, captureConsole, releaseConsole} from '../kernel.mjs'
 import {WComponent} from '../../src/core/w-component.mjs'
@@ -25,6 +25,7 @@ import '../../src/ui/rc-slider.mjs'
 import '../../src/ui/rc-breadcrumb.mjs'
 import '../../src/ui/table-style.mjs'
 import {loadScript} from '../../src/utils/dom.mjs'
+import {defineTable, fieldsChanged} from '../../src/core/fields.mjs'
 
 const sandbox = document.getElementById('sandbox')
 const tick = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -1146,6 +1147,72 @@ await describe('rc-slider', async () => {
   await tick()
   bus.off('tuAction', onEvent)
   bus.off('tuOther', onEvent)
+})
+
+await describe('data-field: the fields of a record in every field component', async () => {
+  // a record in memory; the table refuses the title 'no', and any change of done once the note is locked
+  const note = {title: 'Garden', text: 'Dig', room: 'Kitchen', size: 'm', done: 'no', mood: 'a', volume: '40', tab: 'b'}
+  const writes = []
+  defineTable('tuNotes', {
+    get: (id, field) => id === 'n1' ? note[field] : undefined,
+    set: (id, field, value) => {
+      if ((field === 'title' && value === 'no') || (field === 'done' && note.locked)) { return false }
+      note[field] = value
+      writes.push(`${field}=${value}`)
+    }
+  })
+  sandbox.innerHTML = `
+    <rc-input id="a" data-field="tuNotes/n1/title"></rc-input>
+    <rc-textarea id="b" data-field="tuNotes/n1/text"></rc-textarea>
+    <rc-combobox id="c" commit="input" data-field="tuNotes/n1/room" options="Kitchen|Garden"></rc-combobox>
+    <rc-select id="d" data-field="tuNotes/n1/size" options="Small#s|Medium#m|Large#l"></rc-select>
+    <rc-checkbox id="e" data-field="tuNotes/n1/done"></rc-checkbox>
+    <rc-radio-group id="f" data-field="tuNotes/n1/mood"><rc-radio value="a">A</rc-radio><rc-radio value="b">B</rc-radio></rc-radio-group>
+    <rc-slider id="g" data-field="tuNotes/n1/volume"></rc-slider>
+    <rc-tabs id="h" data-field="tuNotes/n1/tab"><rc-tab label="a">A</rc-tab><rc-tab label="b">B</rc-tab></rc-tabs>
+    <rc-input id="i" value="initial" data-field="tuNotes/n9/title"></rc-input>
+    <rc-icon-button id="j" icon="check" data-field="tuNotes/n1/done" data-value="yes" title="Done"></rc-icon-button>`
+  await tick()
+  const el = id => $(`#${id}`)
+  const native = id => el(id).querySelector('input, textarea, select')
+  const type = (id, text, event = 'input') => {
+    native(id).value = text
+    native(id).dispatchEvent(new Event(event, {bubbles: true}))
+  }
+  const shown = () => [native('a').value, native('b').value, native('c').value, native('d').value, el('e')._component.value,
+    el('f')._component.value, native('g').value, el('h').getAttribute('value')].join()
+  assert('every component shows its field', shown() === 'Garden,Dig,Kitchen,m,no,a,40,b')
+  assert('a field still unknown: the initial value stays', native('i').value === 'initial')
+  type('a', 'Orchard')
+  type('b', 'Plant')
+  type('c', 'Garden')
+  type('d', 'l', 'change')
+  el('e').querySelector('button').click()
+  el('f').querySelectorAll('rc-radio')[1].querySelector('button').click()
+  type('g', '70')
+  el('h').querySelector('[role="tab"]').click()
+  await tick()
+  assert('every component changes its field', writes.join() === 'title=Orchard,text=Plant,room=Garden,size=l,done=yes,mood=b,volume=70,tab=a')
+  assert('… and still shows it', shown() === 'Orchard,Plant,Garden,l,yes,b,70,a')
+  Object.assign(note, {title: 'Barn', text: 'Paint', room: 'Kitchen', size: 's', done: 'no', mood: 'a', volume: '10', tab: 'b'})
+  fieldsChanged('tuNotes', 'n1')
+  await tick()
+  assert('the record changed elsewhere (fieldsChanged): every component follows', shown() === 'Barn,Paint,Kitchen,s,no,a,10,b')
+  type('a', 'no')
+  await tick()
+  assert('a value refused by the table: the field takes back the value kept', native('a').value === 'Barn' && note.title === 'Barn')
+  note.locked = true
+  el('e').querySelector('button').click()
+  await tick()
+  assert('… a box too', el('e')._component.value === 'no' && note.done === 'no')
+  note.locked = false
+  writes.length = 0
+  el('j').querySelector('button').click()
+  await tick()
+  assert('a button with data-field and data-value: one click changes the field', writes.join() === 'done=yes' && el('e')._component.value === 'yes')
+  defineTable('tuNotes', null)
+  sandbox.innerHTML = ''
+  await tick()
 })
 
 await describe('loadScript', async () => {

@@ -23,6 +23,7 @@ valid. Writing the value, by the attribute or by the property, runs no action.
 | Use | How |
 | --- | --- |
 | A configuration item | `data-item="name"`: the field shows the item, and sets it. When the item changes elsewhere, the field follows. |
+| A field of a record | `data-field="table/record/field"`: as an item; the table declared by the application (`defineTable` of the `fields` module) checks and keeps the value, and the component follows the changes of the field (event `fieldsChanged`). |
 | An event | `data-event="name"`, with `data-param` for the payload: the event is emitted with `value` added to the payload. |
 | A form | no action: the field is read with `value` and `valid` when the form is validated. |
 

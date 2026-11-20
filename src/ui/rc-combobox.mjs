@@ -142,10 +142,9 @@ export class RcCombobox extends RcInput {
     super.valueChanged(value)
   }
 
-  itemsChanged (items) {
-    const value = items[this.item]
+  keptChanged (value) {
     if (value !== undefined && value !== null && value !== this.held) { this.#release() } // set elsewhere
-    super.itemsChanged(items)
+    super.keptChanged(value)
   }
 
   optionsChanged (value) {

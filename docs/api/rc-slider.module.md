@@ -25,6 +25,7 @@ The value is shown on the right of the track, followed by `unit`; `no-value` hid
 | Use | How |
 | --- | --- |
 | A configuration item | `data-item="name"`: the slider shows the item, and sets it. When the item changes elsewhere, the slider follows. |
+| A field of a record | `data-field="table/record/field"`: as an item; the table declared by the application (`defineTable` of the `fields` module) checks and keeps the value, and the component follows the changes of the field (event `fieldsChanged`). |
 | An event | `data-event="name"`, with `data-param` for the payload: the event is emitted with `value` added to the payload. |
 
 The `commit` attribute tells when the actions run: `input` (default) while the thumb moves, `change` when the user

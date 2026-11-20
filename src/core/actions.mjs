@@ -8,6 +8,7 @@
  * | Attributes | Action |
  * | --- | --- |
  * | `data-item` + `data-value` | sets a configuration item |
+ * | `data-field` + `data-value` | changes a field of a record (`table/record/field`, see the `fields` module) |
  * | `data-event` + `data-param` | emits one event, or several separated by commas; `data-param` is the JSON payload, `data-value` is added to it as `value` |
  * | `data-path` | navigates: `#universe/brick/…` |
  * | `data-url` | opens a new tab |
@@ -24,7 +25,8 @@
  * | Attribute | Value | What happens |
  * | --- | --- | --- |
  * | `data-item` | the name of a configuration item (`$` stands for the scope) | the item receives the text of `data-value` (`setItem(item, value)`); an item always holds a string |
- * | `data-value` | a text | the value of the item; with `data-event`, also added to the payload as `value` |
+ * | `data-field` | the address of a field: `table/record/field` | the field receives the text of `data-value` (`setField(address, value)`): the table declared by the application checks it and keeps it, then the event `fieldsChanged` is emitted; without `data-value`, nothing is changed and the error is shown in the console |
+ * | `data-value` | a text | the value of the item or of the field; with `data-event`, also added to the payload as `value` |
  * | `data-event` | an event name, or several separated by commas | each event is emitted with the payload |
  * | `data-param` | a JSON object; default `{}` | the payload of the events; when it is not valid JSON, nothing is emitted and the error is shown in the console |
  * | `data-path` | an address, `#…` | the address of the page changes (`location.hash`): the router resolves it |
@@ -40,19 +42,22 @@
  * <!-- emits noteSave {id: 12, value: 'draft'} -->
  * ```
  *
- * The actions run in the order of the table: item, events, path, url, paste, dialog. The payload of each event is a
+ * The actions run in the order of the table: item, field, events, path, url, paste, dialog (the change of a field is not
+ * awaited: the table may keep it later). The payload of each event is a
  * new copy: a listener may change it.
  *
  * Some components write `data-value` themselves, before the actions run: `rc-checkbox` (`yes` or `no`),
  * `rc-radio-group`, `rc-tabs`, `rc-input`, `rc-textarea`, `rc-select`, `rc-slider` (the value of the field),
- * `rc-dialog` (the value of the button chosen). On them, `data-value` is not given; `data-item` and `data-event` receive
- * the value of the component.
+ * `rc-dialog` (the value of the button chosen). On them, `data-value` is not given; `data-item`, `data-field` and
+ * `data-event` receive the value of the component. Those that show a value (all but `rc-dialog`) show the item or the
+ * field, and follow it.
  *
  * Two attributes are read by the windows, not by this module: `data-close` on an element inside an `rc-dropdown` (the
  * dropdown closes after the actions of the click) or an `rc-dialog` (the dialog closes with this value).
  *
  * The keys declared to the keyboard (see the `keyboard` module) have the same actions, written as an object:
- * `{event, param}` — the payload is `param` plus `key`, `shift`, `ctrl` and `alt` —, `{item, value}`, `{click}`.
+ * `{event, param}` — the payload is `param` plus `key`, `shift`, `ctrl` and `alt` —, `{item, value}`, `{field, value}`,
+ * `{click}`.
  *
  * ## Click and double click
  *
@@ -79,7 +84,8 @@
  * One listener, on the document, handles every click: components do not listen to clicks to run their actions.
  *
  * - The **nearest** element that carries actions runs them, as a link would: going up from the clicked element, the
- *   first one with `data-item`, `data-event`, `data-path`, `data-url`, `data-paste`, `data-dialog` or `data-dblclick`. It may combine
+ *   first one with `data-item`, `data-field`, `data-event`, `data-path`, `data-url`, `data-paste`, `data-dialog` or
+ *   `data-dblclick`. It may combine
  *   several actions; the elements with actions above it do not run theirs.
  * - Nothing runs if the clicked element, or any element around it, has the `disabled` attribute or
  *   `aria-disabled="true"`: a disabled block disables everything inside.
@@ -103,9 +109,10 @@
 
 import {bus} from './bus.mjs'
 import {itemStore} from './items.mjs'
+import {setField} from './fields.mjs'
 import {writeClipboard} from '../utils/dom.mjs'
 
-const ACTIONS = '[data-item], [data-event], [data-path], [data-url], [data-paste], [data-dialog], [data-dblclick]'
+const ACTIONS = '[data-item], [data-field], [data-event], [data-path], [data-url], [data-paste], [data-dialog], [data-dblclick]'
 const DISABLED = '[disabled], [aria-disabled="true"]'
 
 /**
@@ -113,8 +120,15 @@ const DISABLED = '[disabled], [aria-disabled="true"]'
  * @param {DOMStringMap|object} dataset - The `dataset` of an element, or an object with the same keys.
  */
 export function runActions (dataset) {
-  const {item, value, event, param, path, url, paste, dialog} = dataset
+  const {item, field, value, event, param, path, url, paste, dialog} = dataset
   if (item !== undefined && item !== '') { itemStore().setItem(item, `${value}`) }
+  if (field !== undefined && field !== '') {
+    if (value === undefined) {
+      console.error(`actions: data-field='${field}' without data-value`)
+    } else {
+      setField(field, value) // not awaited: the table keeps it, then fieldsChanged is emitted
+    }
+  }
   if (event !== undefined && event !== '' && !emitEvents(event, param, value)) { return }
   if (path !== undefined && path !== '') { globalThis.location.hash = path }
   if (url !== undefined && url !== '') { window.open(url, '_blank') }

@@ -9,3 +9,12 @@ The component of `<rc-checkbox>`.
 ### get value
 
 The state: `yes` or `no`.
+
+### keptChanged(value)
+
+The value kept in the item (`data-item`) or the field (`data-field`) changed: the box shows it. Not set yet: the
+initial state stays.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `value` | string\|undefined\|null | `yes` or `no`. |

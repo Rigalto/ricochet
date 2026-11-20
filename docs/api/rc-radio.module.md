@@ -31,6 +31,7 @@ no action: only a click does. A click on the radio already checked runs nothing 
 | Use | How |
 | --- | --- |
 | A configuration item | `data-item="name"` on the group: the radios show the item, and a click sets it. Nothing else is needed: when the item changes elsewhere, the radios follow. An item not yet set leaves the initial value. |
+| A field of a record | `data-field="table/record/field"`: as an item; the table declared by the application (`defineTable` of the `fields` module) checks and keeps the value, and the component follows the changes of the field (event `fieldsChanged`). |
 | An event | `data-event="name"` on the group, with `data-param` for the payload: a click emits the event with `value` added to the payload. |
 | A form | no action: the group is read with `value` (or its `value` attribute) when the form is validated. |
 

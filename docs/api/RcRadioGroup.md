@@ -12,6 +12,7 @@ The component of `<rc-radio-group>`: holds the value of its radios.
 | attribute | `vertical` | in | `boolean` | The radios are one under the other. |
 | attribute | `disabled` | in | `boolean` | Every radio of the group is disabled. |
 | attribute | `data-item` | in | `string` | Configuration item shown and set by the group. |
+| attribute | `data-field` | in | `string` | Field of a record (`table/record/field`, see the `fields` module) shown and set by the group. |
 | attribute | `data-*` | in | `string` | Other actions run when a radio is selected by a click (see the `actions` module). |
 
 ## Methods
@@ -19,6 +20,15 @@ The component of `<rc-radio-group>`: holds the value of its radios.
 ### get value
 
 The selected value, `''` if none.
+
+### keptChanged(value)
+
+The value kept in the item (`data-item`) or the field (`data-field`) changed: the radios show it. Not set yet:
+the initial value stays.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `value` | string\|undefined\|null | The value kept. |
 
 ### acceptsClick()
 

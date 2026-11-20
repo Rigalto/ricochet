@@ -23,6 +23,7 @@ The `value` property of the component (`element._component.value`) reads and wri
 | Use | How |
 | --- | --- |
 | A configuration item | `data-item="name"`: the box shows the item, and a click sets it to `yes` or `no`. Nothing else is needed: when the item changes elsewhere, the box follows. An item not yet set leaves the initial state. |
+| A field of a record | `data-field="table/record/field"`: as an item; the table declared by the application (`defineTable` of the `fields` module) checks and keeps the value, and the component follows the changes of the field (event `fieldsChanged`). |
 | An event | `data-event="name"`, with `data-param` for the payload: a click emits the event with `value` added to the payload. |
 | A form | no action: the box is read with `value` (or the `checked` attribute) when the form is validated. |
 
@@ -48,6 +49,7 @@ The checkbox holds a `<button role="checkbox">` with `aria-checked`: it takes th
 | attribute | `title` | in | `string` | Tooltip; names the checkbox when it has no label. |
 | attribute | `disabled` | in | `boolean` | The state cannot be changed, and the actions do not run. |
 | attribute | `data-item` | in | `string` | Configuration item shown and set by the box (`yes` or `no`). |
+| attribute | `data-field` | in | `string` | Field of a record (`table/record/field`, see the `fields` module) shown and set by the box (`yes` or `no`). |
 | attribute | `data-*` | in | `string` | Other actions run by a click (see the `actions` module). |
 
 ## Exports
