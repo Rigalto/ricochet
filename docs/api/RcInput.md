@@ -74,6 +74,27 @@ Called at each keystroke: returns the value to put in the field. To override; th
 
 **Returns** `string` The value to put in the field.
 
+### fromKept(value)
+
+The value to show for the value kept in the item or the field. To override; the default shows it as it is.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `value` | string | The value kept. |
+
+**Returns** `string` The value to show.
+
+### toKept(value)
+
+The value to keep in the item or the field (and in `data-value`) for the value shown. To override; the default
+keeps it as it is.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `value` | string | The value shown (valid). |
+
+**Returns** `string` The value to keep.
+
 ### validate(value)
 
 Whether a value is valid: `required`, `min`, `max`, `pattern` and the named checks. To override, calling

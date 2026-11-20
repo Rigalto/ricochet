@@ -143,7 +143,7 @@ export class RcCombobox extends RcInput {
   }
 
   keptChanged (value) {
-    if (value !== undefined && value !== null && value !== this.held) { this.#release() } // set elsewhere
+    if (value !== undefined && value !== null && this.fromKept(value) !== this.held) { this.#release() } // set elsewhere
     super.keptChanged(value)
   }
 

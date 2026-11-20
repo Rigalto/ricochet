@@ -81,6 +81,10 @@
  * - `validate(value)`: returns whether the value is valid; call `super.validate(value)` to keep the rules above.
  * - `createField()`, `isCommitKey(e)`, `fieldUpdated()`: another kind of field, another key to commit, a call each
  *   time the value is checked (`rc-textarea` uses them).
+ * - `fromKept(value)`, `toKept(value)`: the value kept in the item or the field (`data-item`, `data-field`) and the
+ *   value shown are not written the same way (a date kept as `YYYY-MM-DD`, shown as `DD/MM/YYYY`): `fromKept` gives
+ *   the value to show, `toKept` the value to keep (`data-value` of the actions). The `value` property is the value
+ *   shown.
  *
  * ```js
  * class DateInput extends RcInput {
@@ -246,7 +250,8 @@ export class RcInput extends WComponent {
    */
   keptChanged (value) {
     if (value === undefined || value === null) { return }
-    if (value !== this.elField.value) { this.#set(value) }
+    const shown = this.fromKept(value)
+    if (shown !== this.elField.value) { this.#set(shown) }
   }
 
   // ------------------------------------------------------------------ to extend
@@ -277,6 +282,21 @@ export class RcInput extends WComponent {
    * @returns {string} The value to put in the field.
    */
   transform (value) { return value }
+
+  /**
+   * The value to show for the value kept in the item or the field. To override; the default shows it as it is.
+   * @param {string} value - The value kept.
+   * @returns {string} The value to show.
+   */
+  fromKept (value) { return value }
+
+  /**
+   * The value to keep in the item or the field (and in `data-value`) for the value shown. To override; the default
+   * keeps it as it is.
+   * @param {string} value - The value shown (valid).
+   * @returns {string} The value to keep.
+   */
+  toKept (value) { return value }
 
   /**
    * Whether a value is valid: `required`, `min`, `max`, `pattern` and the named checks. To override, calling
@@ -373,7 +393,7 @@ export class RcInput extends WComponent {
   #commit () {
     const value = this.elField.value
     this.committed = value
-    this.element.dataset.value = value
+    this.element.dataset.value = this.toKept(value)
     runActions(this.element.dataset)
   }
 }

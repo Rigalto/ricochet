@@ -1215,6 +1215,43 @@ await describe('data-field: the fields of a record in every field component', as
   await tick()
 })
 
+await describe('rc-input: the value kept and the value shown (fromKept, toKept)', async () => {
+  class TuIsoDate extends RcInput {
+    fromKept (value) { return value.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$3/$2/$1') }
+    toKept (value) { return value.replace(/^(\d{2})\/(\d{2})\/(\d{4})$/, '$3-$2-$1') }
+  }
+  WComponent.define('tu-iso-date', TuIsoDate)
+  config.setItem('tu-iso', '2026-11-20')
+  const note = {due: '2026-01-31'}
+  defineTable('tuIso', {get: (id, field) => note[field], set: (id, field, value) => { note[field] = value }})
+  sandbox.innerHTML = `
+    <tu-iso-date id="a" data-item="tu-iso" data-event="tuIsoTyped"></tu-iso-date>
+    <tu-iso-date id="b" data-field="tuIso/n1/due"></tu-iso-date>`
+  await tick()
+  const input = id => $(`#${id} > input`)
+  const type = (id, text) => {
+    input(id).value = text
+    input(id).dispatchEvent(new Event('input', {bubbles: true}))
+  }
+  assert('the item and the field shown with fromKept', input('a').value === '20/11/2026' && input('b').value === '31/01/2026')
+  const typed = []
+  const onTyped = payload => typed.push(payload.value)
+  bus.on('tuIsoTyped', onTyped)
+  type('a', '21/11/2026')
+  type('b', '01/02/2026')
+  await tick()
+  assert('kept with toKept: the item, the field, the value of the event', config.get('tu-iso') === '2026-11-21' && note.due === '2026-02-01' &&
+    typed.at(-1) === '2026-11-21')
+  bus.off('tuIsoTyped', onTyped)
+  assert('the value property is the value shown', $('#a')._component.value === '21/11/2026')
+  config.setItem('tu-iso', '2027-01-01')
+  await tick()
+  assert('the field follows the item, shown with fromKept', input('a').value === '01/01/2027')
+  defineTable('tuIso', null)
+  sandbox.innerHTML = ''
+  await tick()
+})
+
 await describe('loadScript', async () => {
   const src = 'data:text/javascript,window.tuLoadScript%20%3D%20(window.tuLoadScript%20%7C%7C%200)%20%2B%201'
   const script = await loadScript(src)

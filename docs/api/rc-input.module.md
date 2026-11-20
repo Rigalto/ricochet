@@ -81,6 +81,10 @@ fields (the element gets the class `rc-field`):
 - `validate(value)`: returns whether the value is valid; call `super.validate(value)` to keep the rules above.
 - `createField()`, `isCommitKey(e)`, `fieldUpdated()`: another kind of field, another key to commit, a call each
   time the value is checked (`rc-textarea` uses them).
+- `fromKept(value)`, `toKept(value)`: the value kept in the item or the field (`data-item`, `data-field`) and the
+  value shown are not written the same way (a date kept as `YYYY-MM-DD`, shown as `DD/MM/YYYY`): `fromKept` gives
+  the value to show, `toKept` the value to keep (`data-value` of the actions). The `value` property is the value
+  shown.
 
 ```js
 class DateInput extends RcInput {
