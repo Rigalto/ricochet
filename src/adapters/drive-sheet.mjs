@@ -41,19 +41,29 @@
  *
  * - `load()` gives the local copy, at once, without Google: the rows of the last reading, with the changes made since.
  * - `pull()` reads the tab in Drive: its rows, with the changes made here and not yet sent, become the local copy.
- *   It gives `null` when the spreadsheet does not exist (`create()`): never created, deleted, or put in the trash by
- *   the user (a spreadsheet in the trash is no longer used, even though Google still lets it be read). Without a connection, it fails (`GoogleError`
- *   or `Error`): the application keeps the local copy.
+ *   When the spreadsheet did not change in Drive since the last reading or sending of this copy (its version), the tab
+ *   is not read again: the local copy is right. It gives `null` when the spreadsheet does not exist (`create()`): never
+ *   created, deleted, or put in the trash by the user (a spreadsheet in the trash is no longer used, even though Google
+ *   still lets it be read). Without a connection, it fails (`GoogleError` or `Error`): the application keeps the local
+ *   copy.
  * - `create(rows)` creates the folders, the spreadsheet with its tab and headers, and writes the rows.
  *
  * ## Changes
  *
  * `put(row)` (a new row, or a row replaced: same key) and `remove(key)` change the local copy at once, then the tab
- * a few seconds later (`uploadDelay`): the tab is read again, the rows changed here replace its rows, and the whole
- * tab is written in one request (the spreadsheet is checked first: one in the trash is not written, the changes wait).
- * A row changed in the spreadsheet and not here keeps the version of the spreadsheet;
- * the last change of a row wins. A reading (`pull()`) and a sending never overlap: each waits for the other to end. A failed sending is tried again 30 seconds later (`retryDelay`), and at the next
- * connection; the changes wait in the local copy, even when the page is closed.
+ * a few seconds later (`uploadDelay`), the whole tab in one request. Before, Drive gives the state of the spreadsheet:
+ * one in the trash is not written (the changes wait); one changed elsewhere since this copy was read or written
+ * (another window, another computer, by hand: its version is another one) is read again first, and the rows changed
+ * here replace its rows. A row changed in the spreadsheet and not here keeps the version of the spreadsheet; the last
+ * change of a row wins. A spreadsheet changed only here is written without being read.
+ *
+ * The version is the one of Drive (`version` of the file, raised at each change): asked by the Drive API, it does not
+ * count in the quotas of the Sheets API (60 readings a minute for a user). Drive may raise it a little after a change:
+ * a change made elsewhere just before a sending may then be overwritten (seconds; rare for one user).
+ *
+ * A reading (`pull()`) and a sending never overlap: each waits for the other to end. A failed sending is tried again
+ * 30 seconds later (`retryDelay`), and at the next connection; the changes wait in the local copy, even when the page
+ * is closed.
  *
  * What waits is reported to `pendingWrites` (source `sheet <file>/<tab>` by default), as for `DriveConfigAdapter`.
  *
@@ -183,7 +193,7 @@ export class DriveSheet {
   #source
   #uploadDelay
   #retryDelay
-  #record = null // the local copy: {rows, headers, extra, fileId, height, width, pending: {key: row|null}}
+  #record = null // the local copy: {rows, headers, extra, fileId, version, height, width, pending: {key: row|null}}
   #reading = null // the local copy being read (promise)
   #running = null // the sending in progress (promise), one at a time
   #pulling = null // the reading in progress (promise): a reading and a sending never overlap
@@ -280,12 +290,20 @@ export class DriveSheet {
 
   async #pull () {
     const record = await this.#read()
-    if (record.fileId !== null && !await this.#alive(record.fileId)) { // put in the trash, or deleted
+    const known = record.fileId === null ? null : await this.#version(record.fileId)
+    if (record.fileId !== null && known === null) { // put in the trash, or deleted
       record.fileId = null
       await this.#save()
     }
     const fileId = record.fileId ?? await this.#findFile()
     if (fileId === null) { return null }
+    // the version before the reading: a change made meanwhile will be seen at the next sending
+    const version = known ?? await this.#version(fileId)
+    if (version === null) { return null }
+    if (fileId === record.fileId && version !== '' && version === record.version) { // not changed in Drive: the local copy is right
+      if (Object.keys(record.pending).length > 0) { this.#later() }
+      return record.rows
+    }
     const remote = await this.#readTab(fileId)
     if (remote === null) { // the spreadsheet was deleted
       record.fileId = null
@@ -293,6 +311,7 @@ export class DriveSheet {
       return null
     }
     record.fileId = fileId
+    record.version = version
     this.#take(remote)
     await this.#save()
     if (Object.keys(record.pending).length > 0) { this.#later() }
@@ -322,9 +341,10 @@ export class DriveSheet {
       }}]},
       source: 'drive'
     })
-    Object.assign(record, {fileId: file.id, headers: [...this.#columns], extra: [], height: 0, width: 0, pending: {}})
+    Object.assign(record, {fileId: file.id, version: null, headers: [...this.#columns], extra: [], height: 0, width: 0, pending: {}})
     record.rows = rows.map(row => this.#clean(row))
     await this.#writeTab(record)
+    record.version = await this.#version(file.id).catch(() => null)
     await this.#save()
     this.#report()
     return record.rows
@@ -420,7 +440,7 @@ export class DriveSheet {
 
   // ---------------------------------------------------------------- inside
 
-  #empty () { return {rows: [], headers: [...this.#columns], extra: [], fileId: null, height: 0, width: 0, pending: {}} }
+  #empty () { return {rows: [], headers: [...this.#columns], extra: [], fileId: null, version: null, height: 0, width: 0, pending: {}} }
 
   #listen () {
     if (this.#listening) { return }
@@ -500,15 +520,19 @@ export class DriveSheet {
     const record = this.#record
     const pending = {...record.pending}
     if (Object.keys(pending).length === 0) { return }
-    if (!await this.#alive(record.fileId)) { // the changes wait for pull() and create()
+    const version = await this.#version(record.fileId)
+    if (version === null) { // the changes wait for pull() and create()
       record.fileId = null
       await this.#save()
       throw new Error('the spreadsheet is in the trash, or deleted')
     }
-    const remote = await this.#readTab(record.fileId)
-    if (remote === null) { throw new Error('the spreadsheet does not exist any more') }
-    this.#take(remote)
+    if (version === '' || version !== record.version) { // changed elsewhere (another window, another computer, by hand): merged
+      const remote = await this.#readTab(record.fileId)
+      if (remote === null) { throw new Error('the spreadsheet does not exist any more') }
+      this.#take(remote)
+    }
     await this.#writeTab(record)
+    record.version = await this.#version(record.fileId).catch(() => null)
     // the rows sent are no longer pending, unless they changed again meanwhile
     for (const [key, row] of Object.entries(pending)) { if (record.pending[key] === row) { delete record.pending[key] } }
     await this.#save()
@@ -567,14 +591,14 @@ export class DriveSheet {
     record.width = headers.length
   }
 
-  // whether the spreadsheet is still there: not deleted, not in the trash (a file in the trash can still be read and
-  // written through its identifier)
-  async #alive (fileId) {
+  // the version of the spreadsheet in Drive (raised at each change of the file): null when it is deleted or in the
+  // trash (a file in the trash can still be read and written through its identifier); '' when Drive does not give it
+  async #version (fileId) {
     try {
-      const file = await this.#account.request(`${DRIVE}/${fileId}`, {query: {fields: 'trashed'}, source: 'drive'})
-      return file?.trashed !== true
+      const file = await this.#account.request(`${DRIVE}/${fileId}`, {query: {fields: 'trashed,version'}, source: 'drive'})
+      return file?.trashed === true ? null : String(file?.version ?? '')
     } catch (error) {
-      if (error.status === 404) { return false }
+      if (error.status === 404) { return null }
       throw error
     }
   }

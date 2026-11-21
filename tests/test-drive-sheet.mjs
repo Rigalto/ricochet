@@ -31,7 +31,7 @@ class FakeGoogle {
     if (meta !== null && method === 'GET') {
       const file = this.files.get(meta[1])
       if (file === undefined || file.deleted) { throw Object.assign(new Error('File not found'), {status: 404}) }
-      return {trashed: file.trashed === true}
+      return {trashed: file.trashed === true, version: String(file.version ?? 1)}
     }
     if (path === '/drive/v3/files' && method === 'POST') {
       const id = `${body.mimeType.endsWith('folder') ? 'd' : 's'}${this.#next++}`
@@ -47,6 +47,7 @@ class FakeGoogle {
       return {sheets: Object.keys(file.tabs).map((title, index) => ({properties: {sheetId: index * 7}}))}
     }
     if (rest === ':batchUpdate') {
+      file.version = (file.version ?? 1) + 1
       for (const request of body.requests) {
         if (request.updateSheetProperties) {
           const [old] = Object.keys(file.tabs)
@@ -77,6 +78,7 @@ class FakeGoogle {
       return values.length === 0 ? {range} : {range, values}
     }
     if (method === 'PUT') {
+      file.version = (file.version ?? 1) + 1
       this.lastInput = query.valueInputOption
       const tab = file.tabs[range]
       body.values.forEach((line, y) => {
@@ -88,7 +90,12 @@ class FakeGoogle {
     throw new Error(`unexpected ${method} ${path}`)
   }
 
-  tab (name = 'fiches') { return [...this.files.values()].find(f => f.tabs?.[name] && !f.trashed && !f.deleted)?.tabs[name] }
+  // the tab, as the user sees it: may be changed (the version of the file raised, as by Google)
+  tab (name = 'fiches') {
+    const file = [...this.files.values()].find(f => f.tabs?.[name] && !f.trashed && !f.deleted)
+    if (file !== undefined) { file.version = (file.version ?? 1) + 1 }
+    return file?.tabs[name]
+  }
 }
 
 class MemoryCache {
@@ -138,10 +145,14 @@ await describe('DriveSheet — creation and reading', async () => {
   const read = await other.sheet.pull()
   assert('another browser finds the spreadsheet through the folders, reads the raw values', read.length === 2 && read[0].Avancement === true &&
     read[1].Mots === 0 && read[0].id === 'a1' && google.lastRender === 'UNFORMATTED_VALUE')
-  assert('… four searches and one reading', google.calls.filter(c => c.startsWith('GET /drive')).length === 4 && google.calls.length === 5)
+  assert('… four searches, its version, one reading', google.calls.filter(c => c.startsWith('GET /drive')).length === 5 && google.calls.length === 6)
   google.calls.length = 0
   await other.sheet.pull()
-  assert('the spreadsheet known: checked, then read', google.calls.length === 2 && google.calls[0].startsWith('GET /drive/v3/files/'))
+  assert('the spreadsheet known and not changed: its version only, not read', google.calls.length === 1 && google.calls[0].startsWith('GET /drive/v3/files/'))
+  google.tab()[1][2] = 'Changé'
+  google.calls.length = 0
+  const changed = await other.sheet.pull()
+  assert('changed in Drive: its version, then read', google.calls.length === 2 && changed[0].Titre === 'Changé')
   const again = make({google, local: other.local})
   assert('the local copy, at once, without Google', (await again.sheet.load()).length === 2 && google.calls.length === 2)
 })
@@ -228,6 +239,7 @@ await describe('DriveSheet — deleted spreadsheet, renamed tab, failures, forge
   await sheet.create(ROWS)
   const [id] = [...google.files].find(([, f]) => f.name === 'prg-not')
   google.files.get(id).tabs = {Autre: []}
+  google.files.get(id).version += 1
   const rows = await sheet.pull()
   assert('a renamed tab: added again, empty; the rows of this browser are only the ones that wait', rows.length === 0 && 'fiches' in google.files.get(id).tabs)
   google.files.get(id).trashed = true
@@ -298,6 +310,7 @@ await describe('DriveSheet — a reading and a sending do not overlap', async ()
   await sheet.create(ROWS)
   // a reading slow to answer starts, then a row is added: its sending waits for the reading
   let open
+  google.tab() // changed in Drive: the reading reads the tab
   google.gate = new Promise(resolve => { open = resolve })
   const reading = sheet.pull()
   await sleep(5)
@@ -313,4 +326,36 @@ await describe('DriveSheet — a reading and a sending do not overlap', async ()
   await sleep(25) // the sending started
   const read = await sheet.pull()
   assert('the reading after the sending: the row in Drive and in memory', read.map(r => r.id).join() === 'a1,a2,a3,a4' && google.tab().length === 5)
+})
+
+await describe('DriveSheet — sending without reading', async () => {
+  const google = new FakeGoogle()
+  const {sheet} = make({google})
+  await sheet.load()
+  await sheet.create(ROWS)
+  const reads = () => google.calls.filter(c => c.startsWith('GET /v4/spreadsheets/') && c.includes('/values/')).length
+  google.calls.length = 0
+  await sheet.put({id: 'a3', Étiquette: 'Trois'})
+  await sleep(60)
+  assert('changed only here: written without reading', reads() === 0 && google.calls.filter(c => c.startsWith('PUT')).length === 1 &&
+    sheet.pending.length === 0)
+  google.calls.length = 0
+  await sheet.put({id: 'a1', Étiquette: 'Un, revu'})
+  await sleep(60)
+  assert('… again: its version known after its own writing', reads() === 0)
+  // another browser changes the spreadsheet
+  const other = make({google})
+  await other.sheet.pull()
+  await other.sheet.put({id: 'b1', Étiquette: 'Ailleurs'})
+  await sleep(60)
+  google.calls.length = 0
+  await sheet.put({id: 'a4', Étiquette: 'Quatre'})
+  await sleep(60)
+  const merged = reads()
+  google.calls.length = 0
+  await sheet.pull()
+  assert('a reading after: the copy is right, not read', reads() === 0)
+  const ids = google.tab().slice(1).map(line => line[0]).join()
+  assert('changed elsewhere: read, merged, written: nothing lost', merged === 1 && ids === 'a1,a2,a3,b1,a4' &&
+    sheet.rows.map(r => r.id).join() === 'a1,a2,a3,b1,a4')
 })
