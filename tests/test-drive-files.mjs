@@ -4,7 +4,7 @@
 // tests/test-drive-files.mjs — node tests/run.mjs DriveFiles
 // The files of an application in folders of Drive (adapters/drive-files.mjs), with a fake Drive and a fake account:
 // the folders found or created, the lists kept, the sending (one request, or two for a large file), the replacement,
-// the copy, the reading, the source of images, forget().
+// the copy, the reading, the source of images, the trash, the move, forget().
 
 import {describe, assert} from './kernel.mjs'
 import {DriveFiles} from '../src/adapters/drive-files.mjs'
@@ -55,7 +55,9 @@ class FakeDrive {
     const media = /^\/drive\/v3\/files\/([^/]+)$/.exec(path)
     if (media !== null && query.alt === 'media') { return new Blob([this.files.get(media[1]).content]) }
     if (media !== null && method === 'PATCH') {
-      Object.assign(this.files.get(media[1]), body)
+      const file = this.files.get(media[1])
+      if (query.addParents !== undefined) { file.parents = [...file.parents.filter(parent => parent !== query.removeParents), query.addParents] }
+      Object.assign(file, body)
       return {id: media[1]}
     }
     if (path === '/upload/drive/v3/files' && query.uploadType === 'multipart') {
@@ -209,4 +211,40 @@ await describe('DriveFiles — the trash', async () => {
   assert('the root cannot be put in the trash', error?.message.includes('root'))
   const again = await files.upload('notes/n5', new TestFile(['new'], 'b.txt'))
   assert('a new folder of the same name afterwards', again.name === 'b.txt' && drive.at('App', 'data', 'notes', 'n5', 'b.txt')?.content === 'new')
+})
+
+await describe('DriveFiles — move', async () => {
+  const drive = new FakeDrive()
+  const files = new DriveFiles({account: drive, root: ['App', 'data']})
+  const a = await files.upload('prg/not/c1', new TestFile(['a'], 'a.png'))
+  await files.upload('prg/not/c1/sub', new TestFile(['s'], 's.txt'))
+  const folder = await files.folder('prg/not/c1')
+  drive.calls.length = 0
+  assert('moved: true', await files.move('prg/not/c1', 'gam/not/c2') === true)
+  const moved = drive.at('App', 'data', 'gam', 'not', 'c2')
+  assert('… another parent (created), another name: the same folder', moved !== null && drive.files.get(folder) === moved &&
+    drive.at('App', 'data', 'prg', 'not', 'c1') === null)
+  assert('… one request for the move', drive.calls.filter(call => call.startsWith('PATCH')).length === 1)
+  assert('… its files and folders with it, the same identifiers', drive.at('App', 'data', 'gam', 'not', 'c2', 'a.png') === drive.files.get(a.id) &&
+    drive.at('App', 'data', 'gam', 'not', 'c2', 'sub', 's.txt') !== null)
+  assert('… the memory up to date', await files.folder('prg/not/c1') === null && await files.folder('gam/not/c2') === folder &&
+    (await files.find('gam/not/c2', 'a.png'))?.id === a.id && (await files.list('gam/not/c2/sub')).map(f => f.name).join() === 's.txt')
+  files.forget()
+  assert('… and in Drive (read again)', (await files.find('gam/not/c2', 'a.png'))?.id === a.id && await files.folder('prg/not/c1') === null)
+  assert('done again: nothing to do (false)', await files.move('prg/not/c1', 'gam/not/c2') === false)
+  drive.calls.length = 0
+  await files.move('gam/not/c2', 'gam/not/c3')
+  const patch = drive.calls.find(call => call.startsWith('PATCH'))
+  assert('only renamed: the same parent', drive.at('App', 'data', 'gam', 'not', 'c3') === moved && moved.parents.length === 1 && patch !== undefined)
+  await files.upload('gam/not/c4', new TestFile(['x'], 'x.txt'))
+  const errors = []
+  for (const [from, to] of [['gam/not/c3', 'gam/not/c4'], ['gam/not/c3', 'gam/not/c3/in'], ['', 'x'], ['gam/not/c3', '']]) {
+    try { await files.move(from, to) } catch (e) { errors.push(e.message) }
+  }
+  assert('refused: an existing target, into itself, the root', errors.length === 4 && errors[0].includes('exists') &&
+    errors[1].includes('into itself') && errors[2].includes('root') && errors[3].includes('root'))
+  const bare = new DriveFiles({account: drive})
+  let error = null
+  try { await bare.move('App', 'Other') } catch (e) { error = e }
+  assert('the first folder of an empty root cannot be moved', error?.message.includes('first folder'))
 })

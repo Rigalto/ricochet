@@ -29,12 +29,14 @@
  * A name is unique in a folder: `upload()` replaces the content of a file of the same name (it keeps its identifier,
  * so that its links in Drive still work). The application asks the user before, if needed (`find()`). A file put in
  * the trash is no longer seen: by the user in Drive, or by `remove()` (a file) and `trash()` (a folder and all it
- * holds, the files of the user included); Drive keeps them in its trash for 30 days.
+ * holds, the files of the user included); Drive keeps them in its trash for 30 days. `move()` moves a folder, with all
+ * it holds, to another path (another parent, another name): its files keep their identifiers.
  *
  * ## Memory
  *
  * The identifiers of the folders and the list of each folder read are kept for the page: the images of a page ask for
- * one list per folder, not one request per image. `upload()` and `copy()` keep the lists up to date; `forget()` drops
+ * one list per folder, not one request per image. `upload()`, `copy()`, `remove()`, `trash()` and `move()` keep them
+ * up to date; `forget()` drops
  * everything (the user changed Drive by hand: the next requests read it again).
  *
  * ## Sending
@@ -224,6 +226,46 @@ export class DriveFiles {
         if (id !== null) { this.#lists.delete(id) }
       }
     }
+    return true
+  }
+
+  /**
+   * Moves a folder, with all it holds, to another path: another parent (created when missing), another name, or both,
+   * in one request; its files and folders keep their identifiers (their links in Drive still work). Done again once
+   * the folder is moved, it does nothing: a process interrupted can be run again.
+   * @param {string} from - The folder, under the root (not the root, nor the first folder of an empty root).
+   * @param {string} to - Its new path, under the root; it must not exist, nor be inside the folder.
+   * @returns {Promise<boolean>} `true` if the folder was moved, `false` if it does not exist (moved already?).
+   */
+  async move (from, to) {
+    const source = names(from)
+    const target = names(to)
+    if (source.length === 0 || target.length === 0) { throw new Error('DriveFiles: the root cannot be moved') }
+    const fromPath = source.join('/')
+    const toPath = target.join('/')
+    if (toPath === fromPath || toPath.startsWith(`${fromPath}/`)) { throw new Error(`DriveFiles: '${from}' cannot be moved into itself`) }
+    const folder = await this.folder(fromPath)
+    if (folder === null) { return false }
+    if (await this.folder(toPath) !== null) { throw new Error(`DriveFiles: '${to}' exists already`) }
+    const oldParent = await this.folder(source.slice(0, -1).join('/'))
+    if (oldParent === null) { throw new Error('DriveFiles: the first folder of the root cannot be moved') }
+    this.#count(1)
+    try {
+      const newParent = await this.folder(target.slice(0, -1).join('/'), {create: true})
+      const query = {fields: 'id', ...(newParent === oldParent ? {} : {addParents: newParent, removeParents: oldParent})}
+      await this.#account.request(`${DRIVE}/${encodeURIComponent(folder)}`, {
+        method: 'PATCH', query, body: {name: target.at(-1)}, source: this.#source
+      })
+    } finally {
+      this.#count(-1)
+    }
+    // the paths of the folder, and under it, forgotten; the new path known (the lists, by identifier, stay right)
+    const fromKey = [...this.#root, ...source].join('/')
+    const toKey = [...this.#root, ...target].join('/')
+    for (const kept of [...this.#folders.keys()]) {
+      if ([fromKey, toKey].some(key => kept === key || kept.startsWith(`${key}/`))) { this.#folders.delete(kept) }
+    }
+    this.#folders.set(toKey, Promise.resolve(folder))
     return true
   }
 
