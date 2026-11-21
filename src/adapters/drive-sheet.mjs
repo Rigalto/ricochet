@@ -52,7 +52,7 @@
  * a few seconds later (`uploadDelay`): the tab is read again, the rows changed here replace its rows, and the whole
  * tab is written in one request (the spreadsheet is checked first: one in the trash is not written, the changes wait).
  * A row changed in the spreadsheet and not here keeps the version of the spreadsheet;
- * the last change of a row wins. A failed sending is tried again 30 seconds later (`retryDelay`), and at the next
+ * the last change of a row wins. A reading (`pull()`) and a sending never overlap: each waits for the other to end. A failed sending is tried again 30 seconds later (`retryDelay`), and at the next
  * connection; the changes wait in the local copy, even when the page is closed.
  *
  * What waits is reported to `pendingWrites` (source `sheet <file>/<tab>` by default), as for `DriveConfigAdapter`.
@@ -186,6 +186,7 @@ export class DriveSheet {
   #record = null // the local copy: {rows, headers, extra, fileId, height, width, pending: {key: row|null}}
   #reading = null // the local copy being read (promise)
   #running = null // the sending in progress (promise), one at a time
+  #pulling = null // the reading in progress (promise): a reading and a sending never overlap
   #again = null // another sending asked during one: {promise, resolve}
   #timer = null
   #failed = false
@@ -266,6 +267,18 @@ export class DriveSheet {
    */
   async pull () {
     this.#listen()
+    // after the sending in progress: a tab read before it is written, merged after it, would lose the rows just sent
+    while (this.#running !== null) { await this.#running }
+    const pulling = this.#pull()
+    this.#pulling = pulling
+    try {
+      return await pulling
+    } finally {
+      if (this.#pulling === pulling) { this.#pulling = null }
+    }
+  }
+
+  async #pull () {
     const record = await this.#read()
     if (record.fileId !== null && !await this.#alive(record.fileId)) { // put in the trash, or deleted
       record.fileId = null
@@ -371,7 +384,8 @@ export class DriveSheet {
     }
     clearTimeout(this.#timer)
     this.#timer = null
-    this.#running = this.#send()
+    this.#running = this.#afterPull()
+      .then(() => this.#send())
       .then(() => { this.#failed = false })
       .catch(error => {
         this.#failed = true
@@ -474,6 +488,11 @@ export class DriveSheet {
     const known = new Set(remote.rows.map(row => row[this.#key]))
     for (const [key, row] of Object.entries(pending)) { if (row !== null && !known.has(key)) { rows.push(row) } }
     Object.assign(record, {rows, headers: remote.headers, extra: remote.extra, height: remote.height, width: remote.width})
+  }
+
+  // the readings in progress done (failed or not)
+  async #afterPull () {
+    while (this.#pulling !== null) { await this.#pulling.catch(() => {}) }
   }
 
   // sends the changes that wait: the tab read again, merged, written

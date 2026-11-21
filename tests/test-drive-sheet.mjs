@@ -60,6 +60,13 @@ class FakeGoogle {
     const range = decodeURIComponent(rest.replace('/values/', '')).replace(/^'(.*)'$/, '$1').replaceAll("\\'", "'")
     if (!(range in file.tabs)) { throw Object.assign(new Error(`Unable to parse range: ${range}`), {status: 400}) }
     if (method === 'GET') {
+      if (this.gate !== undefined) { // a slow reading: the tab of the moment, given when the gate opens
+        const gate = this.gate
+        this.gate = undefined
+        const values = structuredClone(file.tabs[range])
+        await gate
+        return {range, values}
+      }
       this.lastRender = query.valueRenderOption
       const values = file.tabs[range].map(line => { // Sheets drops the empty cells at the end of the lines and the empty lines
         const copy = [...line]
@@ -282,4 +289,28 @@ await describe('DriveSheet — forgetAll', async () => {
     first.sheet.pending.length === 0 && second.rows.length === 0 && local.map.size === 0)
   assert('… the tables of another database kept', elsewhere.rows.length === 1)
   assert('… the spreadsheets in Drive kept', google.tab().length === 3)
+})
+
+await describe('DriveSheet — a reading and a sending do not overlap', async () => {
+  const google = new FakeGoogle()
+  const {sheet} = make({google})
+  await sheet.load()
+  await sheet.create(ROWS)
+  // a reading slow to answer starts, then a row is added: its sending waits for the reading
+  let open
+  google.gate = new Promise(resolve => { open = resolve })
+  const reading = sheet.pull()
+  await sleep(5)
+  await sheet.put({id: 'a3', Étiquette: 'Trois'})
+  await sleep(60)
+  assert('the sending waits for the reading', google.tab().length === 3)
+  open()
+  await reading
+  await sleep(60)
+  assert('… the row kept in memory, then written', sheet.rows.map(r => r.id).join() === 'a1,a2,a3' && google.tab().length === 4 && sheet.pending.length === 0)
+  // a sending in progress, then a reading: the reading waits for it
+  await sheet.put({id: 'a4', Étiquette: 'Quatre'})
+  await sleep(25) // the sending started
+  const read = await sheet.pull()
+  assert('the reading after the sending: the row in Drive and in memory', read.map(r => r.id).join() === 'a1,a2,a3,a4' && google.tab().length === 5)
 })
