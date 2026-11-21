@@ -52,7 +52,7 @@ their parent.
 a few seconds later (`uploadDelay`): the tab is read again, the rows changed here replace its rows, and the whole
 tab is written in one request (the spreadsheet is checked first: one in the trash is not written, the changes wait).
 A row changed in the spreadsheet and not here keeps the version of the spreadsheet;
-the last change of a row wins. A failed sending is tried again 30 seconds later (`retryDelay`), and at the next
+the last change of a row wins. A reading (`pull()`) and a sending never overlap: each waits for the other to end. A failed sending is tried again 30 seconds later (`retryDelay`), and at the next
 connection; the changes wait in the local copy, even when the page is closed.
 
 What waits is reported to `pendingWrites` (source `sheet <file>/<tab>` by default), as for `DriveConfigAdapter`.
