@@ -99,6 +99,19 @@ is nothing to do.
 
 **Returns** `Promise<boolean>` `true` if the folder was put in the trash, `false` if it does not exist.
 
+### async move(from, to)
+
+Moves a folder, with all it holds, to another path: another parent (created when missing), another name, or both,
+in one request; its files and folders keep their identifiers (their links in Drive still work). Done again once
+the folder is moved, it does nothing: a process interrupted can be run again.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `from` | string | The folder, under the root (not the root, nor the first folder of an empty root). |
+| `to` | string | Its new path, under the root; it must not exist, nor be inside the folder. |
+
+**Returns** `Promise<boolean>` `true` if the folder was moved, `false` if it does not exist (moved already?).
+
 ### read(file)
 
 The content of a file.

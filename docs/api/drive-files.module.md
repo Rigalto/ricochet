@@ -29,12 +29,14 @@ creates the missing ones.
 A name is unique in a folder: `upload()` replaces the content of a file of the same name (it keeps its identifier,
 so that its links in Drive still work). The application asks the user before, if needed (`find()`). A file put in
 the trash is no longer seen: by the user in Drive, or by `remove()` (a file) and `trash()` (a folder and all it
-holds, the files of the user included); Drive keeps them in its trash for 30 days.
+holds, the files of the user included); Drive keeps them in its trash for 30 days. `move()` moves a folder, with all
+it holds, to another path (another parent, another name): its files keep their identifiers.
 
 ## Memory
 
 The identifiers of the folders and the list of each folder read are kept for the page: the images of a page ask for
-one list per folder, not one request per image. `upload()` and `copy()` keep the lists up to date; `forget()` drops
+one list per folder, not one request per image. `upload()`, `copy()`, `remove()`, `trash()` and `move()` keep them
+up to date; `forget()` drops
 everything (the user changed Drive by hand: the next requests read it again).
 
 ## Sending
