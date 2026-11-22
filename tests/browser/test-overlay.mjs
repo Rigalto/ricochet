@@ -195,6 +195,37 @@ await describe('rc-dropdown', async () => {
   const b = $('#d4 rc-text-button').getBoundingClientRect()
   assert('computed placement: below the button, moved to the left to stay in the window', r.top >= b.bottom && r.right <= window.innerWidth - 7 && r.left < b.left)
   key('Escape')
+  // a window higher than the browser window: a scroll bar, in both placements
+  for (const anchored of [false, CSS.supports('anchor-name: --rc')]) {
+    RcDropdown.anchorPositioning = anchored
+    sandbox.insertAdjacentHTML('beforeend', '<rc-dropdown id="d5" label="Tall"><div id="tall" style="height: 3000px">tall</div></rc-dropdown>')
+    RcDropdown.anchorPositioning = CSS.supports('anchor-name: --rc')
+    await tick()
+    $('#d5 button').click()
+    await frame()
+    await frame()
+    const win = $('#d5 [popover]')
+    const box = win.getBoundingClientRect()
+    assert(`a window higher than the browser window (${anchored ? 'anchored' : 'computed'}): inside it, with a scroll bar`,
+      box.top >= 0 && box.bottom <= window.innerHeight + 1 && win.scrollHeight > win.clientHeight)
+    // a scroll inside the window: it stays open
+    win.scrollTop = 100
+    win.dispatchEvent(new Event('scroll'))
+    assert('… a scroll inside the window: still open', $('#d5')._component.open)
+    // the page scrolls and the button goes under a fixed banner: the window closes
+    const button = $('#d5 rc-text-button').getBoundingClientRect()
+    sandbox.insertAdjacentHTML('beforeend', `<div id="banner" style="position: fixed; left: 0; right: 0; top: ${Math.max(0, button.top - 5)}px; height: ${button.height + 10}px; background: grey; z-index: 10"></div>`)
+    document.dispatchEvent(new Event('scroll'))
+    assert('… the button under a fixed banner, the page scrolled: the window closes', !$('#d5')._component.open && keyboard.layers === 0)
+    $('#banner').remove()
+    $('#d5').remove()
+    await tick()
+  }
+  $('#d4 button').click()
+  await frame()
+  document.dispatchEvent(new Event('scroll'))
+  assert('the page scrolls, the button still seen: the window stays open', $('#d4')._component.open)
+  key('Escape')
   sandbox.innerHTML = ''
   await tick()
   assert('no window left open', keyboard.layers === 0)

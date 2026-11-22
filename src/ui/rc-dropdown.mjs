@@ -40,9 +40,13 @@
  * ## Placement
  *
  * The window is placed below the button, aligned on its left side; when it does not fit in the browser window, it is
- * moved to the left, or shown above the button. Browsers that know CSS anchor positioning (Chrome 125, Safari 26,
- * Firefox 147) place it themselves; for the others, the component places it, and again when the window or the content
- * changes size or the page scrolls. `RcDropdown.anchorPositioning` tells which is used.
+ * moved to the left, or shown above the button: on the side with the most room. A window higher than that room gets a
+ * scroll bar. Browsers that know CSS anchor positioning (Chrome 125, Safari 26, Firefox 147) place it themselves; for
+ * the others, the component places it, and again when the window or the content changes size or the page scrolls.
+ * `RcDropdown.anchorPositioning` tells which is used.
+ *
+ * When the page scrolls so that the button is no longer seen (out of the browser window, or under another element: a
+ * fixed banner at the top of the page), the window closes: being in the top layer, it would show above that banner.
  *
  * ## Look
  *
@@ -77,7 +81,9 @@ rc-dropdown > [popover] {
 rc-dropdown > [popover].rc-anchored {
   position-area: bottom span-right;
   position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+  position-try-order: most-height;
   margin-block: 4px;
+  max-height: calc(100% - 4px); /* the room on its side of the button: a scroll bar beyond */
 }
 `, {layer: 'ricochet'})
 
@@ -181,6 +187,16 @@ export class RcDropdown extends WComponent {
 
   placementChanged () { this.#place() }
 
+  // the page scrolls (not the window itself): the button no longer seen, the window closes; else it follows the button
+  pageScrolled (e) {
+    if (e.target instanceof Node && this.elWindow.contains(e.target)) { return }
+    if (!this.#buttonSeen()) {
+      this.close()
+      return
+    }
+    if (!this.anchored) { this.#place() }
+  }
+
   // ------------------------------------------------------------------ opening and closing
 
   /** Opens the window. */
@@ -195,11 +211,11 @@ export class RcDropdown extends WComponent {
     keyboard.openLayer(this, [{key: 'Escape', action: {event: 'dropdownClose', param: {id: this.element.id}}}])
     this.observeDom(document, 'pointerdown', 'pointerPressed', {capture: true})
     this.observeDom(document, 'click', 'documentClicked')
+    this.observeDom(document, 'scroll', 'pageScrolled', {capture: true, passive: true})
     if (!this.anchored) {
       this.resizeObserver = new ResizeObserver(() => this.#place())
       this.resizeObserver.observe(this.elWindow)
       this.observeDom(window, 'resize', 'placementChanged')
-      this.observeDom(document, 'scroll', 'placementChanged', {capture: true, passive: true})
       this.#place()
     }
     this.#aria()
@@ -220,14 +236,14 @@ export class RcDropdown extends WComponent {
     keyboard.closeLayer(this)
     this.unobserveDom(document, 'pointerdown', 'pointerPressed')
     this.unobserveDom(document, 'click', 'documentClicked')
+    this.unobserveDom(document, 'scroll', 'pageScrolled')
     if (!this.anchored) {
       this.resizeObserver?.disconnect()
       this.unobserveDom(window, 'resize', 'placementChanged')
-      this.unobserveDom(document, 'scroll', 'placementChanged')
     }
     if (this.element.hasAttribute('content')) { this.elWindow.replaceChildren() }
     this.#aria()
-    if (focusInside) { this.elTrigger.querySelector('button')?.focus() }
+    if (focusInside) { this.elTrigger.querySelector('button')?.focus({preventScroll: true}) }
   }
 
   detach () { this.resizeObserver?.disconnect() }
@@ -242,20 +258,34 @@ export class RcDropdown extends WComponent {
     button.setAttribute('aria-expanded', this.open ? 'true' : 'false')
   }
 
-  // below the button, aligned on its left side; moved to the left, or above, to stay in the browser window
+  // whether the button is seen: in the browser window, and not under another element (a fixed banner)
+  #buttonSeen () {
+    const box = this.elTrigger.getBoundingClientRect()
+    if (box.width === 0 || box.bottom <= 0 || box.top >= window.innerHeight || box.right <= 0 || box.left >= window.innerWidth) { return false }
+    const x = Math.min(Math.max((box.left + box.right) / 2, 0), window.innerWidth - 1)
+    const y = Math.min(Math.max((box.top + box.bottom) / 2, 0), window.innerHeight - 1)
+    const top = document.elementFromPoint(x, y)
+    return top === null || this.elTrigger.contains(top) || this.elWindow.contains(top)
+  }
+
+  // below the button, aligned on its left side; moved to the left, or above (the side with the most room), to stay in
+  // the browser window; higher than that room: a scroll bar
   #place () {
     if (!this.open) { return }
     const button = this.elTrigger.getBoundingClientRect()
+    this.elWindow.style.maxHeight = ''
     const width = this.elWindow.offsetWidth
-    const height = this.elWindow.offsetHeight
+    const natural = this.elWindow.offsetHeight
     const right = window.innerWidth - EDGE
-    const bottom = window.innerHeight - EDGE
+    const below = window.innerHeight - EDGE - (button.bottom + GAP)
+    const above = button.top - GAP - EDGE
     let left = button.left
     if (left + width > right) { left = Math.max(EDGE, right - width) }
-    let top = button.bottom + GAP
-    if (top + height > bottom) {
-      top = button.top - GAP - height >= EDGE ? button.top - GAP - height : Math.max(EDGE, bottom - height)
-    }
+    const under = natural <= below || below >= above
+    const room = Math.max(0, under ? below : above)
+    const height = Math.min(natural, room)
+    if (natural > room) { this.elWindow.style.maxHeight = `${Math.round(room)}px` }
+    const top = under ? button.bottom + GAP : button.top - GAP - height
     this.elWindow.style.left = `${Math.round(left)}px`
     this.elWindow.style.top = `${Math.round(top)}px`
   }
