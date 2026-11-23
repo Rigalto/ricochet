@@ -107,7 +107,8 @@ rc-floating-button > button:active { filter: brightness(.92); box-shadow: var(--
 rc-floating-button > button:focus-visible { outline: 3px solid var(--rc-focus); outline-offset: 2px; }
 rc-floating-button > button:disabled { filter: grayscale(1) opacity(.55); box-shadow: none; cursor: not-allowed; }
 rc-floating-button > button > span:empty { display: none; }
-@media print { rc-floating-bar { display: none; } }
+/* !important: the default display of the element (rc-floating-bar:not([hidden]), same layer) is more specific */
+@media print { rc-floating-bar { display: none !important; } }
 `, {layer: 'ricochet'})
 
 const DEFAULT_SIZE = 33
