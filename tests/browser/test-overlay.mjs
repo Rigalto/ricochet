@@ -212,11 +212,13 @@ await describe('rc-dropdown', async () => {
     win.scrollTop = 100
     win.dispatchEvent(new Event('scroll'))
     assert('… a scroll inside the window: still open', $('#d5')._component.open)
-    // the page scrolls and the button goes under a fixed banner: the window closes
+    // the page scrolls and the button goes under a fixed banner: the window stays open, above it
     const button = $('#d5 rc-text-button').getBoundingClientRect()
     sandbox.insertAdjacentHTML('beforeend', `<div id="banner" style="position: fixed; left: 0; right: 0; top: ${Math.max(0, button.top - 5)}px; height: ${button.height + 10}px; background: grey; z-index: 10"></div>`)
     document.dispatchEvent(new Event('scroll'))
-    assert('… the button under a fixed banner, the page scrolled: the window closes', !$('#d5')._component.open && keyboard.layers === 0)
+    assert('… the button under a fixed banner, the page scrolled: still open', $('#d5')._component.open)
+    assert('… the end of its scroll does not scroll the page', getComputedStyle(win).overscrollBehavior.startsWith('contain'))
+    key('Escape')
     $('#banner').remove()
     $('#d5').remove()
     await tick()
@@ -224,7 +226,7 @@ await describe('rc-dropdown', async () => {
   $('#d4 button').click()
   await frame()
   document.dispatchEvent(new Event('scroll'))
-  assert('the page scrolls, the button still seen: the window stays open', $('#d4')._component.open)
+  assert('the page scrolls: the window stays open', $('#d4')._component.open)
   key('Escape')
   sandbox.innerHTML = ''
   await tick()

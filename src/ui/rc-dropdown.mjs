@@ -41,12 +41,9 @@
  *
  * The window is placed below the button, aligned on its left side; when it does not fit in the browser window, it is
  * moved to the left, or shown above the button: on the side with the most room. A window higher than that room gets a
- * scroll bar. Browsers that know CSS anchor positioning (Chrome 125, Safari 26, Firefox 147) place it themselves; for
- * the others, the component places it, and again when the window or the content changes size or the page scrolls.
- * `RcDropdown.anchorPositioning` tells which is used.
- *
- * When the page scrolls so that the button is no longer seen (out of the browser window, or under another element: a
- * fixed banner at the top of the page), the window closes: being in the top layer, it would show above that banner.
+ * scroll bar; at the end of its scroll, the page does not scroll. Browsers that know CSS anchor positioning (Chrome
+ * 125, Safari 26, Firefox 147) place it themselves; for the others, the component places it, and again when the window
+ * or the content changes size or the page scrolls. `RcDropdown.anchorPositioning` tells which is used.
  *
  * ## Look
  *
@@ -71,6 +68,7 @@ rc-dropdown > [popover] {
   max-width: calc(100vw - 16px);
   max-height: calc(100vh - 16px);
   overflow: auto;
+  overscroll-behavior: contain; /* the end of its scroll does not scroll the page */
   padding: .5rem .75rem;
   border: 1px solid var(--rc-border);
   border-radius: 8px;
@@ -187,13 +185,9 @@ export class RcDropdown extends WComponent {
 
   placementChanged () { this.#place() }
 
-  // the page scrolls (not the window itself): the button no longer seen, the window closes; else it follows the button
+  // the page scrolls (not the window itself): the window follows the button
   pageScrolled (e) {
     if (e.target instanceof Node && this.elWindow.contains(e.target)) { return }
-    if (!this.#buttonSeen()) {
-      this.close()
-      return
-    }
     if (!this.anchored) { this.#place() }
   }
 
@@ -256,16 +250,6 @@ export class RcDropdown extends WComponent {
     button.setAttribute('aria-haspopup', 'true')
     button.setAttribute('aria-controls', this.elWindow.id)
     button.setAttribute('aria-expanded', this.open ? 'true' : 'false')
-  }
-
-  // whether the button is seen: in the browser window, and not under another element (a fixed banner)
-  #buttonSeen () {
-    const box = this.elTrigger.getBoundingClientRect()
-    if (box.width === 0 || box.bottom <= 0 || box.top >= window.innerHeight || box.right <= 0 || box.left >= window.innerWidth) { return false }
-    const x = Math.min(Math.max((box.left + box.right) / 2, 0), window.innerWidth - 1)
-    const y = Math.min(Math.max((box.top + box.bottom) / 2, 0), window.innerHeight - 1)
-    const top = document.elementFromPoint(x, y)
-    return top === null || this.elTrigger.contains(top) || this.elWindow.contains(top)
   }
 
   // below the button, aligned on its left side; moved to the left, or above (the side with the most room), to stay in

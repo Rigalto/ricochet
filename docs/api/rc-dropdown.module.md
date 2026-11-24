@@ -41,12 +41,9 @@ comes back to the button when the window closes.
 
 The window is placed below the button, aligned on its left side; when it does not fit in the browser window, it is
 moved to the left, or shown above the button: on the side with the most room. A window higher than that room gets a
-scroll bar. Browsers that know CSS anchor positioning (Chrome 125, Safari 26, Firefox 147) place it themselves; for
-the others, the component places it, and again when the window or the content changes size or the page scrolls.
-`RcDropdown.anchorPositioning` tells which is used.
-
-When the page scrolls so that the button is no longer seen (out of the browser window, or under another element: a
-fixed banner at the top of the page), the window closes: being in the top layer, it would show above that banner.
+scroll bar; at the end of its scroll, the page does not scroll. Browsers that know CSS anchor positioning (Chrome
+125, Safari 26, Firefox 147) place it themselves; for the others, the component places it, and again when the window
+or the content changes size or the page scrolls. `RcDropdown.anchorPositioning` tells which is used.
 
 ## Look
 
