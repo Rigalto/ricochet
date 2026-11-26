@@ -303,8 +303,9 @@ palettes and themes, the UI components `rc-*`, unit and browser tests.
    shown as images (`ricochet/adapters/drive-files.mjs`); the file picker of Google, for the files of the user not
    created by the application (`googleAccount.pick()`); the fields of the records of the application, shown and changed
    by the components with `data-field="table/record/field"`, as an item with `data-item` (`ricochet/core/fields.mjs`:
-   the application declares its tables). To come: a store of data records (`data`), with the changes made elsewhere
-   taken back; an adapter for Google Tasks.
+   the application declares its tables); the tasks of the user in Google Tasks, read and changed
+   (`ricochet/adapters/google-tasks.mjs`). To come: a store of data records (`data`), with the changes made elsewhere
+   taken back.
 
 The demos and the documentation are gathered on the home page,
 [rigalto.github.io/ricochet](https://rigalto.github.io/ricochet/).

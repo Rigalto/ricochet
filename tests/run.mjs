@@ -37,6 +37,7 @@ const REGISTRY = [
   {name: 'DriveConfig', file: './test-drive-config.mjs'},
   {name: 'DriveSheet', file: './test-drive-sheet.mjs'},
   {name: 'DriveFiles', file: './test-drive-files.mjs'},
+  {name: 'GoogleTasks', file: './test-google-tasks.mjs'},
   {name: 'DocTool', file: './test-doc-tool.mjs'},
 ]
 
