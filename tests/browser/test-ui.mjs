@@ -22,6 +22,7 @@ import {defineImageSources, forgetImages} from '../../src/ui/rc-image.mjs'
 import {markdownToHtml} from '../../src/utils/markdown.mjs'
 import '../../src/ui/rc-tabs.mjs'
 import '../../src/ui/rc-slider.mjs'
+import {niceMax} from '../../src/ui/rc-bar-chart.mjs'
 import '../../src/ui/rc-breadcrumb.mjs'
 import '../../src/ui/table-style.mjs'
 import {loadScript} from '../../src/utils/dom.mjs'
@@ -1263,4 +1264,30 @@ await describe('loadScript', async () => {
   assert('rejected when it cannot be loaded, element removed', failed !== null && document.querySelector('script[src="/tu-no-such-script.js"]') === null)
   script.remove()
   delete window.tuLoadScript
+})
+
+await describe('rc-bar-chart', async () => {
+  assert('the top of the scale: 1, 2 or 5 times a power of ten', niceMax(0) === 1 && niceMax(1) === 1 && niceMax(3) === 5 && niceMax(7) === 10 &&
+    niceMax(11) === 20 && niceMax(150) === 200 && niceMax(0.3) === 0.5)
+  sandbox.innerHTML = '<rc-bar-chart id="a" height="120" bar-width="10" values label="Per day" empty="Nothing" style="width: 120px"></rc-bar-chart>'
+  await tick()
+  assert('without bars: the empty text', $('#a .rc-empty')?.textContent === 'Nothing')
+  const bars = Array.from({length: 30}, (_, index) => ({value: index % 4, label: index % 7 === 0 ? String(index + 1) : '', title: `day ${index + 1}`,
+    ...(index === 10 ? {mark: 'Dec.'} : {})}))
+  $('#a')._component.bars = bars
+  const svg = $('#a > svg')
+  const rects = [...svg.querySelectorAll('rect.rc-bar')]
+  assert('one bar per value, a title for each', rects.length === 30 && rects[5].querySelector('title').textContent === 'day 6')
+  assert('the heights follow the values (top of the scale: 5)', Math.abs(Number(rects[3].getAttribute('height')) - 3 / 5 * (120 - 42)) < 0.01 &&
+    Number(rects[0].getAttribute('height')) === 0)
+  assert('the labels given, the mark, the values written', [...svg.querySelectorAll('text')].filter(t => t.textContent === '8').length >= 1 &&
+    svg.querySelectorAll('line.rc-mark').length === 1 && svg.querySelectorAll('text.rc-value').length === rects.filter((_, i) => i % 4 !== 0).length)
+  $('#a')._component.bars = [{value: 1, mark: 'August 2026'}, {value: 1, mark: 'Sept.'}, ...Array.from({length: 12}, () => ({value: 1})), {value: 2, mark: 'Oct.'}]
+  assert('a mark too close to the previous one: its line, not its text', $('#a').querySelectorAll('line.rc-mark').length === 3 &&
+    [...$('#a').querySelectorAll('text')].map(t => t.textContent).filter(t => /[A-Z]/.test(t)).join() === 'August 2026,Oct.')
+  $('#a')._component.bars = bars
+  assert('wider than the element: it scrolls, shown at its end', $('#a').scrollWidth > $('#a').clientWidth && $('#a').scrollLeft > 0)
+  assert('named for screen readers', svg.getAttribute('aria-label') === 'Per day' && svg.getAttribute('role') === 'img')
+  $('#a')._component.bars = [{value: 'x'}, {value: -2}]
+  assert('a value that is not a number, or below 0: 0', [...$('#a').querySelectorAll('rect.rc-bar')].every(r => Number(r.getAttribute('height')) === 0))
 })

@@ -49,6 +49,8 @@ await describe('GoogleTasks — reading', async () => {
   const done = account.calls.at(-1)
   assert('the completed tasks of a period: hidden included (completed in the applications of Google)', done.query.showHidden === true &&
     done.query.showCompleted === true && done.query.completedMin === '2026-11-26T00:00:00Z' && done.query.completedMax === '2026-11-27T00:00:00Z')
+  await tasks.completed('L2')
+  assert('… without bounds: since the first task, until now', !('completedMin' in account.calls.at(-1).query) && !('completedMax' in account.calls.at(-1).query))
   assert('the date of a task: YYYY-MM-DD, or empty', dueDay({due: '2026-12-01T00:00:00.000Z'}) === '2026-12-01' && dueDay({}) === '')
 })
 

@@ -99,13 +99,13 @@ export class GoogleTasks {
    * The tasks of a list completed between two moments (wherever they were completed: here or in an application of
    * Google, hidden or not).
    * @param {string} list - The identifier of the list.
-   * @param {string} from - The first moment (RFC 3339, included).
-   * @param {string} to - The last moment (RFC 3339, excluded).
+   * @param {string} [from] - The first moment (RFC 3339, included); none: since the first task.
+   * @param {string} [to] - The last moment (RFC 3339, excluded); none: until now.
    * @returns {Promise<object[]>}
    */
   async completed (list, from, to) {
     const tasks = await this.#all(`${API}/lists/${encodeURIComponent(list)}/tasks`,
-      {showCompleted: true, showHidden: true, showDeleted: false, completedMin: from, completedMax: to})
+      {showCompleted: true, showHidden: true, showDeleted: false, ...(from ? {completedMin: from} : {}), ...(to ? {completedMax: to} : {})})
     return tasks.filter(task => task.status === 'completed')
   }
 

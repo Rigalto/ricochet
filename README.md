@@ -250,7 +250,8 @@ The events that Ricochet emits and listens to, and the `rc` prefix reserved for 
   suggestions), [`rc-select`](docs/api/rc-select.module.md) (looks of the fields:
   [`field-style`](docs/api/field-style.module.md)), [`rc-tabs` and `rc-tab`](docs/api/rc-tabs.module.md),
   [`rc-dropdown`](docs/api/rc-dropdown.module.md), [`rc-dialog`](docs/api/rc-dialog.module.md) (with `showAlert()` and
-  `showConfirm()`), [`rc-slider`](docs/api/rc-slider.module.md), [`rc-breadcrumb` and
+  `showConfirm()`), [`rc-slider`](docs/api/rc-slider.module.md), a bar chart in SVG
+  ([`rc-bar-chart`](docs/api/rc-bar-chart.module.md)), [`rc-breadcrumb` and
   `rc-crumb`](docs/api/rc-breadcrumb.module.md), the grid of a month ([`rc-month`](docs/api/rc-month.module.md)), the look of the tables ([`rc-table`](docs/api/table-style.module.md))
   ([demo/components.html](demo/components.html),
   which also shows the mounting time); floating buttons, [`rc-floating-bar`, `rc-floating-group`,

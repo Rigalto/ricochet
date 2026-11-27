@@ -25,6 +25,7 @@
  * | `RcSelect`, `defineOptionSources`, `parseOptions`, `findOptionSource`, `requestOptions` | [rc-select](rc-select.module.md) |
  * | `RcCombobox` | [rc-combobox](rc-combobox.module.md) |
  * | `RcSlider` | [rc-slider](rc-slider.module.md) |
+ * | `RcBarChart`, `niceMax` | [rc-bar-chart](rc-bar-chart.module.md) |
  * | `RcTabs`, `RcTab` | [rc-tabs](rc-tabs.module.md) |
  * | `RcDropdown` | [rc-dropdown](rc-dropdown.module.md) |
  * | `RcBreadcrumb`, `RcCrumb` | [rc-breadcrumb](rc-breadcrumb.module.md) |
@@ -51,6 +52,7 @@ export {RcTextarea} from './rc-textarea.mjs'
 export {RcSelect, defineOptionSources, parseOptions, findOptionSource, requestOptions} from './rc-select.mjs'
 export {RcCombobox} from './rc-combobox.mjs'
 export {RcSlider} from './rc-slider.mjs'
+export {RcBarChart, niceMax} from './rc-bar-chart.mjs'
 export {RcTabs, RcTab} from './rc-tabs.mjs'
 export {RcDropdown} from './rc-dropdown.mjs'
 export {RcBreadcrumb, RcCrumb} from './rc-breadcrumb.mjs'

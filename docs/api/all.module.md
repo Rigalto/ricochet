@@ -25,6 +25,7 @@ Importing a component alone (`ricochet/ui/rc-select.mjs`) stays possible: it imp
 | `RcSelect`, `defineOptionSources`, `parseOptions`, `findOptionSource`, `requestOptions` | [rc-select](rc-select.module.md) |
 | `RcCombobox` | [rc-combobox](rc-combobox.module.md) |
 | `RcSlider` | [rc-slider](rc-slider.module.md) |
+| `RcBarChart`, `niceMax` | [rc-bar-chart](rc-bar-chart.module.md) |
 | `RcTabs`, `RcTab` | [rc-tabs](rc-tabs.module.md) |
 | `RcDropdown` | [rc-dropdown](rc-dropdown.module.md) |
 | `RcBreadcrumb`, `RcCrumb` | [rc-breadcrumb](rc-breadcrumb.module.md) |

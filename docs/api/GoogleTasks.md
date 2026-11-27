@@ -37,8 +37,8 @@ Google, hidden or not).
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `list` | string | The identifier of the list. |
-| `from` | string | The first moment (RFC 3339, included). |
-| `to` | string | The last moment (RFC 3339, excluded). |
+| `from` | string | The first moment (RFC 3339, included); none: since the first task. |
+| `to` | string | The last moment (RFC 3339, excluded); none: until now. |
 
 **Returns** `Promise<object[]>` 
 
